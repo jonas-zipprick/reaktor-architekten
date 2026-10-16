@@ -1,0 +1,651 @@
+.board-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.25rem;
+  position: relative;
+}
+
+.hex-board {
+  width: 100%;
+  height: min(92vh, 1100px);
+  max-width: 1280px;
+  overflow: visible;
+}
+
+/* ---------- Außenwand ---------- */
+
+.wall-ring {
+  animation: wallPulse 6s ease-in-out infinite;
+}
+
+.wall-haze {
+  animation: wallHaze 6s ease-in-out infinite;
+}
+
+.wall-ring-dash {
+  animation: wallDash 40s linear infinite;
+}
+
+@keyframes wallPulse {
+  0%,
+  100% {
+    stroke-opacity: 0.45;
+  }
+  50% {
+    stroke-opacity: 0.85;
+  }
+}
+
+@keyframes wallHaze {
+  0%,
+  100% {
+    stroke-opacity: 0.12;
+  }
+  50% {
+    stroke-opacity: 0.3;
+  }
+}
+
+@keyframes wallDash {
+  to {
+    stroke-dashoffset: -320;
+  }
+}
+
+/* ---------- Hex-Zellen ---------- */
+
+.hex-cell {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.hex-cell.is-revealed {
+  animation: hexReveal 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes hexReveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.55) rotate(-8deg);
+  }
+  65% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hex-face {
+  fill: var(--hex-fill, #1a222b);
+  transition:
+    fill 160ms ease,
+    filter 160ms ease;
+}
+
+.hex-inner {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.035);
+  stroke-width: 6;
+  pointer-events: none;
+  transition: stroke 160ms ease;
+}
+
+.hex-stroke {
+  fill: none;
+  stroke: rgba(140, 160, 175, 0.26);
+  stroke-width: 1.25;
+  pointer-events: none;
+  transition:
+    stroke 160ms ease,
+    stroke-width 160ms ease;
+}
+
+.hex-cell:hover .hex-face {
+  filter: brightness(1.22);
+}
+
+.hex-cell:hover .hex-inner {
+  stroke: rgba(226, 197, 122, 0.12);
+}
+
+.hex-cell:hover .hex-stroke {
+  stroke: rgba(226, 197, 122, 0.55);
+}
+
+.hex-cell.is-selected .hex-face {
+  fill: #2a3744;
+}
+
+.hex-cell.is-selected .hex-inner {
+  stroke: rgba(226, 197, 122, 0.16);
+}
+
+.hex-cell.is-selected .hex-stroke {
+  stroke: var(--accent-bright);
+  stroke-width: 2.4;
+  animation: selectedPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes selectedPulse {
+  0%,
+  100% {
+    stroke-opacity: 1;
+  }
+  50% {
+    stroke-opacity: 0.55;
+  }
+}
+
+.terrain-empty .hex-face {
+  fill: url(#hexEmpty);
+}
+
+.terrain-mountain .hex-face {
+  fill: #272d35;
+}
+
+.terrain-uranium .hex-face {
+  fill: #232a1f;
+}
+
+.terrain-sun .hex-face {
+  fill: #2e2718;
+}
+
+.terrain-water .hex-face {
+  fill: #15262e;
+}
+
+.terrain-planet .hex-face {
+  fill: #1a2230;
+}
+
+.terrain-fog .hex-face {
+  fill: url(#hexFog);
+}
+
+.terrain-fog .hex-stroke {
+  stroke: rgba(120, 135, 150, 0.14);
+}
+
+.hex-cell.is-explorable .hex-stroke {
+  stroke: rgba(226, 197, 122, 0.7);
+  stroke-width: 1.8;
+  stroke-dasharray: 4 3;
+  animation: explorableDash 1.8s linear infinite;
+}
+
+@keyframes explorableDash {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+
+.hex-cell.is-explorable:hover .hex-face {
+  filter: brightness(1.6);
+}
+
+/* ---------- Nebel-Sterne ---------- */
+
+.fog-star {
+  fill: rgba(200, 215, 235, 0.55);
+  animation: twinkle 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+/* ---------- Asteroid ---------- */
+
+.asteroid {
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6));
+}
+
+.asteroid-body {
+  fill: #5c6069;
+  stroke: #2a2d33;
+  stroke-width: 0.08;
+  stroke-linejoin: round;
+}
+
+.asteroid-light {
+  fill: rgba(255, 255, 255, 0.14);
+}
+
+.asteroid-crater {
+  fill: rgba(20, 22, 28, 0.55);
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 0.04;
+}
+
+/* ---------- Planet ---------- */
+
+.planet-disc {
+  pointer-events: none;
+}
+
+.planet-halo {
+  opacity: 0.16;
+  filter: blur(4px);
+  animation: planetHalo 5s ease-in-out infinite;
+}
+
+@keyframes planetHalo {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 0.26;
+  }
+}
+
+.planet-ring {
+  fill: none;
+  stroke-width: 1.4;
+  stroke-opacity: 0.45;
+}
+
+.planet-band {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.planet-hex-name {
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  fill: #efe2b4;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: rgba(8, 12, 18, 0.9);
+  stroke-width: 3px;
+}
+
+.hex-cell.is-critical .hex-stroke {
+  stroke: #e06a52;
+  stroke-width: 2.2;
+  animation: criticalPulse 1s ease-in-out infinite;
+}
+
+.hex-cell.is-critical .hex-face {
+  fill: #2c1c1c;
+}
+
+@keyframes criticalPulse {
+  0%,
+  100% {
+    stroke-opacity: 1;
+  }
+  50% {
+    stroke-opacity: 0.35;
+  }
+}
+
+/* ---------- Quellen ---------- */
+
+.source-icon {
+  pointer-events: none;
+}
+
+.source-glow {
+  opacity: 0.18;
+  filter: blur(3px);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sourceGlow 3.2s ease-in-out infinite;
+}
+
+.source-sun .source-glow {
+  fill: #f0b84a;
+}
+
+.source-water .source-glow {
+  fill: #58b4d6;
+}
+
+.source-uranium .source-glow {
+  fill: #9ad45a;
+}
+
+@keyframes sourceGlow {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.04);
+  }
+}
+
+.sun-rays line {
+  stroke: rgba(255, 220, 140, 0.85);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.sun-rays {
+  animation: spinSlow 24s linear infinite;
+}
+
+.uranium-blades {
+  animation: spinSlow 10s linear infinite;
+}
+
+.uranium-blade {
+  fill: rgba(28, 44, 20, 0.85);
+}
+
+.uranium-core {
+  fill: #e8ffb0;
+  stroke: rgba(28, 44, 20, 0.9);
+  stroke-width: 1;
+}
+
+@keyframes spinSlow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.water-wave {
+  fill: none;
+  stroke: rgba(230, 248, 255, 0.75);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  animation: waveDrift 2.6s ease-in-out infinite;
+}
+
+.water-wave:nth-child(4) {
+  animation-delay: -1.3s;
+}
+
+@keyframes waveDrift {
+  0%,
+  100% {
+    transform: translateX(-1.2px);
+  }
+  50% {
+    transform: translateX(1.2px);
+  }
+}
+
+.source-arrow-shaft {
+  stroke: rgba(236, 214, 150, 0.95);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.source-arrow-head {
+  fill: #f1dc9a;
+  filter: drop-shadow(0 0 3px rgba(241, 220, 154, 0.7));
+}
+
+.source-arrow-pulse circle {
+  fill: #fff6d6;
+  animation: arrowPulse 1.6s ease-out infinite;
+}
+
+@keyframes arrowPulse {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(13px);
+  }
+}
+
+/* ---------- Raumschiffe ---------- */
+
+.ship {
+  animation: shipHover 3.2s ease-in-out infinite;
+}
+
+.ship-2 {
+  animation-delay: -1.6s;
+}
+
+@keyframes shipHover {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.6px);
+  }
+}
+
+.ship-shadow {
+  fill: rgba(0, 0, 0, 0.45);
+  filter: blur(1.5px);
+}
+
+.ship-body {
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+}
+
+.ship-wing {
+  stroke-width: 0.9;
+  stroke-linejoin: round;
+}
+
+.ship-1 .ship-body,
+.ship-1 .ship-wing {
+  fill: #f4f1ea;
+  stroke: rgba(40, 40, 48, 0.8);
+}
+
+.ship-1 .ship-window {
+  fill: #3d7a8c;
+  stroke: rgba(40, 40, 48, 0.6);
+  stroke-width: 0.6;
+}
+
+.ship-1 .ship-seam {
+  stroke: rgba(40, 40, 48, 0.35);
+  stroke-width: 0.7;
+}
+
+.ship-2 .ship-body,
+.ship-2 .ship-wing {
+  fill: #16171b;
+  stroke: rgba(244, 241, 234, 0.9);
+}
+
+.ship-2 .ship-window {
+  fill: #e2c57a;
+  stroke: rgba(244, 241, 234, 0.6);
+  stroke-width: 0.6;
+}
+
+.ship-2 .ship-seam {
+  stroke: rgba(244, 241, 234, 0.35);
+  stroke-width: 0.7;
+}
+
+.ship-flame {
+  fill: #ffb067;
+  opacity: 0.85;
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: flame 320ms ease-in-out infinite alternate;
+}
+
+@keyframes flame {
+  from {
+    transform: scaleY(0.7);
+    fill: #ffd27a;
+  }
+  to {
+    transform: scaleY(1.25);
+    fill: #ff8a4a;
+  }
+}
+
+.ship.is-active .ship-flame {
+  opacity: 1;
+}
+
+.ship.is-held .ship-hull {
+  animation: shipHeld 900ms ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(226, 197, 122, 0.95));
+}
+
+@keyframes shipHeld {
+  0%,
+  100% {
+    transform: translateY(-4px) scale(1.08);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.12);
+  }
+}
+
+/* ---------- Gebaute Felder ---------- */
+
+.field-badge {
+  pointer-events: none;
+}
+
+.field-ring {
+  fill: rgba(10, 14, 18, 0.55);
+  stroke-width: 1.6;
+}
+
+.field-ring-glow {
+  opacity: 0.12;
+  filter: blur(4px);
+}
+
+.field-icon {
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.owner-1 .hex-stroke {
+  stroke: rgba(244, 241, 234, 0.7);
+}
+
+.owner-2 .hex-stroke {
+  stroke: rgba(20, 20, 20, 0.95);
+}
+
+.hex-label,
+.field-label,
+.consumer-label {
+  font-family: var(--font-ui);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  fill: rgba(230, 220, 200, 0.78);
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: rgba(8, 12, 18, 0.75);
+  stroke-width: 2.5px;
+}
+
+.field-label {
+  font-size: 9px;
+}
+
+.owner-pip {
+  stroke-width: 1.1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+}
+
+.owner-pip-1 {
+  fill: #f4f1ea;
+  stroke: rgba(0, 0, 0, 0.55);
+}
+
+.owner-pip-2 {
+  fill: #141414;
+  stroke: rgba(244, 241, 234, 0.75);
+}
+
+/* ---------- Chips ---------- */
+
+.chip-dot {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+}
+
+.flying-chip {
+  transition: transform 120ms ease;
+}
+
+.flying-chip-aura {
+  opacity: 0.22;
+  filter: blur(4px);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.flying-chip.is-flying .flying-chip-aura {
+  animation: chipAura 1.4s ease-in-out infinite;
+}
+
+@keyframes chipAura {
+  0%,
+  100% {
+    opacity: 0.16;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 0.38;
+    transform: scale(1.15);
+  }
+}
+
+.flying-chip-ring {
+  fill: none;
+  stroke: var(--accent-bright);
+  stroke-width: 1.4;
+  stroke-dasharray: 4 3;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: spinSlow 6s linear infinite;
+}
+
+.flying-chip-shine {
+  fill: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+}
+
+.flying-chip.is-selected {
+  filter: drop-shadow(0 0 6px rgba(255, 220, 150, 0.65));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hex-board *,
+  .hex-board *::before {
+    animation: none !important;
+  }
+}
