@@ -26,7 +26,7 @@ export default function App() {
           <span className="leg chip-blue">Blau 1 W</span>
           <span className="leg chip-purple">Lila 2 W</span>
           <span className="leg chip-red">Rot 3 W</span>
-          <span className="leg">Fog: Chip fliegt weiter</span>
+          <span className="leg">Unentdeckt: Chip fliegt weiter</span>
           <span className="leg">Asteroid / Wand → Beutel</span>
           <span className="leg owner-1">Schiff Weiß</span>
           <span className="leg owner-2">Schiff Schwarz</span>

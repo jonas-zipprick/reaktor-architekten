@@ -37,7 +37,7 @@ export type TerrainKind =
   | 'water'
   | 'planet'
 
-/** Landscape tiles that come from the face-down stack. */
+/** Landscape tiles that come from a face-down zone stack. */
 export type LandscapeTerrain =
   | 'empty'
   | 'uranium'
@@ -45,6 +45,12 @@ export type LandscapeTerrain =
   | 'water'
   | 'mountain'
   | 'planet'
+
+/**
+ * Board zones (gameRules.md §1).
+ * Four start zones plus the contested center. Each has its own landscape stack.
+ */
+export type ZoneId = 's1' | 's2' | 's3' | 's4' | 'center'
 
 /** One settled consumer on a planet (1 die each; no personal meter). */
 export interface ConsumerUnit {
@@ -63,12 +69,7 @@ export type FieldKind =
   | 'pumped'
   | 'transformer'
 
-export type PhaseId =
-  | 'order'
-  | 'navigate'
-  | 'build'
-  | 'simulate'
-  | 'end'
+export type PhaseId = 'order' | 'act' | 'simulate'
 
 export interface Axial {
   q: number
@@ -86,6 +87,20 @@ export interface Chip {
   resource?: ChipResource
   /** Remaining steps this player's move (soft guide, max 5) */
   stepsLeft?: number
+  /** Next step uses dir from a W6 roll instead of a factory arrow. */
+  dieStep?: boolean
+  /** Player who is simulating this chip. Fees and planet income use this. */
+  pilot?: PlayerId
+  /** How often this flight has already landed on each hex. The third landing ends the chip. */
+  seen?: Record<string, number>
+}
+
+/** A flying chip is waiting on a factory or planet. */
+export interface PendingHit {
+  chipId: string
+  hex: Axial
+  /** ship: trigger or redirect. fee: pay or fly straight. color: nuclear swap. */
+  mode: 'ship' | 'fee' | 'color'
 }
 
 export interface PlacedField {
@@ -93,6 +108,12 @@ export interface PlacedField {
   owner: PlayerId
   /** Bound charges currently on this field */
   charge: ChipColor[]
+  /** Flight arrow, chosen when the factory is built. */
+  dir?: DirIndex
+  /** Usage fee paid to the owner to trigger a non-destructive effect. 0–10. */
+  fee?: number
+  /** What a Speicher charge actually is. Turbine water and trafo voltage are implied. */
+  chargeResource?: ChipResource
 }
 
 export interface CellState {
@@ -115,7 +136,12 @@ export interface CellState {
   planetOwner?: PlayerId
   /** Source stock chips (bound) on a resource source */
   sourceStock: ChipColor[]
-  /** W6 facing of a source arrow (only on uranium/sun/water) */
+  /**
+   * Player who paid to develop this source.
+   * Unset sources stay silent: no arrow, no emission.
+   */
+  sourceOwner?: PlayerId
+  /** Firing direction, chosen when the source is developed. */
   sourceDir?: DirIndex
   field?: PlacedField
 }
@@ -128,4 +154,4 @@ export interface PlayerState {
 
 export type Winner = PlayerId | 'draw'
 
-export type ToolMode = 'select' | 'place' | 'remove'
+export type ToolMode = 'select' | 'place' | 'remove' | 'fee'

@@ -1,5 +1,10 @@
 import { useMemo, type MouseEvent } from 'react'
-import { BOARD_RADIUS, CRITICAL_LIMIT } from '../data/boardLayout'
+import {
+  BOARD_RADIUS,
+  CRITICAL_LIMIT,
+  ZONE_SHORT,
+  zoneOf,
+} from '../data/boardLayout'
 import { FIELD_DEFS } from '../data/fields'
 import {
   axialToPixel,
@@ -12,7 +17,7 @@ import {
 } from '../hex/math'
 import { planetHue } from '../data/planetNames'
 import { useGame } from '../state/gameStore'
-import type { Axial, ChipColor, DirIndex, PlayerId } from '../types'
+import { DIRECTIONS, type Axial, type CellState, type ChipColor, type DirIndex, type PlayerId } from '../types'
 import './HexBoard.css'
 
 const SIZE = 42
@@ -248,7 +253,7 @@ const TERRAIN_CLASS: Record<string, string> = {
   planet: 'terrain-planet',
 }
 
-/** Chips along the bottom edge of a hex. */
+/** Bound charges sit in the upper part of a hex. */
 function ChipDots({
   colors,
   cx,
@@ -262,7 +267,7 @@ function ChipDots({
 }) {
   const n = colors.length
   if (n === 0) return null
-  const baseY = cy + SIZE * 0.42
+  const baseY = bound ? cy - SIZE * 0.48 : cy + SIZE * 0.5
   const spread = Math.min(SIZE * 0.55, 6 + n * 5)
   return (
     <g className={bound ? 'chips-bound' : 'chips-free'}>
@@ -280,6 +285,65 @@ function ChipDots({
             strokeWidth={bound ? 0.8 : 1.1}
             className="chip-dot"
           />
+        )
+      })}
+    </g>
+  )
+}
+
+function SourceAimRing({
+  cx,
+  cy,
+  current,
+  onPick,
+}: {
+  cx: number
+  cy: number
+  current?: DirIndex
+  onPick: (dir: DirIndex) => void
+}) {
+  return (
+    <g className="source-aim-ring">
+      {DIRECTIONS.map((d) => {
+        const dir = d.id
+        const mid = edgeMidpoint(cx, cy, SIZE * 1.02, dir)
+        const dx = mid.x - cx
+        const dy = mid.y - cy
+        const len = Math.hypot(dx, dy) || 1
+        const ux = dx / len
+        const uy = dy / len
+        const tipX = cx + ux * SIZE * 0.98
+        const tipY = cy + uy * SIZE * 0.98
+        const baseX = cx + ux * SIZE * 0.56
+        const baseY = cy + uy * SIZE * 0.56
+        const nx = -uy
+        const ny = ux
+        const head = 9
+        const chosen = current === dir
+        return (
+          <g
+            key={dir}
+            className={`source-aim-arrow ${chosen ? 'is-current' : ''}`}
+            role="button"
+            aria-label={`Richtung ${d.label}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (!chosen) onPick(dir)
+            }}
+          >
+            <circle cx={tipX} cy={tipY} r={13} className="source-aim-hit" />
+            <line
+              x1={baseX}
+              y1={baseY}
+              x2={tipX - ux * 7}
+              y2={tipY - uy * 7}
+              className="source-aim-shaft"
+            />
+            <polygon
+              points={`${tipX},${tipY} ${tipX - ux * head + nx * 5.5},${tipY - uy * head + ny * 5.5} ${tipX - ux * head - nx * 5.5},${tipY - uy * head - ny * 5.5}`}
+              className="source-aim-head"
+            />
+          </g>
         )
       })}
     </g>
@@ -408,14 +472,24 @@ export function HexBoard() {
   const tool = useGame((s) => s.tool)
   const placeKind = useGame((s) => s.placeKind)
   const approveType = useGame((s) => s.approveType)
+  const developingSource = useGame((s) => s.developingSource)
+  const buildAimHex = useGame((s) => s.buildAimHex)
+  const phase = useGame((s) => s.phase)
   const activePlayer = useGame((s) => s.activePlayer)
+  const developSource = useGame((s) => s.developSource)
+  const aimFactory = useGame((s) => s.aimFactory)
+  const armFactoryBuild = useGame((s) => s.armFactoryBuild)
   const selectHex = useGame((s) => s.selectHex)
   const placeField = useGame((s) => s.placeField)
   const approveConsumer = useGame((s) => s.approveConsumer)
   const selectAt = useGame((s) => s.selectAt)
   const pickShip = useGame((s) => s.pickShip)
   const removeAt = useGame((s) => s.removeAt)
+  const draftFee = useGame((s) => s.draftFee)
+  const setFactoryFee = useGame((s) => s.setFactoryFee)
   const removeChip = useGame((s) => s.removeChip)
+  const upkeepPlayer = useGame((s) => s.upkeepPlayer)
+  const closeForUpkeep = useGame((s) => s.closeForUpkeep)
 
   const layout = useMemo(() => {
     const list = Object.values(cells)
@@ -441,8 +515,45 @@ export function HexBoard() {
     }
   }, [cells])
 
+  function canAimSource(cell: CellState): boolean {
+    if (phase !== 'act' || !developingSource) return false
+    if (!cell.revealed) return false
+    if (
+      cell.terrain !== 'uranium' &&
+      cell.terrain !== 'sun' &&
+      cell.terrain !== 'water'
+    ) {
+      return false
+    }
+    if (hexDistance(ships[activePlayer], cell.hex) > 1) return false
+    return cell.sourceOwner == null || cell.sourceOwner === activePlayer
+  }
+
+  function canAimFactory(cell: CellState): boolean {
+    if (phase !== 'act' || !developingSource || !cell.revealed || !cell.field) {
+      return false
+    }
+    return (
+      cell.field.owner === activePlayer &&
+      hexDistance(ships[activePlayer], cell.hex) <= 1
+    )
+  }
+
+  function isBuildAim(hex: Axial): boolean {
+    return buildAimHex != null && hexEquals(buildAimHex, hex)
+  }
+
+  function closeOwnedFactory(hex: Axial): boolean {
+    if (!upkeepPlayer) return false
+    const cell = cells[hexKey(hex)]
+    if (cell?.field?.owner !== upkeepPlayer) return false
+    closeForUpkeep(hex)
+    return true
+  }
+
   function onHexClick(hex: Axial, e: MouseEvent) {
     e.stopPropagation()
+    if (closeOwnedFactory(hex)) return
     selectHex(hex)
     const cell = cells[hexKey(hex)]
     if (!cell) return
@@ -456,11 +567,28 @@ export function HexBoard() {
         if (cell.terrain === 'planet') approveConsumer(hex, approveType)
         return
       }
-      placeField(hex, placeKind, activePlayer)
+      const isSource =
+        cell.revealed &&
+        (cell.terrain === 'uranium' ||
+          cell.terrain === 'sun' ||
+          cell.terrain === 'water')
+      if (developingSource || isSource) return
+      const def = FIELD_DEFS[placeKind]
+      const recharging =
+        cell.field?.kind === placeKind && def.startCharge > 0
+      if (recharging) {
+        placeField(hex, placeKind, activePlayer)
+        return
+      }
+      armFactoryBuild(hex)
       return
     }
     if (tool === 'remove') {
       removeAt(hex)
+      return
+    }
+    if (tool === 'fee') {
+      setFactoryFee(hex, draftFee)
     }
   }
 
@@ -596,17 +724,23 @@ export function HexBoard() {
             const hasShip2 = hexEquals(ships[2], cell.hex)
             const nearActive =
               hexDistance(ships[activePlayer], cell.hex) === 1
+            const zone = zoneOf(cell.hex)
 
             const isSource =
               cell.revealed &&
               (cell.terrain === 'uranium' ||
                 cell.terrain === 'sun' ||
                 cell.terrain === 'water')
+            const aiming = canAimSource(cell)
+            const aimingFactory = canAimFactory(cell) || isBuildAim(cell.hex)
+            const markerOwner = cell.field?.owner ?? cell.sourceOwner
+            const closing =
+              upkeepPlayer != null && cell.field?.owner === upkeepPlayer
 
             return (
               <g
                 key={`${hexKey(cell.hex)}-${cell.revealed ? 'r' : 'f'}`}
-                className={`hex-cell ${cell.revealed ? TERRAIN_CLASS[cell.terrain] ?? '' : 'terrain-fog'} ${cell.revealed ? 'is-revealed' : ''} ${selected ? 'is-selected' : ''} ${cell.field ? `owner-${cell.field.owner as PlayerId}` : ''} ${critical ? 'is-critical' : ''} ${nearActive && !cell.revealed ? 'is-explorable' : ''}`}
+                className={`hex-cell zone-${zone} ${cell.revealed ? TERRAIN_CLASS[cell.terrain] ?? '' : 'terrain-fog'} ${cell.revealed ? 'is-revealed' : ''} ${selected ? 'is-selected' : ''} ${markerOwner ? `owner-${markerOwner}` : ''} ${critical ? 'is-critical' : ''} ${closing ? 'is-upkeep' : ''} ${nearActive && !cell.revealed ? 'is-explorable' : ''}`}
                 onClick={(e) => onHexClick(cell.hex, e)}
                 style={{ cursor: 'pointer' }}
               >
@@ -615,6 +749,16 @@ export function HexBoard() {
                 <path d={path} className="hex-stroke" />
 
                 {!cell.revealed && <FogStars hex={cell.hex} cx={cx} cy={cy} />}
+                {!cell.revealed && (
+                  <text
+                    x={cx}
+                    y={cy + SIZE * 0.42}
+                    className={`zone-tag zone-tag-${zone}`}
+                    textAnchor="middle"
+                  >
+                    {ZONE_SHORT[zone]}
+                  </text>
+                )}
 
                 {cell.revealed && cell.terrain === 'mountain' && (
                   <Asteroid hex={cell.hex} cx={cx} cy={cy} />
@@ -648,8 +792,15 @@ export function HexBoard() {
                           ? 'Sonne'
                           : 'Wasser'}
                     </text>
-                    {cell.sourceDir && (
+                    {cell.sourceDir && !aiming && (
                       <SourceArrow cx={cx} cy={cy} dir={cell.sourceDir} />
+                    )}
+                    {cell.sourceOwner && (
+                      <OwnerPip
+                        cx={cx + SIZE * 0.48}
+                        cy={cy - SIZE * 0.42}
+                        owner={cell.sourceOwner}
+                      />
                     )}
                   </g>
                 )}
@@ -687,6 +838,17 @@ export function HexBoard() {
                     >
                       {def.short}
                     </text>
+                    {cell.field?.dir && !aimingFactory && (
+                      <SourceArrow cx={cx} cy={cy} dir={cell.field.dir} />
+                    )}
+                    <text
+                      x={cx - SIZE * 0.46}
+                      y={cy - SIZE * 0.34}
+                      className="field-fee"
+                      textAnchor="middle"
+                    >
+                      {cell.field?.fee ?? 0}
+                    </text>
                     <OwnerPip
                       cx={cx + SIZE * 0.48}
                       cy={cy - SIZE * 0.38}
@@ -711,9 +873,11 @@ export function HexBoard() {
                         active={activePlayer === 1}
                         onPick={(e) => {
                           e.stopPropagation()
+                          if (closeOwnedFactory(cell.hex)) return
                           selectHex(cell.hex)
                           if (tool === 'select') pickShip(1)
                           else if (tool === 'remove') removeAt(cell.hex)
+                          else if (tool === 'fee') setFactoryFee(cell.hex, draftFee)
                         }}
                       />
                     )}
@@ -726,9 +890,11 @@ export function HexBoard() {
                         active={activePlayer === 2}
                         onPick={(e) => {
                           e.stopPropagation()
+                          if (closeOwnedFactory(cell.hex)) return
                           selectHex(cell.hex)
                           if (tool === 'select') pickShip(2)
                           else if (tool === 'remove') removeAt(cell.hex)
+                          else if (tool === 'fee') setFactoryFee(cell.hex, draftFee)
                         }}
                       />
                     )}
@@ -754,7 +920,7 @@ export function HexBoard() {
             .map((chip) => {
               const { x, y } = axialToPixel(chip.hex, SIZE)
               const selected = chip.id === selectedChipId
-              const oy = SIZE * 0.28
+              const oy = SIZE * 0.5
               const px = x
               const py = y + oy
               return (
@@ -763,6 +929,7 @@ export function HexBoard() {
                   className={`flying-chip chip-${chip.color} ${selected ? 'is-selected' : ''} ${chip.state === 'flying' ? 'is-flying' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation()
+                    if (closeOwnedFactory(chip.hex)) return
                     selectHex(chip.hex)
                     if (tool === 'select') {
                       selectAt(chip.hex)
@@ -770,7 +937,9 @@ export function HexBoard() {
                     }
                     if (tool === 'remove') {
                       removeAt(chip.hex)
+                      return
                     }
+                    if (tool === 'fee') setFactoryFee(chip.hex, draftFee)
                   }}
                   style={{
                     cursor: 'pointer',
@@ -810,6 +979,42 @@ export function HexBoard() {
                 </g>
               )
             })}
+
+          {layout.positioned.map(({ cell, x, y }) => {
+            if (canAimSource(cell)) {
+              return (
+                <SourceAimRing
+                  key={`aim-${hexKey(cell.hex)}`}
+                  cx={x}
+                  cy={y}
+                  current={cell.sourceDir}
+                  onPick={(dir) => developSource(cell.hex, dir)}
+                />
+              )
+            }
+            if (isBuildAim(cell.hex)) {
+              return (
+                <SourceAimRing
+                  key={`build-${hexKey(cell.hex)}`}
+                  cx={x}
+                  cy={y}
+                  onPick={(dir) => placeField(cell.hex, placeKind, activePlayer, dir)}
+                />
+              )
+            }
+            if (canAimFactory(cell)) {
+              return (
+                <SourceAimRing
+                  key={`factory-${hexKey(cell.hex)}`}
+                  cx={x}
+                  cy={y}
+                  current={cell.field?.dir}
+                  onPick={(dir) => aimFactory(cell.hex, dir)}
+                />
+              )
+            }
+            return null
+          })}
         </g>
       </svg>
     </div>

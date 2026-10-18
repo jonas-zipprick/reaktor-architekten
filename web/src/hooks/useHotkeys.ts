@@ -46,8 +46,13 @@ export function useHotkeys() {
         setTool('remove')
         return
       }
+      if (key === 'g') {
+        e.preventDefault()
+        setTool('fee')
+        return
+      }
 
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
         nextPhase()
       }

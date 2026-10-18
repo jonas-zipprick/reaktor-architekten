@@ -174,6 +174,66 @@
   stroke: rgba(120, 135, 150, 0.14);
 }
 
+/* Zone tint on fog only, so selection and hover strokes stay readable. */
+.terrain-fog.zone-s1 .hex-face {
+  fill: #16130f;
+}
+.terrain-fog.zone-s2 .hex-face {
+  fill: #101418;
+}
+.terrain-fog.zone-s3 .hex-face {
+  fill: #0e1615;
+}
+.terrain-fog.zone-s4 .hex-face {
+  fill: #16100e;
+}
+.terrain-fog.zone-center .hex-face {
+  fill: #1c170f;
+}
+
+.hex-cell.zone-center:not(.is-selected) .hex-inner {
+  stroke: rgba(212, 168, 74, 0.38);
+}
+
+.terrain-fog.zone-s1:not(.is-selected):not(.is-explorable) .hex-stroke {
+  stroke: rgba(214, 196, 150, 0.42);
+}
+.terrain-fog.zone-s2:not(.is-selected):not(.is-explorable) .hex-stroke {
+  stroke: rgba(150, 176, 196, 0.42);
+}
+.terrain-fog.zone-s3:not(.is-selected):not(.is-explorable) .hex-stroke {
+  stroke: rgba(110, 176, 164, 0.45);
+}
+.terrain-fog.zone-s4:not(.is-selected):not(.is-explorable) .hex-stroke {
+  stroke: rgba(186, 132, 112, 0.45);
+}
+.terrain-fog.zone-center:not(.is-selected):not(.is-explorable) .hex-stroke {
+  stroke: rgba(212, 168, 74, 0.72);
+}
+
+.zone-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+.zone-tag-s1 {
+  fill: rgba(214, 196, 150, 0.55);
+}
+.zone-tag-s2 {
+  fill: rgba(170, 190, 210, 0.55);
+}
+.zone-tag-s3 {
+  fill: rgba(130, 196, 184, 0.55);
+}
+.zone-tag-s4 {
+  fill: rgba(206, 156, 136, 0.55);
+}
+.zone-tag-center {
+  fill: rgba(226, 190, 96, 0.8);
+}
+
 .hex-cell.is-explorable .hex-stroke {
   stroke: rgba(226, 197, 122, 0.7);
   stroke-width: 1.8;
@@ -279,6 +339,11 @@
   paint-order: stroke;
   stroke: rgba(8, 12, 18, 0.9);
   stroke-width: 3px;
+}
+
+.hex-cell.is-upkeep .hex-stroke {
+  stroke: #e2b657;
+  stroke-width: 2.6;
 }
 
 .hex-cell.is-critical .hex-stroke {
@@ -389,6 +454,47 @@
   50% {
     transform: translateX(1.2px);
   }
+}
+
+.source-aim-arrow {
+  cursor: pointer;
+}
+
+.source-aim-hit {
+  fill: rgba(241, 220, 154, 0.14);
+  stroke: rgba(241, 220, 154, 0.45);
+  stroke-width: 1;
+}
+
+.source-aim-arrow:hover .source-aim-hit {
+  fill: rgba(241, 220, 154, 0.4);
+  stroke: #fff6d6;
+}
+
+.source-aim-shaft {
+  stroke: rgba(236, 214, 150, 0.9);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.source-aim-head {
+  fill: #f1dc9a;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(241, 220, 154, 0.55));
+}
+
+.source-aim-arrow.is-current {
+  cursor: default;
+}
+
+.source-aim-arrow.is-current .source-aim-hit {
+  fill: rgba(241, 220, 154, 0.5);
+  stroke: #fff6d6;
+}
+
+.source-aim-arrow.is-current .source-aim-head {
+  fill: #fff6d6;
 }
 
 .source-arrow-shaft {
@@ -574,6 +680,14 @@
 
 .field-label {
   font-size: 9px;
+}
+
+.field-fee {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  fill: #e7c56a;
+  pointer-events: none;
 }
 
 .owner-pip {

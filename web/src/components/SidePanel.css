@@ -68,6 +68,61 @@
   line-height: 1.35;
 }
 
+.zone-decks {
+  list-style: none;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.zone-decks li {
+  display: grid;
+  grid-template-columns: 0.55rem 6.4rem 1.4rem 1fr;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.zone-name {
+  color: var(--ink-soft);
+}
+
+.zone-count {
+  text-align: right;
+  color: var(--accent-bright);
+}
+
+.zone-mix {
+  line-height: 1.35;
+}
+
+.zone-swatch {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 2px;
+  align-self: center;
+}
+
+.zone-swatch-s1 {
+  background: rgba(214, 196, 150, 0.85);
+}
+.zone-swatch-s2 {
+  background: rgba(150, 176, 196, 0.85);
+}
+.zone-swatch-s3 {
+  background: rgba(110, 176, 164, 0.9);
+}
+.zone-swatch-s4 {
+  background: rgba(186, 132, 112, 0.9);
+}
+.zone-swatch-center {
+  background: rgba(212, 168, 74, 0.95);
+}
+
 /* ---------- Karten ---------- */
 
 .panel-card {
@@ -461,7 +516,7 @@
 
 .tool-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.3rem;
   margin-bottom: 0.55rem;
   padding: 0.22rem;

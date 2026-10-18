@@ -29,7 +29,7 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     startCharge: 0,
     accent: '#6b8f9e',
     icon: '↗',
-    blurb: 'Alles: Chip fliegt in beliebige Richtung weiter.',
+    blurb: 'Alles: Chip fliegt in Pfeilrichtung weiter.',
   },
   solar: {
     kind: 'solar',
@@ -41,7 +41,7 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     accent: '#d4a017',
     icon: '☀',
     blurb:
-      'Licht → Spannung (Spieler wählt Richtung). Wärme/Spannung: Feld zerstört.',
+      'Licht → Spannung, fliegt in Pfeilrichtung. Andere Chips fliegen geradeaus.',
   },
   thermalCell: {
     kind: 'thermalCell',
@@ -53,7 +53,7 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     accent: '#d4783a',
     icon: '🔆',
     blurb:
-      'Wie Solarzelle, erzeugt Wärme (Spieler wählt Richtung). Zerstört durch Wasser/Spannung (nicht Wärme).',
+      'Licht → Wärme, fliegt in Pfeilrichtung. Andere Chips fliegen geradeaus.',
   },
   nuclearPlant: {
     kind: 'nuclearPlant',
@@ -65,7 +65,7 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     accent: '#8a5a44',
     icon: '☢',
     blurb:
-      'Uran → Wärme beliebiger Beutel-Farbe (Spieler wählt Richtung). Wasser/Spannung: Feld zerstört.',
+      'Uran → Wärme, fliegt in Pfeilrichtung. Andere Chips fliegen geradeaus.',
   },
   turbine: {
     kind: 'turbine',
@@ -78,7 +78,7 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     accent: '#3d7a8c',
     icon: '⚙',
     blurb:
-      'Wärme bei Ladung>0: → Spannungen (Spieler wählt Richtung). Ohne Ladung: Würfel. Wasser: laden (<4) sonst Zufall. Spannung: Würfel (Feld bleibt).',
+      'Wärme bei Ladung>0: → Spannungen in Pfeilrichtung. Ohne Ladung: Würfel. Wasser: laden (<4) sonst Zufall. Spannung: Würfel (Feld bleibt).',
   },
   pumped: {
     kind: 'pumped',
@@ -91,7 +91,7 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     accent: '#2f6b7a',
     icon: '💧',
     blurb:
-      'Wasser/Spannung/Wärme: leer wird Ladung, sonst geradeaus. Geladen: Besitzer darf die Ladung in eine Richtung schießen.',
+      'Wasser/Spannung/Wärme: leer wird Ladung, sonst geradeaus. In der Simulation schießt der Besitzer die Ladung in Pfeilrichtung.',
   },
   transformer: {
     kind: 'transformer',
@@ -104,7 +104,7 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     accent: '#9a6b3a',
     icon: '⬡',
     blurb:
-      'Start: 4 Spannung. Geladen: 1→2 (Spieler wählt Richtung). Leer: Würfelrichtung.',
+      'Start: 4 Spannung. Geladen: 1→2 in Pfeilrichtung. Leer: Würfelrichtung.',
   },
 }
 
