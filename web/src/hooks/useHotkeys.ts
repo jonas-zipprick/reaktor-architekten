@@ -16,7 +16,6 @@ function isTypingTarget(target: EventTarget | null): boolean {
 export function useHotkeys() {
   const nextPhase = useGame((s) => s.nextPhase)
   const undo = useGame((s) => s.undo)
-  const setTool = useGame((s) => s.setTool)
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -30,25 +29,8 @@ export function useHotkeys() {
 
       if (e.metaKey || e.ctrlKey || e.altKey) return
 
-      const key = e.key.toLowerCase()
-      if (key === 'a') {
-        e.preventDefault()
-        setTool('select')
-        return
-      }
-      if (key === 'b') {
-        e.preventDefault()
-        setTool('place')
-        return
-      }
-      if (key === 'e') {
-        e.preventDefault()
-        setTool('remove')
-        return
-      }
-      if (key === 'g') {
-        e.preventDefault()
-        setTool('fee')
+      if (e.key === 'Escape') {
+        useGame.getState().selectHex(null)
         return
       }
 
@@ -60,5 +42,5 @@ export function useHotkeys() {
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [nextPhase, undo, setTool])
+  }, [nextPhase, undo])
 }

@@ -94,6 +94,22 @@
   box-shadow: 0 0 0 1px rgba(244, 241, 234, 0.8);
 }
 
+.planet-group.owner-3 .planet-group-head {
+  color: #9fd4b8;
+}
+
+.planet-group.owner-3 .planet-group-mark {
+  background: #3d8f6a;
+}
+
+.planet-group.owner-4 .planet-group-head {
+  color: #c9b4e8;
+}
+
+.planet-group.owner-4 .planet-group-mark {
+  background: #7b5ea7;
+}
+
 .planet-group.owner-neutral .planet-group-mark {
   background: transparent;
   box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.38);
@@ -181,6 +197,22 @@
 .planet-card.owner-2::before {
   background: #101114;
   box-shadow: inset -1px 0 0 rgba(244, 241, 234, 0.75);
+}
+
+.planet-card.owner-3 {
+  border-color: rgba(61, 143, 106, 0.55);
+}
+
+.planet-card.owner-3::before {
+  background: #3d8f6a;
+}
+
+.planet-card.owner-4 {
+  border-color: rgba(123, 94, 167, 0.55);
+}
+
+.planet-card.owner-4::before {
+  background: #7b5ea7;
 }
 
 .planet-card.owner-neutral {
@@ -400,15 +432,41 @@
 
 /* ---------- Verbraucherwürfel ---------- */
 
-.planet-dice-row {
+.planet-consumer-rows {
   display: flex;
   flex-direction: column;
+  gap: 0.28rem;
+}
+
+.planet-consumer-row {
+  display: grid;
+  grid-template-columns: 4.4rem 1fr;
+  align-items: center;
   gap: 0.3rem;
 }
 
-.planet-dice-empty {
+.planet-consumer-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--muted);
-  font-size: 0.78rem;
+}
+
+.planet-consumer-add {
+  min-width: 1.6rem;
+  padding: 0.22rem 0.4rem;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  border: 1px dashed rgba(255, 255, 255, 0.28);
+  background: transparent;
+}
+
+.planet-consumer-add:hover {
+  border-style: solid;
 }
 
 .planet-dice-list {

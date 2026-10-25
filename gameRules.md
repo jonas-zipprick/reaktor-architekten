@@ -1,300 +1,521 @@
-# **Versorgungs-Architekten: Spielanleitung**
+# **VERSORGUNGS-ARCHITEKTEN**
 
-Ein kompetitives und diplomatisches Wirtschafts- und Kriegsspiel für 2 bis 4 Spieler mit zufallsgeneriertem Spielfeld im Weltall.
+**Spielanleitung · Version 1.3 – Die Kolonialwirtschaft & Freibeuter**
 
-## **1\. Das Spielfeld im Detail**
+Ein strategisches Wirtschafts-, Infrastruktur- und Logistikspiel für 1–4 Spieler. Handelsgesellschaften erschließen Rohstoffe, betreiben Fabriken, bauen Transportnetze und versorgen Planeten. Freie Marktpreise, wirtschaftliche Abhängigkeiten und Rebellionen bestimmen den Spielverlauf.
 
-Das Hauptspielfeld befindet sich auf einem Hexagon-Raster.  
-Alle Spieler teilen sich dieses große Spielfeld.  
-Das Hexagon-Raster ist mit einer absorbierenden Außenwand umrandet.
+## **1\. Spielmodi und Spielziel**
 
-Zu Spielbeginn ist das Raster **größtenteils unentdeckt** (leere, noch nicht aufgedeckte Hexes). Landschaft entsteht erst durch Erkundung um die Raumschiffe herum  
-Aufgedeckte Landschaft kann enthalten:
+| Modus | Spieler | Ziel |
+| ----- | ----- | ----- |
+| Solo | 1 | Ein Versorgungssystem trotz wandernder Freibeuter stabilisieren |
+| Koop | 2 | Gemeinsam Kolonien versorgen und wirtschaftliche Krisen bewältigen |
+| Versus | 2–4 | Am Spielende das größte Geldvermögen besitzen |
 
-- **Leere Felder** (Weltraum) — relativ häufig; bebautbar  
-- Quellen für Rohstoffe (Uran, Sonne, Wasser)  
-- Unbebaubare und absorbierende Felder (Asteroiden)  
-- **Planeten** — jeder mit einem **einzigartigen Namen**; Messgeräte und W4-Verbraucherwürfel liegen auf dem **Planeten-Nebenspielfeld** (Hauptfeld zeigt nur den Namen)
+**Versus:** Das Spiel endet zu Beginn einer Runde, sobald die Bank leer ist. Der reichste Spieler gewinnt; bei Gleichstand gibt es mehrere Sieger. Infrastruktur besitzt keinen zusätzlichen Schlusswert.
 
-Das Spielfeld ist in fünf Zonen unterteilt: vier Startzonen und eine zentrale Zone.  
-Jeder Spieler startet in einer eigenen Startzone.  
-Die vier Startzonen sind möglichst rotationssymmetrisch angeordnet und enthalten vergleichbare Erkundungs- und Expansionsmöglichkeiten.  
-Die zentrale Zone liegt zwischen den Startzonen und ist für alle Spieler zugänglich. Sie enthält besonders umkämpfte Ressourcen und strategische Ziele.
+**Solo/Koop:** Die Spieler erfüllen innerhalb von 12 Runden ein szenarioabhängiges Versorgungsziel. Jeder Spieler behält seine eigene Kasse, Infrastruktur und 4 Aktionspunkte. Im Koop-Modus gewinnen oder verlieren beide gemeinsam.
 
-## **2\. Setting & Konzept**
+Für Solo und Koop gelten zusätzlich folgende Missionsregeln:
 
-Ihr seid konkurrierende Versorgungs-Konzerne im Weltraum. Mit euren Raumschiffen erkundet ihr das All, genehmigt Kolonien und baut Versorgungsnetze — zuverlässig mit Spannung, Wasser und Wärme, ohne dass die Netze außer Kontrolle geraten.
+* Jeder Missionsplanet beginnt mit einem Verbraucher und einem festgelegten menschlichen Eigentümer.  
+* Bis Ende von Runde 8 benötigt jeder Missionsplanet mindestens zwei unterschiedliche Verbraucherarten.  
+* Am Ende der Simulationsphasen von Runde 11 **und** 12 müssen sämtliche Messgeräte jedes Missionsplaneten zwischen −3 und \+3 liegen.  
+* Rebelliert ein Missionsplanet oder wird freiwillig aufgegeben, ist die Mission sofort verloren.  
+* Sind alle Bedingungen am Ende von Runde 12 erfüllt, ist die Mission gewonnen.  
+* Eine leere Bank beendet Solo- und Koop-Partien nicht.
 
-Wer zu wenige Verbraucher zulässt, verdient wenig. Wer zu viele zulässt, riskiert Überlastung und zerstörte Planeten. Am Ende gewinnt, wer das meiste Geld hat.
+Andere Planeten dürfen wie gewohnt rebellieren, ohne die Mission unmittelbar zu beenden.
 
-## **3\. Spielmaterial**
+## **2\. Spielmaterial und Aufbau**
 
-* **Geld-Scheine**: Repräsentiert je 1 Geld. Sie bilden einen endlichen Geldstapel. Der endliche geldstapel hat 60 geld bei 2 spielern, 90 bei 3 und 120 bei 4\. Euer persönlicher Geldstapel muss offen plaziert werden so dass jeder ihn zählen kann, wenn er will.  
-* **Rundenmarker**  
-* **Reihenfolgechip**  
-* Beutel mit 60 Energiechips, 20 blau, 20 lila, 20 rot. Es sind also genug Chips darin dass er in der Praxis nie leer geht.  
-* **Das Hexagon-Raster (Hauptspielfeld):** siehe „Das Spielfeld im Detail“  
-* **Planeten-Nebenspielfeld:** separates Tableau neben dem Hauptspielfeld. Für **jeden entdeckten Planeten** gibt es dort eine Karte mit:  
-  * dem **einzigartigen Planetennamen** (derselbe Name steht auch auf dem Planeten-Hex im Hauptfeld)  
-  * den **W4-Verbraucherwürfeln** dieses Planeten  
-  * Die drei Messgeräte (Spannung, Wasser, Wärme), die beim Aufdecken bei 0 stehen.  
-* **2 bis 4 Raumschiffe** (eins pro Spieler)  
-* **Die Ressourcen-Chips**: siehe „Die Ressourcen-Chips“  
-* **Landschaftsstapel** (fünf getrennte, verdeckt gemischte Stapel)  
-  * Die Landschaftskacheln werden auf fünf Stapel verteilt:  
-    - Startzone 1: Grundausstattung für Spieler 1\.  
-    - Startzone 2: Grundausstattung für Spieler 2\.  
-    - Startzone 3: Grundausstattung für Spieler 3\.  
-    - Startzone 4: Grundausstattung für Spieler 4\.  
-    - Zentrale Zone: Uranquelle und fünfter Planet sonst nur leere Felder.  
-  * Jeder Startzonen-Stapel enthält dieselbe Grundausstattung: einen Planeten, einen Asteroiden, und genau eine Sonnenquelle oder genau eine Wasserquelle, aber nicht beide gleichzeitig (zufällig in den stapel gelegt). Die übrigen Kacheln sind leere Weltraumfelder.  
-  * Der zentrale Stapel enthält die Uranquelle und einen weiteren Planeten. Die übrigen Kacheln werden entsprechend der Größe der zentralen Zone ergänzt.  
-  * Die Zusammensetzung der Stapel ist vor Spielbeginn bekannt. Die Reihenfolge der Kacheln innerhalb jedes Stapels bleibt verdeckt und wird zufällig gemischt.  
-* **Fabriken:** siehe „Die Fabriken“  
-* **Spielermarker**: zeigen, welchem Spieler ein Feld (leer, Quelle oder Planet) gehört.  
-* **W4-Verbraucherwürfel**: Ein Würfel pro Spannung / Wasser / Wärme Verbraucher (Seiten **−3, −2, −1, \+1**). Liegen auf der Planetenkarte. Ein Verbraucher kann genau eine von drei Typen sein:  
-  * Spannungsverbraucher (Messgerät in V / Volt)  
-  * Wasserverbraucher (Messgerät in L / Liter)  
-  * Wärmeverbraucher (Messgerät in W / Watt)  
-* **W6-Richtungswürfel**  
-* **Gebührenchips**: Zur Deklaration der Gebühren die für die Nutzung einer Fabrik an den Fabrikeigentümer bezahlt werden müssen. Die Gebühr pro Fabrik muss zwischen 0 und 10 liegen.
+**Material:**
 
-## **4\. Spielfeldaufbau**
+* Hexagon-Spielfeld gemäß Szenario  
+* Je Spieler ein Raumschiff, Eigentumsmarker und Geld  
+* Extraktoren, Transportwege (blau/lila/rot) und Gebührenmarker  
+* Ressourcenchips in drei Farben mit fünf möglichen Ressourcentypen  
+* Gemeinsamer Chipbeutel  
+* Planetenfelder mit je drei Messgeräten und W4-Verbraucherwürfeln  
+* Fabrikspeicher und Ladungsmarker  
+* Reihenfolgechip und Rundenmarker  
+* Für Solo/Koop: Freibeutermarker und separate Freibeuterkasse
 
-**Landschaftsstapel**
+**Geld:** Jeder Spieler erhält 12 Geld. Insgesamt sind 60 Geld je Spieler im Umlauf (Solo 60, Koop/2 Spieler 120, 3 Spieler 180, 4 Spieler 240). Das übrige Geld liegt in der Bank.
 
-Bildet die 5 Zonenstapel, dreht sie verdeckt und mischt sie
+Bau- und Unterhaltskosten gehen an die Bank, Versorgungseinnahmen kommen aus ihr. Spielergebühren werden direkt zwischen Spielern bezahlt. Alle Geldvorräte sind öffentlich.
 
-**Raumschiffe**
+**Aufbau:**
 
-* Spieler 1 stellt sein Raumschiff **unten links** auf dem Raster auf.  
-* Spieler 2 stellt sein Raumschiff **oben rechts** auf dem Raster auf.  
-* (Falls vorhanden) Spieler 3 stellt sein Raumschiff oben links auf dem Raster auf  
-* (Falls vorhanden) Spieler 4 stellt sein Raumschiff unten rechts auf dem Raster auf  
-* Das Starthex jedes Schiffes gilt als entdeckt (ohne Landschaftskachel). Die **3 Nachbarfelder** jedes Schiffes werden sofort vom Landschaftsstapel aufgedeckt.
+1. Spielmodus und Szenario auswählen, alle Hexfelder offen auslegen.  
+2. Raumschiffe auf die angegebenen Startfelder stellen (Weiß, Schwarz, Grün, Lila).  
+3. Alle Einrichtungen beginnen neutral und ohne zusätzliche Infrastruktur, sofern das Szenario nichts anderes festlegt.  
+4. Alle Planetenmessgeräte beginnen bei 0\.  
+5. Solo/Koop: Vorgegebene Anfangsinfrastruktur und Freibeuter platzieren.  
+6. Rundenmarker auf 1, Reihenfolgechip auf Weiß.
 
-Zu Spielbeginn gibt es **keine Verbraucher**. Das **Planeten-Nebenspielfeld** beginnt leer und füllt sich, sobald Planeten erkundet werden.
+Das Spielfeld besitzt eine absorbierende Außenwand. Asteroiden sind unpassierbar und absorbieren Chips.
 
-**Startkapital**  
-Teilt jedem Spieler 6 Geld aus.
+## **3\. Eigentum und Gebühren**
 
-**Reihenfolgechip**  
-Der Reihenfolgechip wird an den inhaber des Spiels gegeben
+### **Einrichtungen übernehmen**
 
-## **5\. Die Ressourcen-Chips („State by Location“ & Ladung)**
+Quellen, Fabriken und Planeten können kostenlos und ohne Aktionspunkt übernommen werden, sobald das eigene Raumschiff direkt auf dem neutralen Feld steht. Die Übernahme ist freiwillig.
 
-Das Spiel nutzt eine einzige Art von generischen Chips. Ein Chip erhält seine Bedeutung durch den Ort an dem er liegt und wie er erzeugt wurde:
+Neutrale Einrichtungen sind inaktiv:
 
-* **Als Ladung (Vorrat):** Liegen Chips fest auf einem Hexagon-Feld (z. B. auf einer Uranquelle), repräsentieren sie unverbrauchte Ressourcen dieses Feldes.  
-* **Im Flug (Trigger):** Fliegt ein Chip durch das Raster, ist er ein aktiver Auslöser (z. B. **Wasser, Spannung, Wärme**, …).  
-* Chip beim Verlassen einer Uranquelle sind Uran, beim Verlassen einer Sonnenquelle Licht und beim Verlassen einer Wasserquelle Wasser , etc…  
-* Ein Chip erhält beim Verlassen einer Quelle den zugehörigen Ressourcentyp: Uran, Licht oder Wasser. Dieser Typ bleibt während des Fluges erhalten, bis ein Feldeffekt ihn verändert oder der Chip vom Spielfeld entfernt wird. Die Farbe bestimmt unabhängig davon den Energieinhalt des Chips: Blau \= 1, Lila \= 2, Rot \= 3\.
+* **Quellen:** Keine Extraktoren, keine Chips, keine Produktion.  
+* **Fabriken:** Keine Verarbeitung, Speicherung oder Unterhaltskosten; Chips dürfen das Feld durchqueren.  
+* **Planeten:** Keine Verbraucher, Importzölle oder Versorgungseinnahmen; Lieferungen verändern trotzdem die Messgeräte.
 
-Chips haben eine von 3 Farben — Rot, Lila und Blau — für hohen, mittleren oder niedrigen Energieinhalt (3 / 2 / 1).  
-Neue Chips werden immer aus dem Säckchen gezogen.
+Eigene Einrichtungen dürfen während der Aktionsphase jederzeit kostenlos und aus der Ferne aufgegeben werden. Dabei werden sie neutral. Quellen verlieren Extraktoren und Lagerbestände, Fabriken ihre gespeicherten Chips und Planeten ihre Verbraucher und Messwerte. Entfernte Chips gehen zurück in den Beutel. Transportwege bleiben bestehen.
 
-## **6\. Der Spielablauf**
+### **Freie Marktpreise**
 
-Das Spiel läuft in Runden. Eine Runde besteht aus 3 Phasen
+Eigentümer dürfen folgende Gebühren selbst festlegen:
 
-**1\. Rundenstart**
+| Infrastruktur | Gebühr pro Nutzung |
+| ----- | ----- |
+| Quelle | Entnommenem Chip |
+| Fabrik | Ausgelöstem Fabrikeffekt |
+| Planet | Vergüteter Lieferung (Importzoll) |
+| Transportweg | Überquerung |
 
-**1.1 Spielende prüfen**  
-Ist der Geldvorrat zum aktuellen Zeitpunkt leer, endet das Spiel jetzt. Wer das meiste Geld besitzt, gewinnt; notierte, noch nicht ausgezahlte Einnahmen werden bei der Schlusswertung hinzugerechnet. Bei Gleichstand gewinnen alle führenden Spieler gemeinsam als Team.
+* Gebühren sind beliebige nichtnegative ganze Zahlen, einschließlich 0\.  
+* Sie dürfen während der eigenen Aktionsphase kostenlos verändert werden, nicht während der Simulation.  
+* Eigene Infrastruktur ist kostenlos.  
+* Fremde Gebühren müssen vor der Nutzung bezahlt werden. Andernfalls entfällt die kostenpflichtige Funktion.  
+* Gebühren gelten für alle fremden Spieler gleichermaßen. Individuelle Nachlässe sind über Geldtransfers möglich.  
+* Optional dürfen negative Gebühren zugelassen werden: Der Eigentümer bezahlt dann den Nutzer.
 
-**1.2 Fabrikunterhalt bezahlen** Jeder Spieler muss für jede seiner Fabriken je 1 Geld zahlen. Lege das Geld zurück auf den Geldziehstapel. Wer seine Fabriken nicht unterhalten kann, muss Fabriken abbauen bis der verbleibende Unterhalt bezahlbar ist. Dieses Abbauen findet unabhängig davon statt wo das Raumschiff steht.
+Im Koop-Modus bleiben Eigentum und Gebühren getrennt. Geldgeschenke zwischen den Partnern sind erlaubt. Zusätzliche Freibeutergebühren gelten auch auf eigener Infrastruktur.
 
-**1.3 Kritische Kolonien:**  
-Prüfe ob irgendein Messgerät eines Planeten im kritischen Bereich ist, d.h. ob sein Wert ≥8 oder ≤−8 ist. Ist dies der Fall, wird der Planet zerstört: alle Verbraucher darauf verschwinden, der Planet ist wieder neutral und leer, und die Messgeräte werden auf 0 zurückgesetzt. Alle dürfen erneut genehmigen (wer zuerst genehmigt, besitzt ihn wieder).
+## **4\. Ressourcen und Transport**
 
-**1.4 Reihenfolgechip vergeben:**  
-Der Spieler mit dem geringsten Geld erhält den Reihenfolgechip. Bei Gleichstand erhält ihn derjenige der gleichauf liegenden Spieler, der im Uhrzeigersinn zuerst nach dem bisherigen Inhaber des Reihenfolgechips sitzt.
+### **Ressourcenchips**
 
-**1.5 Die Bedarfs-Vorgabe:**
+Jeder Chip besitzt einen Typ (Licht, Wasser, Uran, Spannung oder Wärme) und eine Farbe:
 
-Für jeden Verbraucher auf einem Planeten: Würfle seinen W4-Verbraucherwürfel. Die Seiten zeigen −3, −2, −1, \+1.  
-Schiebe den Messgerät dieses Planeten (des Verbrauchertyps) um das Würfelergebnis: meist nach links (Bedarf −1/−2/−3), selten nach rechts.  
-Hinweis: Unerfüllter Bedarf bleibt über as Rundenende hinweg stehen und summiert sich mit dem nächsten Tag.
+| Farbe | Energie |
+| ----- | ----- |
+| Blau | 1 |
+| Lila | 2 |
+| Rot | 3 |
 
-Einnahmen durch Verbraucher: Nachdem alle Verbraucherwürfel geworfen wurden, erhält der Besitzer des Planeten für jeden Würfel, der eine \+1 zeigt, genau 1 Geld aus der Bank. Diese Einnahmen sind unabhängig vom aktuellen Messwert und von der Versorgung des Planeten. Ist der Geldstapel leer, wird das Geld trotzdem notiert und für die Gewinnerwertung verwendet.
+Chips können gelagert, verarbeitet, transportiert oder verbraucht werden. Verbrauchte und vernichtete Chips kehren in den Beutel zurück.
 
-**1.6 Quellen generieren:**  
-Sonnen erhalten jetzt einen zufällig gezogenen Chip aus dem Nachziehbeutel. wasserquelle einen blauen Chip aus dem nachziehbeutel und uran einen roten.  Unerschlossene Quellen erhalten keinen Chip und emittieren nicht.
+### **Transportwege**
 
-**2\. Aktionen**
+Transportwege liegen auf den Kanten benachbarter Hexfelder und sind in beide Richtungen nutzbar.
 
-Der Inhaber des Reihenfolgechips führt alle eigenen Aktionen aus, danach geht es im Uhrzeigersinn weiter.  
-Jeder Spieler hat 4 Aktionspunkte. Eine Aktion ist entweder
+| Weg | Baukosten | Zulässige Chips |
+| ----- | ----- | ----- |
+| Blau | 2 | Blau |
+| Lila | 4 | Blau, Lila |
+| Rot | 6 | Alle |
 
-- das eigene Raumschiff um genau 1 Hex zu bewegen, oder  
-- etwas zu bauen: ein Feld kaufen und platzieren, einen Trafo nachladen, einen Verbraucher genehmigen, eine Quelle erschließen oder die Richtung einer eigenen Quelle oder Fabrik ändern.
+**Bauen:** 1 AP, sofern beide Felder zum Spielfeld gehören, kein Asteroid die Verbindung verhindert und die Kante unbebaut ist. Das Raumschiff muss auf einem der beiden Felder oder einem unmittelbar benachbarten Feld stehen.
 
-Geldkosten kommen zusätzlich zum Aktionspunkt. Eine Aktion, die nicht ausgeführt werden kann, kostet keinen Punkt.
+**Aufwerten:** 1 AP und 2 Geld pro Stufe (Blau → Rot direkt: 4 Geld). Nur eigene Wege dürfen aufgewertet werden.
 
-Aktionspunkte müssen nicht aufgebraucht werden. Übrige Punkte verfallen, sobald der Spieler seine Aktionen beendet, und spätestens am Ende der Phase. Sie gehen nicht an den anderen Spieler und nicht in die nächste Runde.
+**Abbauen:** Eigene Wege in Baureichweite für 1 AP, ohne Kostenerstattung.
 
-**Raumschiffbewegung**
+Transportwege verursachen keinen Unterhalt, sind unbegrenzt nutzbar und besitzen keine Kapazitätsbegrenzung. Der Eigentümer bestimmt ihre Transportgebühr.
 
-Beim Betreten eines Hexes werden alle noch unentdeckten Nachbarfelder automatisch erkundet. Für jede der fünf Zonen gibt es einen eigenen verdeckten Landschaftsstapel. Die Landschaftskachel kommt aus dem Stapel der Zone, in der das Feld liegt.
+An jeder Kreuzung entscheidet der Chipbesitzer über den weiteren zulässigen Weg.
 
-Ein Raumschiff darf kein Feld betreten, auf dem das andere Raumschiff steht, und kein unentdecktes Hex.
+Raumschiffe benötigen keine Transportwege.
 
-Sobald ein Raumschiff ein neues Hex betritt, werden alle noch unentdeckten Nachbarfelder dieses Hexes vom Stapel aufgedeckt. Ist der Stapel leer, bleiben weitere Nachbarn unentdeckt und können nicht betreten werden.
+## **5\. Quellen und Extraktoren**
 
-Wird ein Planet vom Landschaftsstapel aufgedeckt:
+| Quelle | Produktion pro Extraktor und Runde |
+| ----- | ----- |
+| Sonne | 1 Lichtchip zufälliger Farbe |
+| Wasser | 1 blauer Wasserchip |
+| Uran | 1 roter Uranchip |
 
-Ziehe einen einzigartigen Namen und lege ihn auf das Hex und auf das neue Fach im Nebenspielfeld.  
-Lege die drei Messgeräte (alle auf 0\) auf das Nebenspielfeld-Fach.
+Bei der Sonnenquelle sind Blau, Lila und Rot gleich wahrscheinlich.
 
-**Bauen**
+* Extraktor bauen: **2 Geld \+ 1 AP**, Raumschiff auf der Quelle oder einem Nachbarfeld.  
+* Pro Quelle sind beliebig viele Extraktoren möglich.  
+* Jeder Extraktor produziert beim Rundenstart automatisch einen Chip ohne laufende Kosten.  
+* Produzierte Chips bleiben auf ihrer Quelle liegen, bis jemand sie entnimmt.  
+* Während der Simulation darf ein Spieler pro Simulationszug einen neuen Chip entnehmen. Fremde Abbaugebühren werden dabei bezahlt.  
+* **Quellenrebellion:** Liegen bei der Kollapsprüfung mindestens 5 Chips auf einer Quelle, wird sie neutral. Sämtliche Extraktoren und gelagerten Chips werden entfernt.
 
-Bezahlung geht zurück auf den endlichen Geldstapel, von dem auch gezogen wird. Alle Bauaktionen sind nur auf dem Hex erlaubt, auf dem das eigene Raumschiff gerade steht oder die unmittelbar neben dem Raumschiff sind.
+Neutrale Quellen produzieren nichts.
 
-**Bauaktion 1: Quelle erschließen**:  
-Kosten: 1 Geld  
-Nur auf einer noch unerschlossenen Quelle.  
-Der Spieler legt die Schussrichtung fest. Die Quelle erhält seinen Spielermarker und gehört ihm.  
-Sie emittiert erst ab der nächsten Emissionsphase, und zwar in diese Richtung.
+## **6\. Fabriken**
 
-**Bauaktion 2: Quelle oder Fabrik ausrichten**:  
-Kosten: 1 Geld und 1 Aktionspunkt  
-Der Besitzer darf die Pfeilrichtung einer eigenen erschlossenen Quelle oder einer eigenen Fabrik neu festlegen
+Fabriken sind auf der Karte vorgegeben und können nicht neu gebaut werden.
 
-**Bauaktion 3: Trafo wieder aufladen**  
-Bist du der Besizter des Trafos, so kannst du ihn durch erneutes Kaufen wieder aufladen. Zahle den Kaufpreis eines Trafos und lege wieder Ladungen auf ihn bis er 4 Ladungen hat
+Jede besessene Fabrik kostet **2 Geld Unterhalt pro Runde**. Kann oder möchte der Besitzer nicht bezahlen, wird sie neutral und inaktiv.
 
-**Bauaktion 4: Verbraucher genehmigen**  
-Kosten: 1 Geld
+Der Eigentümer bestimmt eine Verarbeitungsgebühr. Sie fällt pro ausgelöstem Effekt an, auch wenn dabei zwei Chips entstehen. Eigene Fabriken sind kostenlos nutzbar. Chips dürfen Fabriken ohne Verarbeitung durchqueren.
 
-Der Planet muss neutral sein oder dir gehören.  
-Wähle den Verbrauchertyp (Spannung / Wasser / Wärme).  
-Lege den Verbraucher mit W4-Verbraucher auf die Planetenkarte dieses Planeten.
+| Fabrik | Funktion |
+| ----- | ----- |
+| Solarzelle | Licht → Spannung, gleiche Farbe |
+| Thermische Zelle | Licht → Wärme, gleiche Farbe |
+| Atomkraftwerk | Uran → Wärme, gleiche Farbe |
+| Turbine | Speichert bis zu 4 Wasserchips. Ein Wärmechip \+ ein gespeicherter Wasserchip können zu zwei Spannungschips ihrer jeweiligen Eingangsfarben werden |
+| Speicher | Speichert einen Wasser-, Spannungs- oder Wärmechip. Der Einlagernde kann ihn später kostenlos freigeben; Einlagerung kostet die Fabrikgebühr |
+| Trafo | Beginnt mit 4 zufälligen Spannungschips. Ein eintreffender Spannungschip kann einen gespeicherten Spannungschip zusätzlich freisetzen; beide werden vom Lieferanten kontrolliert |
 
-Genehmigst du den *ersten* Verbraucher auf einem leeren Planeten, gehört dieser Planet Spieler jetzt dir, solange dort mindestens ein Verbraucher steht.  
-Alle anderen Spieler dürfen solange auf diesem Planeten keine Verbraucher genehmigen.
+**Trafo aufladen:** Der Eigentümer füllt ihn für 2 Geld und 1 AP auf vier Chips auf. Das Raumschiff muss auf dem Trafo oder benachbart stehen.
 
-**Bauaktion 5: Eine Fabrik kaufen**
+Gespeicherte Chips bleiben bis zur Verwendung liegen. Bei Neutralisierung werden sie entfernt. Bei erneuter Übernahme erhält eine Fabrik ihre vorgesehene Anfangsausstattung.
 
-Das Feld muss dafür leer sein.  
-Bezahle die Fabrik und platziere sie auf das leere Feld. Lege dabei ihren Richtungspfeil fest, wie beim Erschließen einer Quelle. Bei einem Trafo lege zusätzlich die Start Ladung auf den Ladungsbereich des leeren Feldes.  
-Das Feld gehört jetzt dir. Platziere den Spielermarker darauf. Entscheide dich für die Gebühr die für die Nutzung der Fabrik bezahlt werden muss. Lege entsprechend Gebührenchips auf das Feld.
+Fabriken besitzen keine feste Ausgangsrichtung. Der Chipbesitzer wählt den weiteren Transportweg.
 
-**Bauaktion 6: Fabrik-Gebühr ändern**  
-Nur wenn du der Besitzer des Feldes der Fabrik bist: Wähle die neue Gebühr die für die Nutzung der Fabrik bezahlt werden muss und lege entsprechen Gebührenchips auf das Feld.
+## **7\. Planeten und Verbraucher**
 
-**Bauaktion 7: Fabrik abbauen**   
-Die Fabrik muss dir selbst gehören. Entferne die Fabrik, lege sie und alle Bedarfschip auf dem Feld zurück in die Spielbox. Kostet kein Geld.
+Jeder Planet besitzt drei Messgeräte:
 
-**3\. Simulation:**
+* Spannung  
+* Wasser  
+* Wärme
 
-* Ihr simuliert abwechselnd im Uhrzeigersinn. Der Spieler mit dem Reihenfolgechip beginnt. In jedem Zug dieser Phase bewegt ein Spieler maximal einen Chip von einer seiner Quellen oder einem Speicher und simuliert ihn und alle aus ihm entstehenden Chips bis sie alle vernichtet sind oder zu Ladung wurden. Chips dürfen nicht in der Luft liegen bleiben — sie müssen bis zum nächsten Feld simuliert werden. Die Simulationsphase endet erst, wenn alle Quellen leer sind und kein ungebundener Chip mehr auf dem Spielfeld liegt.  
-* Die Flugrichtung eines Chips von einer Quelle bestimmt sich anhand des Richtungspfeils der Quelle.  
-* Verlässt ein Chip eine Fabrik in einer Richtung, die früher frei gewählt wurde, fliegt er entlang des Richtungspfeils dieser Fabrik. Der Pfeil steht seit dem Bau fest. Geradeaus, Würfel und Zufall bleiben so, wie es bei der einzelnen Fabrik steht.  
-* Ist keine Bewegung mehr möglich, ist der nächste Spieler dran.  
-* Trifft ein fliegender Chip auf ein Feld, passiert Folgendes:  
-  * *leeres entdecktes Feld:* Chips fliegen in geraden Linien weiter.  
-  * *Treffer auf Fabrik:* Interagiert die Fabrik potentiell mit deinem Chip und kannst du die Gebühr bezahlen, so löst die Fabrik seinen Interaktions-Effekt aus. Gelöste Ladungen und der eingehende Chip liegen „ungebunden“ und fliegen weiter, sofern die Regeln es verlangen. Zahlt dem Besitzer der Fabrik die festgelegte Gebühr die auf dem Gebührenchip steht. Alle von der Fabrik erzeugten freien Chips müssen vom gleichen Spieler weitersimuliert werden und dieser Spieler bekommt auch das Geld wenn sie später auf einen Planeten treffen. Für die Nutzung eigener Fabriken fallen keine Gebühren an. Kannst du die Gebühr nicht bezahlen oder hätte die Fabrik sowieso keine Interaktion mit dem Chip, so fliegt der Chip weiter.  
-  * *Treffer auf Asteroiden oder Außenwand:* Chip geht zurück in den Nachziehbeutel (Ressourcen so entsorgen ist erlaubt).  
-  * *Treffer auf unentdecktes Hex:* Der Chip fliegt in gerader Linie weiter. Das Feld bleibt unentdeckt. Nur Raumschiffe decken Felder auf.  
-  * *Treffer auf Raumschiff:* Wenn Raumschiff auf leerem Feld: Raumschiffbesitzer wählt die Weiterflug-Richtung (Umleitung). Steht ein Raumschiff auf einem Feld mit einer Fabrik oder einem Planeten, hat das Raumschiff keinen Einfluss.  
-  * *Treffer auf Planeten:*  
-    * Spannung, Wärme oder Wasser:  
-      * Verschiebe den Spannungs-, Wasser- bzw. Wärme-Messgerät um 1 / 2 / 3 nach rechts (blau / lila / rot).  
-        * Hinweis: Das Messgerät geht immer nach rechts, auch selbst dann wenn auf dem Planeten kein entsprechender Verbraucher ist  
-      * falls auf diesem Planeten mindestens ein Verbraucher dieser Ressourcen-Art (Spannung, Wasser bzw. Wärme) genehmigt ist erhält der Spieler der den Chip steuert die folgende Menge an Geld:  
-        - bei Blau: (-1) \* min(\<Messgerätwert vor Eintreffen\>, 0\)  
-        - bei Lila: (-1) \* min(\<Messgerätwert vor Eintreffen\>, 0\) \+ (-1) \* min(\<Messgerätwert vor Eintreffen\> \+ 1, 0\)  
-        - bei Rot:  (-1) \* min(\<Messgerätwert vor Eintreffen\>, 0\) \+ (-1) \* min(\<Messgerätwert vor Eintreffen\> \+ 1, 0\) \+ (-1) \* min(\<Messgerätwert vor Eintreffen\> \+ 2, 0\)  
-      * Wird der Geldvorrat während einer Runde leer, wird die laufende Runde vollständig zu Ende gespielt. Nicht auszahlbare Einnahmen werden für die Schlusswertung notiert.  
-      * Der Chip verschwindet vom Spielfeld und wird zurück in den Ziehbeutel gemischt  
-    * Uran, Licht: Verschwindet ohne Effekt  
-    * *Endlosschleife*: Trifft ein Chip während eines Fluges zum dritten Mal auf dasselbe Feld, wird er vernichtet.
+Sie beginnen bei 0\. Negative Werte bedeuten Unterversorgung, positive Überschüsse.
 
-## **7\. Die Fabriken**
+**Verbraucher genehmigen:** 2 Geld \+ 1 AP; Raumschiff auf dem Planeten oder benachbart. Verbraucher können für jede der drei Ressourcenarten genehmigt werden, auch mehrfach.
 
-Falls eine Interaktion mit einer Chip-Art nicht aufgeführt ist, fliegt der Chip ungehindert in dieselbe Richtung weiter.
+Jeder Verbraucher würfelt zu Rundenbeginn einen W4 mit den Ergebnissen:
 
-Jede Fabrik hat einen Richtungspfeil. Er wird beim Bau gewählt. Wo eine Interaktion eine Richtung vorgibt, die nicht geradeaus, Würfel oder Zufall ist, gilt dieser Pfeil. Er wird nicht für jeden Chip neu entschieden.
+**−3 / −2 / −1 / \+1**
 
-Hinweis: Es gibt von jeder kaufbaren Fabrik so viele Exemplare in der Spielbox, das ihr euch keine Sorge machen müsst das sie jemals ausverkauft sein könnten
+Das Ergebnis verändert das zugehörige Messgerät. Unterversorgung und Überschüsse bleiben über mehrere Runden bestehen. Das Ergebnis \+1 erzeugt keine Einnahmen.
 
-* **Umleitung**  
-    
-  * **Kosten:** 1 Geld  
-  * **Max Ladung:** 0  
-  * **Start Ladung:** 0  
-  * **Interaktionen**  
-    * **Alles:** fliegt in Pfeilrichtung weiter
+**Planetenrebellion:** Erreicht bei der Kollapsprüfung ein Messgerät mindestens \+8 oder höchstens −8, wird der Planet neutral. Eigentümer und Verbraucher werden entfernt, Messgeräte auf 0 gesetzt, Importzoll aufgehoben. Transportwege bleiben.
 
+### **Versorgung und Einnahmen**
 
-* **Solarzelle**  
-    
-  * **Kosten:** 2 Geld  
-  * **Max Ladung:** 0  
-  * **Start Ladung:** 0  
-  * **Interaktionen**  
-    * **Licht:**  
-      * Wird zu elektrischer Spannung  
-      * Spannung fliegt in Pfeilrichtung weiter
+Nur Spannung, Wasser und Wärme können an Planeten geliefert werden. Ein Chip erhöht den entsprechenden Messwert um seinen Energiewert (+1/+2/+3).
 
+Eine Lieferung erzeugt nur Einnahmen, wenn:
 
-* **Thermische Zelle**  
-    
-  * Wie Solarzelle, erzeugt aber Wärme in Pfeilrichtung
+* Ein passender Verbraucher existiert.  
+* Sie bestehende Unterversorgung ausgleicht.  
+* Ein gegebenenfalls fälliger Importzoll bezahlt wurde.
 
+Ohne Importzollzahlung verändert die Lieferung dennoch das Messgerät, bringt aber kein Geld. Das ermöglicht auch absichtliche Überversorgung.
 
-* **Atomkraftwerk**  
-    
-  * **Kosten:** 2 Geld  
-  * **Max Ladung:** 0  
-  * **Start Ladung:** 0  
-  * **Interaktionen**  
-    * **Uran:**  
-      * Wird zu einem wärme Chip  
-      * Wärme fliegt dann in Pfeilrichtung weiter
+**Berechnung:** Sei (m) der Messwert vor der Lieferung.
 
+* Blau: (E\_1=\\max(0,-m))  
+* Lila: (E\_2=\\max(0,-m)+\\max(0,-m-1))  
+* Rot: (E\_3=\\max(0,-m)+\\max(0,-m-1)+\\max(0,-m-2))
 
-* **Turbine**  
-    
-  * **Kosten:** 1 Geld  
-  * **Max Ladung:** 4 Wasser-Chips  
-  * **Start Ladung:** 0  
-  * **Interaktionen**  
-    * **Wärme:**  
-      * Ladung \> 0: wird zu Spannung; zusätzlich wird 1 Wasser-Ladung zu Spannung. Spannungen fliegen in Pfeilrichtung  
-      * Ladung \= 0: Wärme-Chip in W6 Würfel-Richtung  
-    * **Wasser:**  
-      * Ladung \< 4: Wird zur Ladung  
-      * Ladung \= 4: Fliegt in zufällige Richtung  
-    * **Spannung:** Chip fliegt in W6 Würfel-Richtung weiter
+Der Lieferant erhält den Betrag aus der Bank. Anschließend wird der Messwert erhöht und der Chip zurückgelegt.
 
+**Beispiel:** Ein roter Spannungschip trifft auf Spannung −5. Er bringt 5+4+3 \= **12 Geld** und hebt den Messwert auf −2.
 
-* **Speicher**  
-    
-  * **Kosten:** 1 Geld  
-  * **Max Ladung:** 1 Wasser-Chip oder 1 Spannungs-Chip oder 1 Wärme-Chip  
-  * **Start Ladung:** 0  
-  * **Interaktionen**  
-    * **Wasser, Spannung, Wärme:**  
-      * Ladung \= 0: Wird zur Ladung  
-      * Ladung \= 1: Fliegt geradeaus weiter  
-  * **Wenn geladen und Besitzer möchte und Besitzer ist in der Simulation dran:** Löse die Ladung und schieße sie in Pfeilrichtung
+## **8\. Freibeuter (Solo und Koop)**
 
+Freibeuter sind automatische Gebührenmarker. Sie besitzen keine Infrastruktur oder Firmenkasse und führen keine normalen Spieleraktionen aus.
 
-* **Trafo**  
-    
-  * **Kosten:** 2 Geld  
-  * **Max Ladung:** 4 Spannungs-Chips  
-  * **Start Ladung:** 4 Spannungs-Chips (4 zufällig aus dem Beutel gezogene Chips)  
-  * **Interaktion:**  
-    * **Spannung:**  
-      * Geladen: aus 1 Spannung wird 2\. Dazu die erste Ladung von links nehmen und zusammen mit dem ankommenden Chip weiter fliegen lassen. Beide fliegen in Pfeilrichtung.  
-      * Leer: leite nur den einkommenden Chip in W6 Würfel-Richtung weiter
+Jeder Freibeuter hat einen festen Gebührenwert und bewegt sich auf einer im Szenario vorgegebenen Route.
 
-## **8\. Tipps**
+### **Bewegung**
 
-* Vorgefertigte Szenarien: Statt das Spielfeld über den Ziehstapel zufällig zu generieren und langsam zu entdecken, könnt ihr auch mit einem der vollständig entdekten Spielfelder beginnen, die von der Community erstellt wurden. Ihr findet sie unter:... TODO vorgefertigte Karten hier einfügen  
-* Koalitionen und Diplomatie: Es ist zu keinem Zeitpunkt verboten anderen Spielern Geld zu geben oder Absprachen zu treffen. Dies kann sogar heimlich geschehen. Nutzt dies um Koalitionen zu bilden  
-* Offensive Spielstiele: Chips können nicht nur auf Planeten geschossen werden um Geld zu verdienen, sondern auch um die Planeten bewusst überzuversorgen und so zum Kollaps zu bringen.  
-* Startposition: Sobald das Spielfeld aufgebaut wurde und die initialen Felder sofort entdeckt wurden, lässt sich oft bereits erahnen, welche Spielerposition welchen Spielstil eher begünstigt oder benachteiligt. Wenn du einen bevorzugten Spielstil hast, dann spreche dich am Anfang des Spiels mit deinen Mitspielern ab, damit jeder so gut wie möglich seinen Lieblingsspielstil spielen kann.
+* Freibeuter starten auf ihrer angegebenen Position.  
+* Ab Runde 2 bewegen sie sich zu Rundenbeginn genau **ein Hexfeld**.  
+* Kreispatrouillen laufen endlos im Kreis; Pendelpatrouillen kehren an den Endpunkten um.  
+* Freibeuter benötigen keine Wege, blockieren keine Raumschiffe und können Quellen, Fabriken und Planeten besetzen.  
+* Ihre Route ist vollständig sichtbar und vorhersehbar.
 
+### **Gebühren**
+
+* Jeder Ressourcenchip bezahlt die Freibeutergebühr beim Betreten eines besetzten Feldes.  
+* Auf einer besetzten Quelle fällt sie bereits bei der Entnahme an; bei einem besetzten Fabrikspeicher bei der Freigabe.  
+* Die Gebühr gilt auch bei eigener Infrastruktur und kommt zu gewöhnlichen Spielergebühren hinzu.  
+* Pro Chip und Feldbesuch wird sie einmal erhoben, auch bei einer zusätzlichen Fabrikverarbeitung. Entstehen zwei Ausgangschips, fällt für den auslösenden Fabrikbesuch nur eine Freibeutergebühr an.  
+* Bei erneutem Betreten wird erneut bezahlt; mehrere Freibeuter auf einem Feld addieren ihre Gebühren.  
+* Wer nicht bezahlen kann oder möchte, darf das Feld nicht betreten beziehungsweise den Chip dort nicht entnehmen oder freigeben.  
+* Freibeutergebühren gehen in eine **separate Kasse**, nicht in die Bank. Sie werden nicht wieder ausgegeben.  
+* Raumschiffe, Übernahmen und Bauaktionen werden nicht besteuert.
+
+Freibeuter verändern weder Eigentum noch Produktion und zerstören keine Infrastruktur. Ihre Wirkung besteht ausschließlich in den zusätzlichen Kosten.
+
+## **9\. Rundenablauf**
+
+### **Phase I – Rundenstart**
+
+Die folgenden Schritte erfolgen in dieser Reihenfolge:
+
+1. **Spielende prüfen:** Versus endet bei leerer Bank. Solo/Koop endet nach Missionsregeln.  
+2. **Freibeuter bewegen:** Ab Runde 2 jeweils ein Feld (nur Solo/Koop).  
+3. **Quellenrebellion:** Quellen mit mindestens 5 gelagerten Chips werden neutral.  
+4. **Planetenrebellion:** Planeten mit Messwert ≥+8 oder ≤−8 werden neutral.  
+5. **Fabrikunterhalt:** 2 Geld pro besessener Fabrik; unbezahlte Fabriken werden neutral.  
+6. **Reihenfolge:** Der ärmste Spieler beginnt; bei Gleichstand der erste Gleichplatzierte im Uhrzeigersinn nach dem bisherigen Inhaber.  
+7. **Verbraucher würfeln:** Alle W4 verändern ihre Messgeräte. Neue kritische Werte werden erst bei der nächsten Kollapsprüfung wirksam.  
+8. **Quellenproduktion:** Ein Chip pro Extraktor auf besessenen Quellen.
+
+### **Phase II – Aktionsphase**
+
+Beginnend mit dem Reihenfolgechip führt jeder Spieler seine vier Aktionspunkte aus.
+
+| Aktion | AP | Geld |
+| ----- | ----- | ----- |
+| Raumschiff 1 Hex bewegen | 1 | 0 |
+| Extraktor bauen | 1 | 2 |
+| Weg bauen (blau/lila/rot) | 1 | 2/4/6 |
+| Weg aufwerten | 1 | 2 je Stufe |
+| Eigenen Weg abbauen | 1 | 0 |
+| Verbraucher genehmigen | 1 | 2 |
+| Trafo auffüllen | 1 | 2 |
+| Neutrale Einrichtung übernehmen | 0 | 0 |
+| Eigene Einrichtung aufgeben | 0 | 0 |
+| Gebühren ändern | 0 | 0 |
+| Geld verschenken | 0 | Beliebig |
+
+Ungenutzte AP verfallen.
+
+Raumschiffe bewegen sich auf benachbarte betretbare Felder. Andere menschliche Raumschiffe blockieren ein Feld; Freibeuter nicht.
+
+### **Phase III – Simulationsphase**
+
+Beginnend mit dem Reihenfolgechip führen die Spieler abwechselnd Simulationszüge aus.
+
+Pro Zug darf ein Spieler:
+
+* Einen neuen Chip aus einer Quelle entnehmen oder  
+* Einen eigenen gespeicherten Chip freigeben.
+
+Der Chip wird vollständig abgewickelt, bevor der nächste Spieler an der Reihe ist.
+
+Der Besitzer bestimmt den Weg, bezahlt gegebenenfalls Gebühren und kann passende Fabrikeffekte auslösen oder an Planeten liefern. Zwei durch einen Fabrikeffekt entstehende Chips werden im selben Zug abgewickelt.
+
+Der Transport darf jederzeit abgebrochen werden; der Chip geht dann in den Beutel. Erreicht ein Chip zum dritten Mal dasselbe Hexfeld, wird er vernichtet.
+
+Die Simulation endet, sobald alle Spieler nacheinander auf weitere Entnahmen beziehungsweise Freigaben verzichten. Nicht verwendete Chips bleiben gelagert.
+
+### **Diplomatie**
+
+Spieler dürfen jederzeit verhandeln, Geld verschenken, Lieferketten gemeinsam finanzieren und Bündnisse schließen. Mündliche Vereinbarungen sind nicht automatisch bindend. Gebühren bleiben während der Simulation unverändert.
+
+## **10\. Spielende und Bank**
+
+**Versus:** Zu Rundenbeginn wird geprüft, ob die Bank leer ist. Ist sie während der vorherigen Simulation leer geworden, wird diese Runde trotzdem vollständig abgeschlossen.
+
+Die Bank wird niemals negativ. Kann sie Versorgungseinnahmen nicht vollständig auszahlen, erhält der Spieler das vorhandene Geld; der Rest wird als offene Forderung notiert.
+
+Bei der kompetitiven Schlusswertung zählen offene Forderungen zum Geldvermögen.
+
+**Solo/Koop:** Offene Forderungen zählen nicht als verfügbares Geld. Die reguläre Bankendbedingung entfällt; die Mission endet nach ihrer Rundenzahl oder einer Niederlagebedingung.
+
+---
+
+# **11\. Szenarien**
+
+Die Szenarien verwenden **axiale Hexkoordinaten `(q,r)`**. Benachbart sind:
+
+`(+1,0), (−1,0), (0,+1), (0,−1), (+1,−1), (−1,+1)`
+
+Die q-Achse verläuft waagerecht, die r-Achse schräg von rechts oben nach links unten.
+
+Alle nicht ausdrücklich belegten Felder innerhalb einer Szenariogrenze sind leerer Weltraum.
+
+### **Allgemeiner Solo-/Koop-Start**
+
+Jeder Spieler erhält gemäß Szenario kostenlos:
+
+* Eine eigene Quelle mit einem Extraktor  
+* Eine eigene Fabrik  
+* Einen Missionsplaneten mit einem Verbraucher  
+* Zwei rote Transportwege, die diese drei Einrichtungen verbinden
+
+Die 12 Geld Startkapital bleiben unverändert. Fabrikunterhalt und Verbraucherbedarf beginnen ab Runde 1\.
+
+Im Versus-Modus entfällt diese Anfangsinfrastruktur vollständig; alle Einrichtungen beginnen neutral.
+
+## **Szenario A – Polarität**
+
+**Modi:** Solo, Koop, 2-Spieler-Versus
+
+Zwei getrennte Industriegebiete mit einer zentralen Wasserquelle. Westen und Osten besitzen unterschiedliche Verarbeitungsanlagen.
+
+**Kartenform:** Vollständiges Hexagon mit Radius 3:
+
+(\\max(|q|,|r|,|q+r|)\\leq3)
+
+| Einrichtung | Koordinate |
+| ----- | ----- |
+| Planet A / B | (−2,0) / (2,0) |
+| Sonnenquelle West / Ost | (−3,1) / (3,−1) |
+| Wasserquelle | (0,0) |
+| Solarzelle / Thermische Zelle | (−2,1) / (2,−1) |
+| Speicher / Trafo | (−1,0) / (1,0) |
+| Asteroiden | (−1,−2), (1,2) |
+
+**Start:** Weiß (−3,0), Schwarz (3,0).
+
+**Koop-Anfangsinfrastruktur:**
+
+* Weiß: Planet A (Spannungsverbraucher), westliche Sonne mit Extraktor, Solarzelle; rote Wege `(−3,1)–(−2,1)–(−2,0)`.  
+* Schwarz: Planet B (Wärmeverbraucher), östliche Sonne mit Extraktor, Thermische Zelle; rote Wege `(3,−1)–(2,−1)–(2,0)`.
+
+Solo verwendet nur Weiß.
+
+**Freibeuter:**
+
+* F1, Gebühr 2, Kreisroute: `(0,1) → (−1,1) → (−1,0) → (0,−1) → (1,−1) → (1,0) → (0,0) → (0,1)`. Start `(0,1)`.  
+* F2, Gebühr 2, Kreisroute: `(3,0) → (3,−1) → (2,−1) → (2,0) → (3,0)`. Start `(3,0)`.
+
+Solo: nur F1. Koop: F1 und F2. Versus: keine Freibeuter.
+
+**Mission Solo:** Planet A benötigt bis Runde 8 Spannung und Wasser.
+
+**Mission Koop:** Planet A benötigt Spannung und Wasser, Planet B Wärme und Wasser.
+
+Alle Missionsplaneten müssen bis zum Ende stabil sein (Abschnitt 1).
+
+## **Szenario B – Kanalwelt**
+
+**Modi:** Solo, Koop, 2-Spieler-Versus
+
+Zwei Kolonien liegen am unteren Ende eines U-förmigen Systems. Der einzige durchgehende Verbindungskorridor verläuft über den nördlichen Industriesektor.
+
+**Kartenform:**
+
+* Linker Arm: `q = −3 oder −2`, `r = −2 bis +2`  
+* Rechter Arm: `q = 2 oder 3`, `r = −2 bis +2`  
+* Oberer Korridor: `q = −1 bis +1`, `r = −2 oder −1`
+
+Alle übrigen Felder existieren nicht.
+
+| Einrichtung | Koordinate |
+| ----- | ----- |
+| Planet A / B | (−2,2) / (2,2) |
+| Sonnenquelle West / Ost | (−3,1) / (3,1) |
+| Wasserquelle West / Ost | (−3,−2) / (3,−2) |
+| Uranquelle | (0,−1) |
+| Solarzelle / Thermische Zelle | (−2,1) / (2,1) |
+| Atomkraftwerk / Turbine | (−1,−1) / (1,−1) |
+| Speicher / Trafo | (0,−2) / (−2,−1) |
+
+**Start:** Weiß (−3,2), Schwarz (3,2).
+
+**Koop-Anfangsinfrastruktur:**
+
+* Weiß: Planet A (Spannungsverbraucher), westliche Sonne mit Extraktor, Solarzelle; rote Wege `(−3,1)–(−2,1)–(−2,2)`.  
+* Schwarz: Planet B (Wärmeverbraucher), östliche Sonne mit Extraktor, Thermische Zelle; rote Wege `(3,1)–(2,1)–(2,2)`.
+
+Solo verwendet nur Weiß.
+
+**Freibeuter:**
+
+Beide verwenden dieselbe Pendelroute:
+
+`(−3,2) → (−3,1) → (−3,0) → (−3,−1) → (−3,−2) → (−2,−2) → (−1,−2) → (0,−2) → (1,−2) → (2,−2) → (3,−2) → (3,−1) → (3,0) → (3,1) → (3,2)`
+
+* F1: Gebühr 2, startet `(0,−2)`, bewegt sich zunächst nach Westen.  
+* F2: Gebühr 3, startet `(2,−2)`, bewegt sich zunächst nach Osten.
+
+Solo: nur F1. Koop: beide. Versus: keine.
+
+**Mission Solo:** Planet A benötigt bis Runde 8 Spannung und Wasser.
+
+**Mission Koop:** Planet A benötigt Spannung und Wasser, Planet B Wärme und Wasser.
+
+Alle Missionsplaneten müssen bis zum Ende stabil sein (Abschnitt 1).
+
+## **Szenario C – Triade**
+
+**Modus:** 3-Spieler-Versus
+
+Drei äußere Sonnenquellen, keine Wasserquelle und eine zentrale Uranquelle. Die Kontrolle über Rohstoffe und Verarbeitungsanlagen bestimmt die wirtschaftliche Macht.
+
+**Kartenform:** Hexagon mit Radius 4:
+
+(\\max(|q|,|r|,|q+r|)\\leq4)
+
+| Einrichtung | Koordinate |
+| ----- | ----- |
+| Planeten A / B / C | (−3,0), (0,−3), (3,0) |
+| Sonnenquellen | (−4,0), (0,−4), (4,0) |
+| Uranquelle | (0,0) |
+| Solarzelle | (−2,0) |
+| Thermische Zelle | (0,−2) |
+| Atomkraftwerk | (2,0) |
+| Speicher / Trafo / Turbine | (0,−1), (−1,0), (1,−1) |
+| Asteroiden | (−2,2), (2,−2), (1,2), (−2,−1) |
+
+**Startpositionen:**
+
+* Weiß: (−4,1)  
+* Schwarz: (1,−4)  
+* Grün: (4,−1)
+
+Alle Einrichtungen sind neutral. Keine Freibeuter oder vorgebauten Transportwege.
+
+**Sieg:** Größtes Geldvermögen bei leerer Bank.
+
+## **Szenario D – King of the Hill**
+
+**Modus:** 4-Spieler-Versus
+
+Ein zentraler Industriekomplex mit Sonne, Speicher und Trafo liegt zwischen drei äußeren Kolonien. Ein Asteroidenring schafft strategische Engpässe.
+
+**Kartenform:** Hexagon mit Radius 4:
+
+(\\max(|q|,|r|,|q+r|)\\leq4)
+
+| Einrichtung | Koordinate |
+| ----- | ----- |
+| Trafo / Speicher / Sonne (Zentrum) | (0,0), (1,0), (0,1) |
+| Planeten West / Nord / Ost | (−3,1), (1,−3), (3,0) |
+| Wasserquellen West / Nord / Ost | (−4,0), (2,−4), (4,0) |
+| Solarzellen West / Nord | (−2,1), (1,−2) |
+| Thermische Zelle Ost | (2,1) |
+| Asteroiden | (−1,1), (−1,2), (0,2), (1,−1), (1,1), (2,−1) |
+
+Drei wichtige Durchgänge zum Zentrum liegen auf `(−1,0)`, `(0,−1)` und `(2,0)`.
+
+**Startpositionen:**
+
+* Weiß: (−4,1)  
+* Schwarz: (1,−4)  
+* Grün: (4,−1)  
+* Lila: (0,0)
+
+Alle Einrichtungen beginnen neutral und ohne Transportwege. Lila steht bereits auf dem Trafo und kann ihn in seiner ersten Aktionsphase übernehmen.
+
+**Sieg:** Größtes Geldvermögen bei leerer Bank.
+
+---
+
+## **12\. Schwierigkeitsgrade (Solo/Koop)**
+
+| Schwierigkeit | Freibeutergebühr | Missionsdauer | Stabile Schlussrunden |
+| ----- | ----- | ----- | ----- |
+| Leicht | −1, mindestens 1 | 14 | 13 und 14 |
+| Normal | Szenariowert | 12 | 11 und 12 |
+| Schwer | \+1 | 12 | 11 und 12 |
+| Extrem | \+1 | 10 | 9 und 10 |
+
+Die Verbraucher-Ausbaufrist bleibt Runde 8, außer bei Leicht (Runde 10).
+
+## **13\. Regelübersicht**
+
+| Mechanik | Wert |
+| ----- | ----- |
+| Startgeld | 12 pro Spieler |
+| Aktionspunkte | 4 pro Spieler/Runde |
+| Quelle übernehmen | Kostenlos, Raumschiff auf Feld |
+| Extraktor | 2 Geld, 1 AP |
+| Produktion | 1 Chip/Extraktor/Runde |
+| Quellenrebellion | Ab 5 gelagerten Chips |
+| Fabrikunterhalt | 2 Geld/Runde |
+| Verbraucher | 2 Geld, 1 AP |
+| Verbraucherwürfel | −3, −2, −1, \+1 |
+| Planetenrebellion | Ab \+8 oder −8 |
+| Blauer/lila/roter Weg | 2/4/6 Geld |
+| Wegaufwertung | 2 Geld pro Stufe |
+| Freibeuterbewegung | 1 Hex/Runde, ab Runde 2 |
+| Freibeutergebühren | Auch auf eigener Infrastruktur |
+| Versus-Sieg | Höchstes Geldvermögen bei leerer Bank |
+| Solo-/Koop-Sieg | Missionsbedingungen erfüllt |
+
+**Spielprinzip:** Dieselben Grundregeln erzeugen unterschiedliche Herausforderungen: Im Versus-Modus bestimmen die Spieler durch Gebühren, Monopole und Diplomatie ihre wirtschaftlichen Beziehungen. In Solo und Koop verändern wandernde Freibeuter die Kosten bestehender Lieferketten und erzwingen gemeinsame Planung, alternative Transportwege und flexible Versorgungssysteme.

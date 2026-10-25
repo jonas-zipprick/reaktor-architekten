@@ -1,4 +1,12 @@
-import type { Axial, LandscapeTerrain, PlayerId, ZoneId } from '../types'
+import { FIELD_DEFS } from './fields'
+import type {
+  Axial,
+  FieldKind,
+  LandscapeTerrain,
+  LandscapeTile,
+  PlayerId,
+  ZoneId,
+} from '../types'
 import { hexDisk, hexDistance } from '../hex/math'
 
 /** Board radius — change here to grow/shrink the map. */
@@ -7,8 +15,20 @@ export const BOARD_RADIUS = 4
 /** Inner disk that belongs to the central zone. */
 export const CENTER_RADIUS = 1
 
-/** Starting money pile for two players (gameRules.md). Each player takes 6. */
-export const BANK_START = 60
+/** Total money for two players. Each takes START_MONEY; the rest is the bank. */
+export const BANK_START = 120
+
+export const START_MONEY = 12
+
+/** Paid to the bank for every owned factory at round start. */
+export const FACTORY_UPKEEP = 2
+
+export const CONSUMER_COST = 2
+
+/** One extractor on an owned source. Each extractor yields one chip per round. */
+export const EXTRACTOR_COST = 2
+
+export const TRAFO_RELOAD_COST = 2
 
 /** Planet meters ≥ this or ≤ −this destroy the colony at round end. */
 export const CRITICAL_LIMIT = 8
@@ -32,18 +52,67 @@ export const ZONE_SHORT: Record<ZoneId, string> = {
   center: 'Z',
 }
 
-export type LandscapeDecks = Record<ZoneId, LandscapeTerrain[]>
+export type LandscapeDecks = Record<ZoneId, LandscapeTile[]>
 
 /**
- * One start-zone stack (gameRules.md): a planet, an asteroid, and exactly
- * one of sun or water.
+ * One start-zone stack: a planet, an asteroid, one source, and two factories.
+ * The four sources together are always two sun and two water.
+ * Factory counts are a playtest fill; the rulebook leaves the exact mix open.
  */
-function startZoneKit(rng: () => number): LandscapeTerrain[] {
-  return ['planet', 'mountain', rng() < 0.5 ? 'sun' : 'water']
+function startZoneKit(
+  source: LandscapeTerrain,
+  factories: FieldKind[],
+): LandscapeTile[] {
+  return [
+    { terrain: 'planet' },
+    { terrain: 'mountain' },
+    { terrain: source },
+    ...factories.map((factory) => ({ terrain: 'factory' as const, factory })),
+  ]
 }
 
-/** Central stack: uranium source, fifth planet, rest empty to fill the zone. */
-const CENTER_KIT: LandscapeTerrain[] = ['uranium', 'planet']
+function startZoneSources(rng: () => number): LandscapeTerrain[] {
+  return shuffle(['sun', 'sun', 'water', 'water'], rng)
+}
+
+/**
+ * Two of each common factory, two per start zone.
+ * The nuclear plant is never in the center: it is added to one random start zone.
+ * The center holds the transformer.
+ */
+function dealFactories(rng: () => number): {
+  starts: FieldKind[][]
+  center: FieldKind[]
+} {
+  const pool = shuffle<FieldKind>(
+    [
+      'solar',
+      'solar',
+      'thermalCell',
+      'thermalCell',
+      'turbine',
+      'turbine',
+      'pumped',
+      'pumped',
+    ],
+    rng,
+  )
+  const starts = [0, 1, 2, 3].map((zone) => pool.slice(zone * 2, zone * 2 + 2))
+  const host = Math.floor(rng() * starts.length)
+  starts[host] = [...starts[host], 'nuclearPlant']
+  return {
+    starts,
+    center: ['transformer'],
+  }
+}
+
+function centerKit(factories: FieldKind[]): LandscapeTile[] {
+  return [
+    { terrain: 'uranium' },
+    { terrain: 'planet' },
+    ...factories.map((factory) => ({ terrain: 'factory' as const, factory })),
+  ]
+}
 
 const TILE_WORD: Record<LandscapeTerrain, string> = {
   planet: 'Planet',
@@ -91,7 +160,8 @@ export function zoneOf(hex: Axial): ZoneId {
  * Ship spawn hexes (gameRules.md §4):
  * S1 unten links, S2 oben rechts (pointy-top axial).
  */
-export const SHIP_SPAWNS: Record<PlayerId, Axial> = {
+/** Legacy disk spawns (scenarios supply their own). */
+export const SHIP_SPAWNS: Partial<Record<PlayerId, Axial>> = {
   1: { q: -BOARD_RADIUS, r: BOARD_RADIUS },
   2: { q: BOARD_RADIUS, r: -BOARD_RADIUS },
 }
@@ -101,12 +171,12 @@ export function allBoardHexes(): Axial[] {
 }
 
 function fillDeck(
-  kit: LandscapeTerrain[],
+  kit: LandscapeTile[],
   count: number,
   rng: () => number,
-): LandscapeTerrain[] {
+): LandscapeTile[] {
   const tiles = [...kit]
-  while (tiles.length < count) tiles.push('empty')
+  while (tiles.length < count) tiles.push({ terrain: 'empty' })
   return shuffle(tiles.slice(0, Math.max(0, count)), rng)
 }
 
@@ -128,33 +198,52 @@ export function buildLandscapeDecks(
   for (const spawn of Object.values(SHIP_SPAWNS)) {
     counts[zoneOf(spawn)] -= 1
   }
+  const sources = startZoneSources(rng)
+  const factories = dealFactories(rng)
   return {
-    s1: fillDeck(startZoneKit(rng), counts.s1, rng),
-    s2: fillDeck(startZoneKit(rng), counts.s2, rng),
-    s3: fillDeck(startZoneKit(rng), counts.s3, rng),
-    s4: fillDeck(startZoneKit(rng), counts.s4, rng),
-    center: fillDeck(CENTER_KIT, counts.center, rng),
+    s1: fillDeck(startZoneKit(sources[0], factories.starts[0]), counts.s1, rng),
+    s2: fillDeck(startZoneKit(sources[1], factories.starts[1]), counts.s2, rng),
+    s3: fillDeck(startZoneKit(sources[2], factories.starts[2]), counts.s3, rng),
+    s4: fillDeck(startZoneKit(sources[3], factories.starts[3]), counts.s4, rng),
+    center: fillDeck(centerKit(factories.center), counts.center, rng),
   }
 }
 
+function tileWord(tile: LandscapeTile): string {
+  if (tile.terrain === 'factory') return FIELD_DEFS[tile.factory].short
+  return TILE_WORD[tile.terrain]
+}
+
 /** Known composition of a stack, without revealing order. */
-export function describeDeck(tiles: LandscapeTerrain[]): string {
-  const order: LandscapeTerrain[] = [
-    'planet',
-    'sun',
-    'water',
-    'uranium',
-    'mountain',
-    'empty',
+export function describeDeck(tiles: LandscapeTile[]): string {
+  const counts = new Map<string, number>()
+  const seen: string[] = []
+  for (const tile of tiles) {
+    const word = tileWord(tile)
+    if (!counts.has(word)) seen.push(word)
+    counts.set(word, (counts.get(word) ?? 0) + 1)
+  }
+  const rank = [
+    'Planet',
+    'Sonne',
+    'Wasser',
+    'Uran',
+    'Asteroid',
+    ...Object.values(FIELD_DEFS).map((def) => def.short),
+    'leer',
   ]
-  const counts = new Map<LandscapeTerrain, number>()
-  for (const tile of tiles) counts.set(tile, (counts.get(tile) ?? 0) + 1)
-  const parts = order
-    .filter((tile) => (counts.get(tile) ?? 0) > 0)
-    .map((tile) => {
-      const n = counts.get(tile) ?? 0
-      if (tile === 'empty') return `${n} leer`
-      return n === 1 ? TILE_WORD[tile] : `${n}× ${TILE_WORD[tile]}`
-    })
-  return parts.join(' · ') || 'leer'
+  return (
+    [...seen]
+      .sort((a, b) => {
+        const ia = rank.indexOf(a)
+        const ib = rank.indexOf(b)
+        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib)
+      })
+      .map((word) => {
+        const n = counts.get(word) ?? 0
+        if (word === 'leer') return `${n} leer`
+        return n === 1 ? word : `${n}× ${word}`
+      })
+      .join(' · ') || 'leer'
+  )
 }

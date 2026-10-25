@@ -1,9 +1,11 @@
 import type { MeterKind, PlayerId } from '../types'
 
-/** Player 1 = Weiß, Player 2 = Schwarz (UI). */
+/** UI colors / names for up to four seats. */
 export const PLAYER_NAMES: Record<PlayerId, string> = {
   1: 'Weiß',
   2: 'Schwarz',
+  3: 'Grün',
+  4: 'Lila',
 }
 
 export function playerLabel(p: PlayerId): string {

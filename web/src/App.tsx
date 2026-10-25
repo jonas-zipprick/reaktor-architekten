@@ -1,17 +1,37 @@
+import type { MouseEvent } from 'react'
 import { HexBoard } from './components/HexBoard'
 import { PlanetBoard } from './components/PlanetBoard'
+import { ScenarioPicker } from './components/ScenarioPicker'
 import { SidePanel } from './components/SidePanel'
+import { playerLabel } from './data/labels'
+import { useAiDriver } from './hooks/useAi'
 import { useHotkeys } from './hooks/useHotkeys'
 import { useGame } from './state/gameStore'
 import './App.css'
 
 export default function App() {
   useHotkeys()
-  const discardHeldChip = useGame((s) => s.removeChip)
+  useAiDriver()
+  const phase = useGame((s) => s.phase)
+  const playerIds = useGame((s) => s.playerIds)
 
-  function onStageClick() {
-    const id = useGame.getState().selectedChipId
-    if (id) discardHeldChip(id)
+  function onStageClick(event: MouseEvent<HTMLDivElement>) {
+    const target = event.target
+    if (!(target instanceof Element)) return
+    if (target.closest('.planet-board, .board-dock, button, a, input, textarea, select, label')) {
+      return
+    }
+    const state = useGame.getState()
+    state.selectHex(null)
+    state.selectChip(null)
+  }
+
+  if (phase === 'setup') {
+    return (
+      <div className="app-shell">
+        <ScenarioPicker />
+      </div>
+    )
   }
 
   return (
@@ -26,10 +46,12 @@ export default function App() {
           <span className="leg chip-blue">Blau 1 W</span>
           <span className="leg chip-purple">Lila 2 W</span>
           <span className="leg chip-red">Rot 3 W</span>
-          <span className="leg">Unentdeckt: Chip fliegt weiter</span>
-          <span className="leg">Asteroid / Wand → Beutel</span>
-          <span className="leg owner-1">Schiff Weiß</span>
-          <span className="leg owner-2">Schiff Schwarz</span>
+          <span className="leg">Asteroid → Beutel</span>
+          {playerIds.map((p) => (
+            <span key={p} className={`leg owner-${p}`}>
+              Schiff {playerLabel(p)}
+            </span>
+          ))}
         </footer>
       </div>
       <SidePanel />

@@ -1,28 +1,60 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import {
-  allBoardHexes,
-  BANK_START,
-  buildLandscapeDecks,
+  CONSUMER_COST,
   CRITICAL_LIMIT,
-  SHIP_SPAWNS,
-  ZONE_LABELS,
-  zoneOf,
-  type LandscapeDecks,
+  EXTRACTOR_COST,
+  FACTORY_UPKEEP,
+  START_MONEY,
+  TRAFO_RELOAD_COST,
 } from '../data/boardLayout'
+import {
+  applySoloCoopStart,
+  bankForPlayers,
+  cellsFromScenario,
+  getScenario,
+  missionConsumersReady,
+  missionPlanetStable,
+  seatCountForMode,
+  type ScenarioMission,
+} from '../data/scenarios'
+import {
+  missionForDifficulty,
+  type Difficulty,
+} from '../data/difficulty'
+import {
+  describeFreibeuterPos,
+  moveAllFreibeuter,
+  spawnFreibeuter,
+  type Freibeuter,
+} from '../data/freibeuter'
 import { FIELD_DEFS } from '../data/fields'
 import {
   clampFee,
   classifyFactoryHit,
   departureKind,
-  paidEffectLabel,
   resourceName,
   rollDir,
   supplyPayout,
 } from './factoryHit'
-import { METER_LABELS, METER_SHORT, playerLabel } from '../data/labels'
-import { shufflePlanetNames } from '../data/planetNames'
 import {
+  ROUTE_BUILD_COST,
+  TIER_LABEL,
+  upgradeCost,
+} from './simRules'
+import {
+  abortTransport,
+  clickDuringSim,
+  deliverChip,
+  passSimulation,
+  releaseStoredChip,
+  routeAlong,
+  takeSourceChip,
+  triggerFactory,
+} from './simTurn'
+import { METER_LABELS, METER_SHORT, playerLabel } from '../data/labels'
+import {
+  edgeKey,
   hexDistance,
   hexEquals,
   hexKey,
@@ -37,13 +69,19 @@ import {
   type ChipResource,
   type ConsumerUnit,
   type DirIndex,
+  type DiscoveryOffer,
   type FieldKind,
+  type GameMode,
   type LandscapeTerrain,
   type MeterKind,
   type PhaseId,
   type PendingHit,
+  type PlacedField,
   type PlayerId,
+  playerIdsForCount,
   type PlayerState,
+  type Route,
+  type RouteTier,
   type ToolMode,
   type Winner,
 } from '../types'
@@ -52,24 +90,23 @@ const PHASES: { id: PhaseId; label: string; hint: string }[] = [
   {
     id: 'order',
     label: 'Rundenstart',
-    hint: 'Zuerst, ob die Bank leer ist. Dann 1 Geld Unterhalt pro Fabrik. Wer das nicht zahlen kann, schließt Fabriken, bis der Rest bezahlbar ist. Danach kritische Kolonien, Reihenfolgechip, Bedarf und Emission.',
+    hint: 'Leere Bank beendet das Spiel. Dann Quellen- und Planetenrebellionen, 2 Geld Unterhalt je Fabrik, Reihenfolgechip, Verbraucherwürfel ohne Geldbonus, danach ein Chip je Extraktor.',
   },
   {
     id: 'act',
     label: 'Aktionen',
-    hint: 'Zuerst der Inhaber des Reihenfolgechips, danach der andere Spieler. Eine Aktion ist ein Schritt oder ein Bau. Bauen geht auf dem Feld des Schiffs oder direkt daneben. Übrige Punkte verfallen.',
+    hint: 'Reihenfolgechip beginnt, jeder hat 4 Punkte. Schiff bewegen, Extraktor (2), Wege, Verbraucher und Trafo-Aufladen kosten Geld. Übernehmen nur mit dem Schiff auf dem Feld. Aufgeben, Gebühren und Geschenke kosten keine Punkte.',
   },
   {
     id: 'simulate',
     label: 'Simulation',
-    hint: 'Fabrikeffekte lösen aus, sobald die Gebühr bezahlt werden kann. Zum dritten Mal auf demselben Feld ist der Chip weg. Ein Schiff leitet nur auf einem leeren Feld um.',
+    hint: 'Reihenfolgechip beginnt. Ein Zug: einen Chip von einer Quelle nehmen oder die eigene Speicherladung freigeben, dann über Wege leiten. Effekt und Lieferung sind freiwillig. Zum dritten Mal auf demselben Feld ist der Chip weg. Ein voller Pass-Umlauf beendet die Phase.',
   },
 ]
 
 export { PHASES }
 
-const STORAGE_KEY = 'reaktor-playtest-v11'
-const START_MONEY = 6
+const STORAGE_KEY = 'reaktor-playtest-v17'
 const MAX_HISTORY = 80
 
 const CHIP_ENERGY: Record<ChipColor, number> = {
@@ -124,8 +161,24 @@ function formatMeterDelta(n: number): string {
   return n > 0 ? `+${n}` : `−${Math.abs(n)}`
 }
 
-function nextClockwise(p: PlayerId): PlayerId {
-  return p === 1 ? 2 : 1
+function nextClockwise(p: PlayerId, seats: PlayerId[]): PlayerId {
+  const i = seats.indexOf(p)
+  if (i < 0) return seats[0] ?? 1
+  return seats[(i + 1) % seats.length]!
+}
+
+/** Next seat clockwise that still has action points. */
+function nextWithActions(
+  from: PlayerId,
+  seats: PlayerId[],
+  actionsLeft: Record<PlayerId, number>,
+): PlayerId | null {
+  let p = nextClockwise(from, seats)
+  for (let i = 0; i < seats.length; i++) {
+    if ((actionsLeft[p] ?? 0) > 0) return p
+    p = nextClockwise(p, seats)
+  }
+  return null
 }
 
 function playerScore(p: PlayerState): number {
@@ -135,15 +188,15 @@ function playerScore(p: PlayerState): number {
 function assignOrderChip(
   players: Record<PlayerId, PlayerState>,
   current: PlayerId,
+  seats: PlayerId[],
 ): PlayerId {
-  const ids: PlayerId[] = [1, 2]
-  const min = Math.min(...ids.map((id) => players[id].money))
-  const tied = ids.filter((id) => players[id].money === min)
-  if (tied.length === 1) return tied[0]
-  let p = nextClockwise(current)
-  for (let i = 0; i < ids.length; i++) {
+  const min = Math.min(...seats.map((id) => players[id].money))
+  const tied = seats.filter((id) => players[id].money === min)
+  if (tied.length === 1) return tied[0]!
+  let p = nextClockwise(current, seats)
+  for (let i = 0; i < seats.length; i++) {
     if (tied.includes(p)) return p
-    p = nextClockwise(p)
+    p = nextClockwise(p, seats)
   }
   return current
 }
@@ -189,19 +242,6 @@ function earnFromBank(
   }
 }
 
-function emptyCell(hex: Axial): CellState {
-  return {
-    hex,
-    revealed: false,
-    terrain: 'empty',
-    voltage: 0,
-    water: 0,
-    heat: 0,
-    consumers: [],
-    sourceStock: [],
-  }
-}
-
 const LANDSCAPE_LABELS: Record<LandscapeTerrain, string> = {
   empty: 'Leer',
   uranium: 'Uranquelle',
@@ -209,123 +249,6 @@ const LANDSCAPE_LABELS: Record<LandscapeTerrain, string> = {
   water: 'Wasserquelle',
   mountain: 'Asteroid',
   planet: 'Planet',
-}
-
-function makeCells(): Record<string, CellState> {
-  const cells: Record<string, CellState> = {}
-  for (const hex of allBoardHexes()) {
-    cells[hexKey(hex)] = emptyCell(hex)
-  }
-  // Ship start hexes are discovered (empty space, no landscape tile)
-  for (const spawn of Object.values(SHIP_SPAWNS)) {
-    const key = hexKey(spawn)
-    cells[key] = { ...cells[key], revealed: true, terrain: 'empty' }
-  }
-  return cells
-}
-
-/**
- * Draw one landscape tile from the stack of the hex's zone.
- * Returns null when the hex is missing, already open, or that stack is empty.
- */
-function revealHex(
-  cells: Record<string, CellState>,
-  decks: LandscapeDecks,
-  planetNames: string[],
-  hex: Axial,
-): {
-  cells: Record<string, CellState>
-  decks: LandscapeDecks
-  planetNames: string[]
-  label: string
-} | null {
-  const key = hexKey(hex)
-  const cell = cells[key]
-  if (!cell || cell.revealed) return null
-  const zone = zoneOf(hex)
-  const deck = decks[zone]
-  if (!deck || deck.length === 0) return null
-
-  const [tile, ...rest] = deck
-  let nextNames = planetNames
-  let planetName: string | undefined
-  if (tile === 'planet') {
-    if (nextNames.length > 0) {
-      planetName = nextNames[0]
-      nextNames = nextNames.slice(1)
-    } else {
-      planetName = `Planet-${hex.q},${hex.r}`
-    }
-  }
-
-  const zoneName = ZONE_LABELS[zone]
-  const label =
-    tile === 'planet' && planetName
-      ? `${planetName} (${zoneName})`
-      : `${LANDSCAPE_LABELS[tile]} (${zoneName})`
-
-  return {
-    cells: {
-      ...cells,
-      [key]: {
-        ...cell,
-        revealed: true,
-        terrain: tile,
-        planetName,
-        voltage: 0,
-        water: 0,
-        heat: 0,
-        consumers: [],
-        planetOwner: undefined,
-        sourceStock: [],
-        sourceOwner: undefined,
-        sourceDir: undefined,
-      },
-    },
-    decks: { ...decks, [zone]: rest },
-    planetNames: nextNames,
-    label,
-  }
-}
-
-/**
- * Reveal every still-hidden neighbor of a ship.
- * Each hex draws from the stack of the zone it lies in.
- */
-function revealAroundShip(
-  cells: Record<string, CellState>,
-  decks: LandscapeDecks,
-  planetNames: string[],
-  shipHex: Axial,
-): {
-  cells: Record<string, CellState>
-  decks: LandscapeDecks
-  planetNames: string[]
-  revealed: string[]
-} {
-  let nextCells = cells
-  let nextDecks = decks
-  let nextNames = planetNames
-  const revealed: string[] = []
-
-  for (let d = 1; d <= 6; d++) {
-    const hex = neighbor(shipHex, d as DirIndex)
-    const cell = nextCells[hexKey(hex)]
-    if (!cell || cell.revealed) continue
-    const result = revealHex(nextCells, nextDecks, nextNames, hex)
-    if (!result) continue
-    nextCells = result.cells
-    nextDecks = result.decks
-    nextNames = result.planetNames
-    revealed.push(result.label)
-  }
-
-  return {
-    cells: nextCells,
-    decks: nextDecks,
-    planetNames: nextNames,
-    revealed,
-  }
 }
 
 function chipPilot(chip: Chip, fallback: PlayerId): PlayerId {
@@ -491,8 +414,18 @@ function settleFactory(
   dest: Axial,
 ): Partial<Snapshot> {
   const field = cell.field!
-  const kind = classifyFactoryHit(field, chip)
   const name = FIELD_DEFS[field.kind].name
+  if (field.owner == null) {
+    return {
+      ...landed,
+      log: appendLog(
+        landed.log ?? s.log,
+        s.day,
+        `${name} ist neutral und inaktiv.`,
+      ),
+    }
+  }
+  const kind = classifyFactoryHit(field, chip)
   if (kind === 'straight') {
     return {
       ...landed,
@@ -639,6 +572,15 @@ function applyPaidFactory(
   dest: Axial,
 ): Partial<Snapshot> {
   const field = cell.field!
+  if (field.owner == null) {
+    return {
+      log: appendLog(
+        s.log,
+        s.day,
+        `${FIELD_DEFS[field.kind].name} ist neutral und inaktiv.`,
+      ),
+    }
+  }
   const how = departureKind(field, chip)
   const arrow = field.dir ?? chip.dir
   const key = hexKey(dest)
@@ -776,62 +718,69 @@ function applyPaidFactory(
   }
 }
 
-function setupBoard(rng: () => number = Math.random): {
-  cells: Record<string, CellState>
-  landscapeDecks: LandscapeDecks
-  planetNames: string[]
-  logLines: string[]
-} {
-  let cells = makeCells()
-  let landscapeDecks = buildLandscapeDecks(rng)
-  let planetNames = shufflePlanetNames(rng)
-  const logLines: string[] = []
-
-  for (const p of [1, 2] as PlayerId[]) {
-    const result = revealAroundShip(
-      cells,
-      landscapeDecks,
-      planetNames,
-      SHIP_SPAWNS[p],
-    )
-    cells = result.cells
-    landscapeDecks = result.decks
-    planetNames = result.planetNames
-    if (result.revealed.length > 0) {
-      logLines.push(
-        `${playerLabel(p)} Start-Erkundung: ${result.revealed.join(' · ')}`,
-      )
-    }
+/** Offer a claim only for the neutral facility the ship is standing on. */
+function standingClaim(player: PlayerId, cell: CellState): DiscoveryOffer | null {
+  if (!cell.revealed) return null
+  let label: string | null = null
+  if (cell.field && cell.field.owner == null) {
+    label = FIELD_DEFS[cell.field.kind].name
+  } else if (cell.terrain === 'planet' && cell.planetOwner == null) {
+    label = cell.planetName ?? 'Planet'
+  } else if (SOURCE_TERRAINS.has(cell.terrain) && cell.sourceOwner == null) {
+    label = LANDSCAPE_LABELS[cell.terrain as LandscapeTerrain]
   }
-
-  return { cells, landscapeDecks, planetNames, logLines }
+  if (!label) return null
+  return {
+    id: uid('offer'),
+    player,
+    hex: { ...cell.hex },
+    label,
+  }
 }
 
-function isDevelopedSource(cell: CellState): boolean {
+function extractorCount(cell: CellState): number {
+  return cell.extractors ?? 0
+}
+
+function neutralSource(cell: CellState): CellState {
+  return {
+    ...cell,
+    sourceOwner: undefined,
+    sourceFee: undefined,
+    sourceDir: undefined,
+    sourceStock: [],
+    extractors: 0,
+  }
+}
+
+function isProducingSource(cell: CellState): boolean {
   return (
     cell.revealed &&
     SOURCE_TERRAINS.has(cell.terrain) &&
     cell.sourceOwner != null &&
-    cell.sourceDir != null
+    extractorCount(cell) > 0
   )
 }
 
 function sourceVisitNote(cell: CellState): string | null {
   if (!cell.revealed || !SOURCE_TERRAINS.has(cell.terrain)) return null
-  if (cell.sourceOwner != null && cell.sourceDir != null) {
-    const aim = DIRECTIONS[cell.sourceDir - 1].label
-    return `Auf Quelle von ${playerLabel(cell.sourceOwner)} — Pfeil ${cell.sourceDir} ${aim}.`
+  if (cell.sourceOwner != null) {
+    const n = extractorCount(cell)
+    return `Quelle von ${playerLabel(cell.sourceOwner)}. ${n} Extraktor${n === 1 ? '' : 'en'}, Lager ${cell.sourceStock.length}.`
   }
-  return 'Auf unerschlossener Quelle — emittiert nicht, bis sie im Bauen erschlossen wird.'
+  return 'Neutrale Quelle — stillgelegt, ohne Extraktoren und ohne Lager.'
 }
 
 /** Drop dice-rolled arrows from saves made before sources had to be bought. */
 function silenceUndevelopedSources(cells: Record<string, CellState> | undefined) {
   if (!cells) return
   for (const cell of Object.values(cells)) {
+    if (cell.extractors == null) cell.extractors = 0
     if (!SOURCE_TERRAINS.has(cell.terrain) || cell.sourceOwner != null) continue
     cell.sourceDir = undefined
+    cell.sourceFee = undefined
     cell.sourceStock = []
+    cell.extractors = 0
   }
 }
 
@@ -847,11 +796,14 @@ function seedSourceCharges(
   const next = { ...cells }
   let any = false
   for (const [key, cell] of Object.entries(cells)) {
-    if (!isDevelopedSource(cell)) continue
+    const n = isProducingSource(cell) ? extractorCount(cell) : 0
+    if (n === 0) continue
     any = true
+    const added: ChipColor[] = []
+    for (let i = 0; i < n; i++) added.push(emittedSourceColor(cell.terrain))
     next[key] = {
       ...cell,
-      sourceStock: [...cell.sourceStock, emittedSourceColor(cell.terrain)],
+      sourceStock: [...cell.sourceStock, ...added],
     }
   }
   return any ? next : cells
@@ -862,15 +814,49 @@ function emitRevealedSources(
   day: number,
   log: string[],
 ): { cells: Record<string, CellState>; log: string[] } {
-  const count = Object.values(cells).filter(isDevelopedSource).length
+  let chips = 0
+  let idle = 0
+  for (const cell of Object.values(cells)) {
+    if (!cell.revealed || !SOURCE_TERRAINS.has(cell.terrain)) continue
+    if (cell.sourceOwner == null) continue
+    const n = extractorCount(cell)
+    if (n === 0) idle += 1
+    else chips += n
+  }
   const msg =
-    count === 0
-      ? 'Emit: keine erschlossene Quelle.'
-      : `Emit: ${count} erschlossene Quelle(n). Sonne zufällig, Wasser blau, Uran rot.`
+    chips === 0
+      ? idle === 0
+        ? 'Produktion: keine Quelle mit Eigentümer.'
+        : `Produktion: ${idle} Quelle(n) ohne Extraktor, kein Chip.`
+      : `Produktion: ${chips} Chip(s)${idle > 0 ? `, ${idle} Quelle(n) ohne Extraktor` : ''}.`
   return {
     cells: seedSourceCharges(cells),
     log: appendLog(log, day, msg),
   }
+}
+
+function applySourceRebellions(
+  cells: Record<string, CellState>,
+  day: number,
+  log: string[],
+): { cells: Record<string, CellState>; log: string[] } {
+  let nextCells = cells
+  let nextLog = log
+  for (const [key, cell] of Object.entries(cells)) {
+    if (!cell.revealed || !SOURCE_TERRAINS.has(cell.terrain)) continue
+    if (cell.sourceOwner == null || cell.sourceStock.length < 5) continue
+    if (nextCells === cells) nextCells = { ...cells }
+    const owner = cell.sourceOwner
+    const name = LANDSCAPE_LABELS[cell.terrain as 'sun' | 'water' | 'uranium']
+    const extractors = extractorCount(cell)
+    nextCells[key] = neutralSource(cell)
+    nextLog = appendLog(
+      nextLog,
+      day,
+      `${name} (${cell.hex.q},${cell.hex.r}): ${playerLabel(owner)} verliert die Quelle. ${extractors} Extraktoren und ${cell.sourceStock.length} Chips werden entfernt.`,
+    )
+  }
+  return { cells: nextCells, log: nextLog }
 }
 
 function meterCritical(cell: CellState): boolean {
@@ -887,7 +873,7 @@ function applyColonyDestruction(
   let nextCells = cells
   let nextLog = log
   for (const [key, cell] of Object.entries(cells)) {
-    if (cell.terrain !== 'planet' || cell.consumers.length === 0) continue
+    if (cell.terrain !== 'planet' || !cell.revealed) continue
     if (!meterCritical(cell)) continue
     if (nextCells === cells) nextCells = { ...cells }
     const n = cell.consumers.length
@@ -896,6 +882,7 @@ function applyColonyDestruction(
       ...cell,
       consumers: [],
       planetOwner: undefined,
+      importFee: undefined,
       voltage: 0,
       water: 0,
       heat: 0,
@@ -903,26 +890,157 @@ function applyColonyDestruction(
     nextLog = appendLog(
       nextLog,
       day,
-      `${name}: Kolonie zerstört (${n} Verbraucher, Messer ±${CRITICAL_LIMIT}) — neutral, Messer auf 0.`,
+      `${name}: Rebellion (Messer ±${CRITICAL_LIMIT}${n > 0 ? `, ${n} Verbraucher` : ''}) — neutral, Messer auf 0.`,
     )
   }
   return { cells: nextCells, log: nextLog }
 }
 
-function decideWinner(players: Record<PlayerId, PlayerState>): Winner {
-  const m1 = playerScore(players[1])
-  const m2 = playerScore(players[2])
-  if (m1 > m2) return 1
-  if (m2 > m1) return 2
-  return 'draw'
+function freshFactory(field: PlacedField, owner: PlayerId): PlacedField {
+  const def = FIELD_DEFS[field.kind]
+  const charge: ChipColor[] = []
+  for (let i = 0; i < def.startCharge; i++) charge.push(randomColor())
+  return { kind: field.kind, owner, charge, fee: 0 }
+}
+
+function neutralizeFactory(field: PlacedField): PlacedField {
+  return { kind: field.kind, owner: null, charge: [], fee: 0 }
+}
+
+function claimCell(
+  cell: CellState,
+  player: PlayerId,
+): { cell: CellState; note: string } | { error: string } {
+  if (cell.field) {
+    if (cell.field.owner != null) {
+      return { error: `Fabrik gehört ${playerLabel(cell.field.owner)}.` }
+    }
+    const next = freshFactory(cell.field, player)
+    const loaded =
+      next.charge.length > 0 ? `, Startladung ${next.charge.length}` : ''
+    return {
+      cell: { ...cell, field: next },
+      note: `${playerLabel(player)} übernimmt ${FIELD_DEFS[cell.field.kind].name}${loaded}.`,
+    }
+  }
+  if (cell.terrain === 'planet') {
+    if (cell.planetOwner != null) {
+      return { error: `Planet gehört ${playerLabel(cell.planetOwner)}.` }
+    }
+    const name = cell.planetName ?? `(${cell.hex.q},${cell.hex.r})`
+    return {
+      cell: { ...cell, planetOwner: player },
+      note: `${playerLabel(player)} übernimmt ${name}.`,
+    }
+  }
+  if (SOURCE_TERRAINS.has(cell.terrain)) {
+    if (cell.sourceOwner != null) {
+      return { error: `Quelle gehört ${playerLabel(cell.sourceOwner)}.` }
+    }
+    return {
+      cell: { ...cell, sourceOwner: player },
+      note: `${playerLabel(player)} übernimmt ${LANDSCAPE_LABELS[cell.terrain as 'sun' | 'water' | 'uranium']}.`,
+    }
+  }
+  return { error: 'Hier ist nichts zu übernehmen.' }
+}
+
+function abandonCell(
+  cell: CellState,
+  player: PlayerId,
+): { cell: CellState; note: string } | { error: string } {
+  if (cell.field) {
+    if (cell.field.owner !== player) {
+      return {
+        error:
+          cell.field.owner == null
+            ? 'Fabrik ist schon neutral.'
+            : `Fabrik gehört ${playerLabel(cell.field.owner)}.`,
+      }
+    }
+    const charges = cell.field.charge.length
+    return {
+      cell: { ...cell, field: neutralizeFactory(cell.field) },
+      note: `${playerLabel(player)} gibt ${FIELD_DEFS[cell.field.kind].name} auf. ${charges} Ladung in den Beutel.`,
+    }
+  }
+  if (cell.terrain === 'planet') {
+    if (cell.planetOwner !== player) {
+      return {
+        error:
+          cell.planetOwner == null
+            ? 'Planet ist schon neutral.'
+            : `Planet gehört ${playerLabel(cell.planetOwner)}.`,
+      }
+    }
+    const name = cell.planetName ?? `(${cell.hex.q},${cell.hex.r})`
+    return {
+      cell: {
+        ...cell,
+        planetOwner: undefined,
+        importFee: undefined,
+        consumers: [],
+        voltage: 0,
+        water: 0,
+        heat: 0,
+      },
+      note: `${playerLabel(player)} gibt ${name} auf. Verbraucher weg, Messer auf 0.`,
+    }
+  }
+  if (SOURCE_TERRAINS.has(cell.terrain)) {
+    if (cell.sourceOwner !== player) {
+      return {
+        error:
+          cell.sourceOwner == null
+            ? 'Quelle ist schon neutral.'
+            : `Quelle gehört ${playerLabel(cell.sourceOwner)}.`,
+      }
+    }
+    const chips = cell.sourceStock.length
+    const extractors = extractorCount(cell)
+    return {
+      cell: neutralSource(cell),
+      note: `${playerLabel(player)} gibt die Quelle auf. ${extractors} Extraktoren und ${chips} Chips werden entfernt.`,
+    }
+  }
+  return { error: 'Hier ist nichts aufzugeben.' }
+}
+
+function decideWinner(
+  players: Record<PlayerId, PlayerState>,
+  seats: PlayerId[],
+): Winner {
+  let best: PlayerId | null = null
+  let bestScore = -Infinity
+  let tie = false
+  for (const id of seats) {
+    const score = playerScore(players[id])
+    if (score > bestScore) {
+      best = id
+      bestScore = score
+      tie = false
+    } else if (score === bestScore) {
+      tie = true
+    }
+  }
+  if (tie || best == null) return 'draw'
+  return best
+}
+
+function flightOpen(s: Snapshot): boolean {
+  return s.chips.some((c) => c.state === 'flying') || s.simQueue.length > 0
 }
 
 function shipOnHex(
   ships: Record<PlayerId, Axial>,
   hex: Axial,
+  seats?: PlayerId[],
 ): PlayerId | null {
-  if (hexEquals(ships[1], hex)) return 1
-  if (hexEquals(ships[2], hex)) return 2
+  const ids = seats ?? (Object.keys(ships).map(Number) as PlayerId[])
+  for (const id of ids) {
+    const pos = ships[id]
+    if (pos && hexEquals(pos, hex)) return id
+  }
   return null
 }
 
@@ -935,13 +1053,17 @@ export type Snapshot = {
   day: number
   phase: PhaseId
   activePlayer: PlayerId
+  /** Active seats for the chosen scenario. */
+  playerIds: PlayerId[]
+  scenarioId: string | null
+  gameMode: GameMode
+  difficulty: Difficulty
+  freibeuters: Freibeuter[]
+  piratePurse: number
   players: Record<PlayerId, PlayerState>
   cells: Record<string, CellState>
   chips: Chip[]
   ships: Record<PlayerId, Axial>
-  landscapeDecks: LandscapeDecks
-  /** Remaining unique planet names for newly revealed planets */
-  planetNames: string[]
   /** Action points left in the current action phase. Unused points expire. */
   actionsLeft: Record<PlayerId, number>
   /** Remaining money in the shared pile */
@@ -963,8 +1085,19 @@ export type Snapshot = {
   draftFee: number
   /** Flying chip waiting for a fee, a redirect, or a nuclear color. */
   pendingHit: PendingHit | null
-  /** Player who must close factories before upkeep can be paid. */
+  /** Built transport links, keyed by undirected edge. */
+  routes: Record<string, Route>
+  /** Consecutive simulation passes. Two end the phase. */
+  simPasses: number
+  simDone: boolean
+  /** Chips from the same factory effect, routed after the one in the air. */
+  simQueue: string[]
+  /** Player who must neutralize factories before upkeep can be paid. */
   upkeepPlayer: PlayerId | null
+  /** Discoveries the finder may still accept or refuse. */
+  offers: DiscoveryOffer[]
+  /** Day 1: round start runs on the first Weiter, after claims. */
+  orderPending: boolean
   lastDice: DirIndex | null
   log: string[]
   lost: boolean
@@ -975,9 +1108,12 @@ export type Snapshot = {
 
 export interface GameState extends Snapshot {
   past: Snapshot[]
+  /** When true, that player is driven by the computer. */
+  ai: Record<PlayerId, boolean>
 
   reset: () => void
   undo: () => void
+  setAi: (player: PlayerId, on: boolean) => void
   setTool: (tool: ToolMode) => void
   setPlaceKind: (kind: FieldKind) => void
   setApproveType: (type: MeterKind) => void
@@ -997,8 +1133,21 @@ export interface GameState extends Snapshot {
   declineFactoryHit: () => void
   /** After paying an Atomkraftwerk, swap the uranium chip for heat of this color. */
   pickNuclearColor: (color: ChipColor) => void
-  /** Speicher: owner, on their simulation turn, shoots the charge along the arrow. */
+  /** Speicher: the player who stored the chip releases it on their simulation turn. */
   releaseStorage: (hex: Axial) => void
+  passSimulation: () => void
+  takeSourceChip: (hex: Axial, index: number) => void
+  followRoute: (dir: DirIndex) => void
+  triggerFactoryEffect: () => void
+  deliverChip: (payTariff: boolean) => void
+  abortChipTransport: () => void
+  simClick: (hex: Axial) => void
+  buildRoute: (hex: Axial, dir: DirIndex, tier: RouteTier) => void
+  upgradeRoute: (hex: Axial, dir: DirIndex, tier: RouteTier) => void
+  removeRoute: (hex: Axial, dir: DirIndex) => void
+  setRouteFee: (hex: Axial, dir: DirIndex, fee: number) => void
+  setSourceFee: (hex: Axial, fee: number) => void
+  setImportFee: (hex: Axial, fee: number) => void
   selectHex: (hex: Axial | null) => void
   selectChip: (id: string | null) => void
   setPhase: (phase: PhaseId) => void
@@ -1007,13 +1156,22 @@ export interface GameState extends Snapshot {
   adjustMoney: (p: PlayerId, delta: number) => void
   rollDemand: () => void
   approveConsumer: (hex: Axial, type: MeterKind) => void
+  claimOffer: (id: string) => void
+  declineOffer: (id: string) => void
+  claimFacility: (hex: Axial) => void
+  abandonFacility: (hex: Axial) => void
+  /** Pay 2 and spend 1 AP to add an extractor on an owned source in range. */
+  buildExtractor: (hex: Axial) => void
+  rechargeTransformer: (hex: Axial) => void
+  giveMoney: (amount: number) => void
   /** Select-tool: Objekt aufnehmen / ablegen (Chip oder Schiff). */
   selectAt: (hex: Axial) => void
   /** Select-tool: Schiff explizit aufnehmen (Klick auf Schiff-Marker). */
   pickShip: (player: PlayerId) => void
   moveShip: (hex: Axial, player?: PlayerId) => void
-  exploreHex: (hex: Axial) => void
-  /** Pass the rest of this player's actions. Player 1 hands to player 2; player 2 just expires. */
+  /** Load a scenario in the chosen mode and begin day 1. */
+  startScenario: (id: string, mode: GameMode, difficulty?: Difficulty) => void
+  /** Pass remaining actions; hand off clockwise or enter simulation. */
   endActions: () => void
   seedSourcesForEmit: () => void
   adjustMeter: (hex: Axial, meter: MeterKind, delta: number) => void
@@ -1051,8 +1209,48 @@ export interface GameState extends Snapshot {
 
 const ACTIONS_PER_PLAYER = 4
 
-function freshActions(): Record<PlayerId, number> {
-  return { 1: ACTIONS_PER_PLAYER, 2: ACTIONS_PER_PLAYER }
+function blankPlayers(seats: PlayerId[], money: number): Record<PlayerId, PlayerState> {
+  const active = new Set(seats)
+  return {
+    1: { money: active.has(1) ? money : 0, owed: 0 },
+    2: { money: active.has(2) ? money : 0, owed: 0 },
+    3: { money: active.has(3) ? money : 0, owed: 0 },
+    4: { money: active.has(4) ? money : 0, owed: 0 },
+  }
+}
+
+function blankShips(
+  seats: PlayerId[],
+  spawns: Axial[],
+): Record<PlayerId, Axial> {
+  const ships: Record<PlayerId, Axial> = {
+    1: { q: 99, r: 99 },
+    2: { q: 99, r: 99 },
+    3: { q: 99, r: 99 },
+    4: { q: 99, r: 99 },
+  }
+  seats.forEach((id, i) => {
+    ships[id] = { ...(spawns[i] ?? { q: 0, r: 0 }) }
+  })
+  return ships
+}
+
+function freshActions(seats: PlayerId[]): Record<PlayerId, number> {
+  return {
+    1: seats.includes(1) ? ACTIONS_PER_PLAYER : 0,
+    2: seats.includes(2) ? ACTIONS_PER_PLAYER : 0,
+    3: seats.includes(3) ? ACTIONS_PER_PLAYER : 0,
+    4: seats.includes(4) ? ACTIONS_PER_PLAYER : 0,
+  }
+}
+
+function emptyAi(_seats: PlayerId[]): Record<PlayerId, boolean> {
+  return {
+    1: false,
+    2: false,
+    3: false,
+    4: false,
+  }
 }
 
 type ActionSpend =
@@ -1078,13 +1276,15 @@ function beginAction(s: Snapshot): ActionSpend {
   }
   const remaining = left - 1
   const actionsLeft = { ...s.actionsLeft, [p]: remaining }
-  const next = nextClockwise(p)
-  if (remaining === 0 && (actionsLeft[next] ?? 0) > 0) {
-    return {
-      ok: true,
-      actionsLeft,
-      activePlayer: next,
-      note: `Aktionspunkt verbraucht (0 übrig). → ${playerLabel(next)}`,
+  if (remaining === 0) {
+    const next = nextWithActions(p, s.playerIds, actionsLeft)
+    if (next != null) {
+      return {
+        ok: true,
+        actionsLeft,
+        activePlayer: next,
+        note: `Aktionspunkt verbraucht (0 übrig). → ${playerLabel(next)}`,
+      }
     }
   }
   return {
@@ -1129,25 +1329,25 @@ function applyShipStep(
       log: appendLog(s.log, s.day, `${playerLabel(s.activePlayer)} ist am Zug.`),
     }
   }
-  if (hexEquals(s.ships[player], hex)) {
-    return {
-      heldShip: null,
-      selectedHex: hex,
-      log: appendLog(s.log, s.day, `Schiff ${playerLabel(player)} abgelegt.`),
+    if (hexEquals(s.ships[player], hex)) {
+      return {
+        heldShip: null,
+        selectedHex: null,
+        log: appendLog(s.log, s.day, `Schiff ${playerLabel(player)} abgelegt.`),
+      }
     }
-  }
   if (hexDistance(s.ships[player], hex) !== 1) {
     return {
       log: appendLog(s.log, s.day, 'Ein Schritt nur auf ein Nachbarfeld.'),
     }
   }
-  if (!cell.revealed) {
+  if (cell.terrain === 'mountain') {
     return {
-      log: appendLog(s.log, s.day, 'Unentdecktes Feld — nicht begehbar.'),
+      log: appendLog(s.log, s.day, 'Asteroiden sind unpassierbar.'),
     }
   }
-  const other: PlayerId = player === 1 ? 2 : 1
-  if (hexEquals(s.ships[other], hex)) {
+  const blocker = shipOnHex(s.ships, hex, s.playerIds)
+  if (blocker != null && blocker !== player) {
     return {
       log: appendLog(s.log, s.day, 'Feld vom anderen Raumschiff besetzt.'),
     }
@@ -1155,40 +1355,48 @@ function applyShipStep(
   const spent = beginAction(s)
   if (!spent.ok) return { log: appendLog(s.log, s.day, spent.message) }
 
-  const around = revealAroundShip(
-    s.cells,
-    s.landscapeDecks,
-    s.planetNames,
-    hex,
-  )
   let log = appendLog(
     s.log,
     s.day,
     `${playerLabel(player)} geht nach (${hex.q},${hex.r}). ${spent.note}`,
   )
-  if (around.revealed.length > 0) {
-    log = appendLog(log, s.day, `Auto-Erkundung: ${around.revealed.join(' · ')}`)
-  }
   if (SOURCE_TERRAINS.has(cell.terrain)) {
-    const note = sourceVisitNote(around.cells[key] ?? cell)
+    const note = sourceVisitNote(cell)
     if (note) log = appendLog(log, s.day, note)
+  }
+  const previous = s.offers.filter((offer) => offer.player === player)
+  if (previous.length > 0) {
+    log = appendLog(
+      log,
+      s.day,
+      `${playerLabel(player)} zieht weiter und lässt ${previous.map((offer) => offer.label).join(', ')} neutral.`,
+    )
+  }
+  const offer = standingClaim(player, cell)
+  if (offer) {
+    log = appendLog(
+      log,
+      s.day,
+      `${offer.label}: Schiff steht darauf. Übernehmen oder ablehnen, kostenlos.`,
+    )
   }
   return {
     ships: { ...s.ships, [player]: { ...hex } },
-    cells: around.cells,
-    landscapeDecks: around.decks,
-    planetNames: around.planetNames,
     ...spentFields(s, spent),
     heldShip: null,
     selectedChipId: null,
-    selectedHex: hex,
+    selectedHex: null,
+    offers: [
+      ...s.offers.filter((item) => item.player !== player),
+      ...(offer ? [offer] : []),
+    ],
     log,
   }
 }
 
 function expireActionsLog(s: Snapshot, log: string[]): string[] {
   if (s.phase !== 'act') return log
-  const leftover = ([1, 2] as PlayerId[])
+  const leftover = s.playerIds
     .filter((p) => (s.actionsLeft[p] ?? 0) > 0)
     .map((p) => `${playerLabel(p)} ${s.actionsLeft[p]}`)
   if (leftover.length === 0) return log
@@ -1204,12 +1412,16 @@ function takeSnapshot(s: Snapshot): Snapshot {
     day: s.day,
     phase: s.phase,
     activePlayer: s.activePlayer,
+    playerIds: s.playerIds,
+    scenarioId: s.scenarioId,
+    gameMode: s.gameMode,
+    difficulty: s.difficulty,
+    freibeuters: s.freibeuters,
+    piratePurse: s.piratePurse,
     players: s.players,
     cells: s.cells,
     chips: s.chips,
     ships: s.ships,
-    landscapeDecks: s.landscapeDecks,
-    planetNames: s.planetNames,
     actionsLeft: s.actionsLeft,
     bank: s.bank,
     orderHolder: s.orderHolder,
@@ -1223,7 +1435,13 @@ function takeSnapshot(s: Snapshot): Snapshot {
     buildAimHex: s.buildAimHex,
     draftFee: s.draftFee,
     pendingHit: s.pendingHit,
+    routes: s.routes,
+    simPasses: s.simPasses,
+    simDone: s.simDone,
+    simQueue: s.simQueue,
     upkeepPlayer: s.upkeepPlayer,
+    offers: s.offers,
+    orderPending: s.orderPending,
     lastDice: s.lastDice,
     log: s.log,
     lost: s.lost,
@@ -1235,39 +1453,23 @@ function takeSnapshot(s: Snapshot): Snapshot {
 
 function initialData(): Snapshot {
   idSeq = 0
-  const board = setupBoard()
-  const setupLog = [
-    `Neues Spiel — Bank ${BANK_START - START_MONEY * 2}, Reihenfolgechip bei ${playerLabel(1)}.`,
-    ...board.logLines.map((line) => `T1: ${line}`),
-  ]
-  const startingPlayers = {
-    1: { money: START_MONEY, owed: 0 },
-    2: { money: START_MONEY, owed: 0 },
-  }
-  const startingBank = BANK_START - START_MONEY * 2
-  const demand = runDemandRoll(
-    board.cells,
-    1,
-    setupLog,
-    startingPlayers,
-    startingBank,
-  )
-  const emitted = emitRevealedSources(demand.cells, 1, demand.log)
+  const seats = playerIdsForCount(2)
   return {
     day: 1,
-    phase: 'order',
+    phase: 'setup',
     activePlayer: 1,
-    players: demand.players,
-    cells: emitted.cells,
+    playerIds: seats,
+    scenarioId: null,
+    gameMode: 'versus',
+    difficulty: 'normal',
+    freibeuters: [],
+    piratePurse: 0,
+    players: blankPlayers(seats, START_MONEY),
+    cells: {},
     chips: [],
-    ships: {
-      1: { ...SHIP_SPAWNS[1] },
-      2: { ...SHIP_SPAWNS[2] },
-    },
-    landscapeDecks: board.landscapeDecks,
-    planetNames: board.planetNames,
-    actionsLeft: freshActions(),
-    bank: demand.bank,
+    ships: blankShips(seats, [{ q: 0, r: 0 }, { q: 0, r: 0 }]),
+    actionsLeft: freshActions(seats),
+    bank: 0,
     orderHolder: 1,
     selectedHex: null,
     selectedChipId: null,
@@ -1279,9 +1481,236 @@ function initialData(): Snapshot {
     buildAimHex: null,
     draftFee: 0,
     pendingHit: null,
+    routes: {},
+    simPasses: 0,
+    simDone: false,
+    simQueue: [],
     upkeepPlayer: null,
+    offers: [],
+    orderPending: true,
     lastDice: null,
-    log: emitted.log.slice(0, 80),
+    log: ['Szenario wählen, um zu starten.'],
+    lost: false,
+    lossReason: null,
+    gameOver: false,
+    winner: null,
+  }
+}
+
+function currentMission(s: Snapshot): ScenarioMission | null {
+  if (s.gameMode !== 'solo' && s.gameMode !== 'coop') return null
+  if (!s.scenarioId) return null
+  const raw = getScenario(s.scenarioId)?.missions?.[s.gameMode]
+  if (!raw) return null
+  return missionForDifficulty(raw, s.difficulty ?? 'normal')
+}
+
+function missionFail(
+  s: Snapshot,
+  reason: string,
+): Partial<Snapshot> {
+  return {
+    lost: true,
+    lossReason: reason,
+    gameOver: true,
+    winner: null,
+    log: appendLog(s.log, s.day, `Mission verloren: ${reason}`),
+  }
+}
+
+function evaluateMissionAtOrder(
+  s: Snapshot,
+  cells: Record<string, CellState>,
+  day: number,
+  log: string[],
+): Partial<Snapshot> | null {
+  const mission = currentMission(s)
+  if (!mission) return null
+
+  for (const spec of mission.planets) {
+    const cell = Object.values(cells).find(
+      (c) => c.terrain === 'planet' && c.planetName === spec.planetName,
+    )
+    if (!cell || cell.planetOwner !== spec.owner) {
+      return {
+        lost: true,
+        lossReason: `Missionsplanet ${spec.planetName} ist nicht mehr unter Kontrolle.`,
+        gameOver: true,
+        winner: null,
+        log: appendLog(
+          log,
+          day,
+          `Mission verloren: ${spec.planetName} rebellierte oder wurde aufgegeben.`,
+        ),
+      }
+    }
+    if (day === mission.consumerDeadline) {
+      if (!missionConsumersReady(cell, spec.needByRound8)) {
+        const need = spec.needByRound8.join(' + ')
+        return {
+          lost: true,
+          lossReason: `${spec.planetName} braucht bis Runde ${mission.consumerDeadline}: ${need}.`,
+          gameOver: true,
+          winner: null,
+          log: appendLog(
+            log,
+            day,
+            `Mission verloren: ${spec.planetName} hat nicht die benötigten Verbraucher (${need}).`,
+          ),
+        }
+      }
+    }
+  }
+
+  if (mission.stableRounds.includes(day as 11 | 12 | 9 | 10 | 13 | 14)) {
+    // Stability is checked after simulation of that day; order phase of day N+1
+    // sees day N completed. We check at order entry when day equals stable round
+    // after that round's simulation by checking when entering order of day+1.
+    // Here day is the NEW day at order start — so after sim of day D we enter
+    // order of D+1. Check previous day.
+  }
+
+  return null
+}
+
+/** After simulation ends (entering next order / new day), check stable rounds. */
+function evaluateMissionAfterDay(
+  s: Snapshot,
+  completedDay: number,
+  cells: Record<string, CellState>,
+  log: string[],
+): Partial<Snapshot> | null {
+  const mission = currentMission(s)
+  if (!mission) return null
+
+  const [a, b] = mission.stableRounds
+  if (completedDay !== a && completedDay !== b) return null
+
+  for (const spec of mission.planets) {
+    const cell = Object.values(cells).find(
+      (c) => c.terrain === 'planet' && c.planetName === spec.planetName,
+    )
+    if (!cell || !missionPlanetStable(cell)) {
+      return {
+        lost: true,
+        lossReason: `${spec.planetName} war in Runde ${completedDay} nicht stabil (−3…+3).`,
+        gameOver: true,
+        winner: null,
+        log: appendLog(
+          log,
+          completedDay,
+          `Mission verloren: ${spec.planetName} außerhalb von −3…+3 in Runde ${completedDay}.`,
+        ),
+      }
+    }
+  }
+
+  if (completedDay === b) {
+    return {
+      gameOver: true,
+      lost: false,
+      lossReason: null,
+      winner: 'mission',
+      log: appendLog(
+        log,
+        completedDay,
+        'Mission gewonnen — alle Missionsplaneten sind stabil.',
+      ),
+    }
+  }
+  return {
+    log: appendLog(
+      log,
+      completedDay,
+      `Stabilitätscheck Runde ${completedDay} bestanden.`,
+    ),
+  }
+}
+
+function snapshotFromScenario(
+  id: string,
+  mode: GameMode,
+  difficulty: Difficulty = 'normal',
+): Snapshot | null {
+  const scenario = getScenario(id)
+  if (!scenario || !scenario.modes.includes(mode)) return null
+  idSeq = 0
+  const seats = playerIdsForCount(seatCountForMode(scenario, mode))
+  let { cells, logLines } = cellsFromScenario(scenario)
+  let routes: Record<string, Route> = {}
+  const rawMission =
+    mode === 'solo' || mode === 'coop'
+      ? scenario.missions?.[mode]
+      : undefined
+  const mission = rawMission
+    ? missionForDifficulty(rawMission, difficulty)
+    : undefined
+  if (mission) {
+    const started = applySoloCoopStart(cells, mission, (prefix) => uid(prefix))
+    cells = started.cells
+    routes = started.routes
+    logLines = [...started.logLines, ...logLines]
+  }
+  const freibeuters = spawnFreibeuter(
+    scenario.freibeuters ?? [],
+    mode,
+    difficulty,
+  )
+  const totalBank = bankForPlayers(seats.length)
+  const bank = totalBank - START_MONEY * seats.length
+  const players = blankPlayers(seats, START_MONEY)
+  const ships = blankShips(seats, scenario.spawns)
+  const modeLabel =
+    mode === 'solo' ? 'Solo' : mode === 'coop' ? 'Koop' : 'Versus'
+  const names = seats.map(playerLabel).join(', ')
+  const pirateLog =
+    freibeuters.length > 0
+      ? `Freibeuter: ${freibeuters.map(describeFreibeuterPos).join(' · ')}.`
+      : null
+  const setupLog = [
+    `${scenario.name} (${modeLabel}${mode !== 'versus' ? `, ${difficulty}` : ''}) — ${seats.length} Spieler (${names}). Bank ${bank}, je ${START_MONEY} Startgeld.`,
+    mode === 'versus'
+      ? 'Versus: leere Bank beendet das Spiel. Übernehmen nur mit dem Schiff auf der Einrichtung.'
+      : `Mission: ${mission?.rounds ?? 12} Runden. Leere Bank beendet nicht. Stabilität in Runden ${mission?.stableRounds.join(' und ') ?? '11 und 12'}.`,
+    ...(pirateLog ? [pirateLog] : []),
+    ...logLines.map((line) => `T1: ${line}`),
+  ]
+  return {
+    day: 1,
+    phase: 'order',
+    activePlayer: 1,
+    playerIds: seats,
+    scenarioId: scenario.id,
+    gameMode: mode,
+    difficulty,
+    freibeuters,
+    piratePurse: 0,
+    players,
+    cells,
+    chips: [],
+    ships,
+    actionsLeft: freshActions(seats),
+    bank,
+    orderHolder: 1,
+    selectedHex: null,
+    selectedChipId: null,
+    heldShip: null,
+    tool: 'select',
+    placeKind: 'divert',
+    approveType: null,
+    developingSource: false,
+    buildAimHex: null,
+    draftFee: 0,
+    pendingHit: null,
+    routes,
+    simPasses: 0,
+    simDone: false,
+    simQueue: [],
+    upkeepPlayer: null,
+    offers: [],
+    orderPending: true,
+    lastDice: null,
+    log: setupLog.slice(0, 80),
     lost: false,
     lossReason: null,
     gameOver: false,
@@ -1293,6 +1722,7 @@ function migrateActions(state: {
   phase: string
   activePlayer: PlayerId
   orderHolder?: PlayerId
+  playerIds?: PlayerId[]
   actionsLeft?: Record<PlayerId, number>
 }) {
   const legacy =
@@ -1300,25 +1730,22 @@ function migrateActions(state: {
     state.phase === 'build' ||
     state.phase === 'demand'
   state.phase = normalizePhase(state.phase)
+  const seats = state.playerIds ?? playerIdsForCount(2)
   if (
     !state.actionsLeft ||
-    state.actionsLeft[1] == null ||
-    state.actionsLeft[2] == null
+    seats.some((id) => state.actionsLeft![id] == null)
   ) {
-    state.actionsLeft = freshActions()
+    state.actionsLeft = freshActions(seats)
   }
   if (legacy && state.phase === 'act') {
-    state.activePlayer = state.orderHolder ?? 1
-    state.actionsLeft = freshActions()
+    state.activePlayer = state.orderHolder ?? seats[0]!
+    state.actionsLeft = freshActions(seats)
   }
-  // Action phase used to start on Weiß. If nobody has spent a point yet,
-  // give the turn to the order-chip holder.
   if (
     state.phase === 'act' &&
     state.orderHolder &&
     state.activePlayer !== state.orderHolder &&
-    state.actionsLeft[1] === ACTIONS_PER_PLAYER &&
-    state.actionsLeft[2] === ACTIONS_PER_PLAYER
+    seats.every((id) => state.actionsLeft![id] === ACTIONS_PER_PLAYER)
   ) {
     state.activePlayer = state.orderHolder
   }
@@ -1328,7 +1755,12 @@ function normalizePhase(phase: string): PhaseId {
   if (phase === 'demand' || phase === 'navigate' || phase === 'build') return 'act'
   if (phase === 'emit') return 'simulate'
   if (phase === 'end') return 'order'
-  if (phase === 'order' || phase === 'act' || phase === 'simulate') {
+  if (
+    phase === 'setup' ||
+    phase === 'order' ||
+    phase === 'act' ||
+    phase === 'simulate'
+  ) {
     return phase
   }
   return 'order'
@@ -1350,12 +1782,9 @@ function runDemandRoll(
   players: Record<PlayerId, PlayerState>
   bank: number
 } {
-  let nextCells = { ...cells }
+  let nextCells = cells
   let nextLog = log
-  let nextPlayers = players
-  let nextBank = bank
   const parts: string[] = []
-  const bonuses: { owner: PlayerId; name: string; count: number }[] = []
 
   for (const [key, cell] of Object.entries(cells)) {
     if (
@@ -1368,20 +1797,16 @@ function runDemandRoll(
     let voltage = cell.voltage
     let water = cell.water
     let heat = cell.heat
-    let plus = 0
     const planet = cell.planetName ?? `(${cell.hex.q},${cell.hex.r})`
     for (const cons of cell.consumers) {
       const roll = rollW4()
       if (cons.type === 'voltage') voltage += roll
       else if (cons.type === 'water') water += roll
       else heat += roll
-      if (roll === 1) plus += 1
       parts.push(`${planet} ${METER_LABELS[cons.type]} ${formatMeterDelta(roll)}`)
     }
+    if (nextCells === cells) nextCells = { ...cells }
     nextCells[key] = { ...cell, voltage, water, heat }
-    if (plus > 0 && cell.planetOwner) {
-      bonuses.push({ owner: cell.planetOwner, name: planet, count: plus })
-    }
   }
 
   if (parts.length === 0) {
@@ -1394,22 +1819,11 @@ function runDemandRoll(
     nextLog = appendLog(nextLog, day, `Bedarf: ${parts.join(' · ')}`)
   }
 
-  for (const bonus of bonuses) {
-    const earned = earnFromBank(nextPlayers, nextBank, bonus.owner, bonus.count)
-    nextPlayers = earned.players
-    nextBank = earned.bank
-    nextLog = appendLog(
-      nextLog,
-      day,
-      `${bonus.name}: ${bonus.count}× +1, ${playerLabel(bonus.owner)} +${bonus.count} Geld${earned.owedNote}.`,
-    )
-  }
-
   return {
     cells: nextCells,
     log: nextLog,
-    players: nextPlayers,
-    bank: nextBank,
+    players,
+    bank,
   }
 }
 
@@ -1430,17 +1844,48 @@ function applyPhaseEntry(
   let nextLog = log
   let upkeepPlayer: PlayerId | null = null
 
+  let freibeuters = s.freibeuters ?? []
+
   if (phase === 'order') {
-    if (bank <= 0) {
+    if (bank <= 0 && s.gameMode === 'versus') {
       gameOver = true
-      winner = decideWinner(players)
+      winner = decideWinner(players, s.playerIds)
       const reason =
-        winner === 'draw'
+        winner === 'draw' || winner === 'mission' || winner == null
           ? 'Geldstapel leer — Gleichstand, Gewinn als Team.'
           : `Geldstapel leer — ${playerLabel(winner)} gewinnt.`
       nextLog = appendLog(nextLog, day, reason)
     } else {
-      const who = firstWhoMustClose(players, cells, s.orderHolder)
+      if (bank <= 0 && s.gameMode !== 'versus') {
+        nextLog = appendLog(
+          nextLog,
+          day,
+          'Bank leer — in Solo/Koop kein Spielende; offene Forderungen zählen nicht.',
+        )
+      }
+      // Freibeuter move from round 2 onward (after game-end check).
+      if (day >= 2 && freibeuters.length > 0) {
+        freibeuters = moveAllFreibeuter(freibeuters)
+        nextLog = appendLog(
+          nextLog,
+          day,
+          `Freibeuter: ${freibeuters.map(describeFreibeuterPos).join(' · ')}`,
+        )
+      }
+      const missionFailPatch = evaluateMissionAtOrder(s, cells, day, nextLog)
+      if (missionFailPatch) {
+        return { ...missionFailPatch, cells, players, bank, freibeuters }
+      }
+      const sources = applySourceRebellions(cells, day, nextLog)
+      const planets = applyColonyDestruction(sources.cells, day, sources.log)
+      cells = planets.cells
+      nextLog = planets.log
+      // Mission planets that rebelled → immediate loss
+      const afterRebel = evaluateMissionAtOrder(s, cells, day, nextLog)
+      if (afterRebel) {
+        return { ...afterRebel, cells, players, bank, freibeuters }
+      }
+      const who = firstWhoMustClose(players, cells, s.orderHolder, s.playerIds)
       if (who) {
         upkeepPlayer = who
         activePlayer = who
@@ -1458,25 +1903,42 @@ function applyPhaseEntry(
   }
 
   if (phase === 'act') {
-    actionsLeft = freshActions()
+    actionsLeft = freshActions(s.playerIds)
     activePlayer = s.orderHolder
-    const second = nextClockwise(s.orderHolder)
+    const order = s.playerIds
+    const from = order.indexOf(s.orderHolder)
+    const rotated =
+      from >= 0
+        ? [...order.slice(from), ...order.slice(0, from)]
+        : order
+    const names = rotated.map(
+      (id) => `${playerLabel(id)} (${ACTIONS_PER_PLAYER})`,
+    )
     nextLog = appendLog(
       nextLog,
       day,
-      `Aktionsphase: ${playerLabel(s.orderHolder)} hat ${ACTIONS_PER_PLAYER} Aktionen, danach ${playerLabel(second)}. Ungenutzte Punkte verfallen.`,
+      `Aktionsphase: ${names.join(' → ')}. Ungenutzte Punkte verfallen.`,
     )
   }
 
   if (phase === 'simulate') {
     activePlayer = s.orderHolder
+    nextLog = appendLog(
+      nextLog,
+      day,
+      `Simulation: ${playerLabel(s.orderHolder)} beginnt. Ein Zug entnimmt einen Chip oder gibt eine eigene Speicherladung frei.`,
+    )
   }
 
   return {
     cells,
     players,
     bank,
+    freibeuters,
     log: nextLog,
+    simPasses: 0,
+    simDone: false,
+    simQueue: [],
     actionsLeft,
     orderHolder,
     activePlayer,
@@ -1502,18 +1964,36 @@ function mustCloseFactories(
   cells: Record<string, CellState>,
   player: PlayerId,
 ): boolean {
-  return factoryCount(cells, player) > players[player].money
+  return factoryCount(cells, player) * FACTORY_UPKEEP > players[player].money
 }
 
-/** Order-chip holder first, then the other player. */
+function factoriesToDrop(
+  players: Record<PlayerId, PlayerState>,
+  cells: Record<string, CellState>,
+  player: PlayerId,
+): number {
+  const money = players[player].money
+  let count = factoryCount(cells, player)
+  let drop = 0
+  while (count > 0 && count * FACTORY_UPKEEP > money) {
+    count -= 1
+    drop += 1
+  }
+  return drop
+}
+
+/** Order-chip holder first, then clockwise. */
 function firstWhoMustClose(
   players: Record<PlayerId, PlayerState>,
   cells: Record<string, CellState>,
   start: PlayerId,
+  seats: PlayerId[],
 ): PlayerId | null {
-  if (mustCloseFactories(players, cells, start)) return start
-  const other = nextClockwise(start)
-  if (mustCloseFactories(players, cells, other)) return other
+  let p = start
+  for (let i = 0; i < seats.length; i++) {
+    if (mustCloseFactories(players, cells, p)) return p
+    p = nextClockwise(p, seats)
+  }
   return null
 }
 
@@ -1524,11 +2004,11 @@ function closurePrompt(
 ): string {
   const count = factoryCount(cells, player)
   const money = players[player].money
-  const extra = count - money
-  return `${playerLabel(player)} kann ${money} von ${count} Fabriken unterhalten. Schließe ${extra} ${extra === 1 ? 'Fabrik' : 'Fabriken'}.`
+  const drop = factoriesToDrop(players, cells, player)
+  return `${playerLabel(player)} hat ${money} Geld und ${count} ${count === 1 ? 'Fabrik' : 'Fabriken'} (Unterhalt ${FACTORY_UPKEEP} je Fabrik). ${drop} neutralisieren, bis der Rest bezahlbar ist.`
 }
 
-/** Pay full upkeep, then colonies, order chip, demand and emission. */
+/** Pay full upkeep, then order chip, demand and production. Rebellions already ran. */
 function finishOrderStart(
   s: Snapshot,
   cells: Record<string, CellState>,
@@ -1537,16 +2017,15 @@ function finishOrderStart(
   day: number,
   log: string[],
 ): Partial<Snapshot> {
-  const upkeep = payFactoryUpkeep(players, cells, bank, day, log)
-  const destroyed = applyColonyDestruction(cells, day, upkeep.log)
-  const orderHolder = assignOrderChip(upkeep.players, s.orderHolder)
+  const upkeep = payFactoryUpkeep(players, cells, bank, day, log, s.playerIds)
+  const orderHolder = assignOrderChip(upkeep.players, s.orderHolder, s.playerIds)
   let nextLog = appendLog(
-    destroyed.log,
+    upkeep.log,
     day,
     `Reihenfolgechip: ${playerLabel(orderHolder)} beginnt.`,
   )
   const rolled = runDemandRoll(
-    destroyed.cells,
+    cells,
     day,
     nextLog,
     upkeep.players,
@@ -1564,36 +2043,205 @@ function finishOrderStart(
   }
 }
 
-/** 1 Geld pro eigener Fabrik an die Bank. Jeder Spieler kann den vollen Betrag zahlen. */
+/** 2 Geld pro eigener Fabrik an die Bank. Neutrale Fabriken kosten nichts. */
 function payFactoryUpkeep(
   players: Record<PlayerId, PlayerState>,
   cells: Record<string, CellState>,
   bank: number,
   day: number,
   log: string[],
+  seats: PlayerId[],
 ): { players: Record<PlayerId, PlayerState>; bank: number; log: string[] } {
-  const due: Record<PlayerId, number> = { 1: 0, 2: 0 }
+  const due = {} as Record<PlayerId, number>
+  for (const id of seats) due[id] = 0
   for (const cell of Object.values(cells)) {
-    if (cell.field) due[cell.field.owner] += 1
+    const owner = cell.field?.owner
+    if (owner != null && due[owner] != null) due[owner] += FACTORY_UPKEEP
   }
   let next = players
   let nextBank = bank
   let nextLog = log
-  for (const player of [1, 2] as PlayerId[]) {
-    const count = due[player]
-    if (count === 0 || next[player].money < count) continue
+  for (const player of seats) {
+    const amount = due[player]
+    if (amount === 0 || next[player].money < amount) continue
+    const count = amount / FACTORY_UPKEEP
     next = {
       ...next,
-      [player]: { ...next[player], money: next[player].money - count },
+      [player]: { ...next[player], money: next[player].money - amount },
     }
-    nextBank += count
+    nextBank += amount
     nextLog = appendLog(
       nextLog,
       day,
-      `${playerLabel(player)} zahlt ${count} Fabrikunterhalt für ${count} ${count === 1 ? 'Fabrik' : 'Fabriken'}.`,
+      `${playerLabel(player)} zahlt ${amount} Fabrikunterhalt für ${count} ${count === 1 ? 'Fabrik' : 'Fabriken'}.`,
     )
   }
   return { players: next, bank: nextBank, log: nextLog }
+}
+
+function runPendingRoundStart(s: Snapshot): {
+  snapshot: Snapshot
+  patch: Partial<Snapshot> | null
+  blocked: boolean
+} {
+  if (!s.orderPending || s.phase !== 'order') {
+    return { snapshot: s, patch: null, blocked: false }
+  }
+  const started = applyPhaseEntry(
+    s,
+    'order',
+    s.day,
+    appendLog(s.log, s.day, 'Rundenstart'),
+  )
+  const snapshot: Snapshot = {
+    ...s,
+    ...started,
+    phase: 'order',
+    orderPending: false,
+  }
+  return {
+    snapshot,
+    patch: { ...started, orderPending: false },
+    blocked: Boolean(snapshot.gameOver || snapshot.upkeepPlayer),
+  }
+}
+
+function routeAt(
+  s: Snapshot,
+  hex: Axial,
+  dir: DirIndex,
+): { key: string; dest: Axial; route: Route } | null {
+  const dest = neighbor(hex, dir)
+  const key = edgeKey(hex, dest)
+  const route = s.routes[key]
+  if (!route) return null
+  return { key, dest, route }
+}
+
+function routeReachError(s: Snapshot, hex: Axial, dest: Axial): string | null {
+  const ship = s.ships[s.activePlayer]
+  if (!inShipRange(ship, hex) && !inShipRange(ship, dest)) {
+    return 'Das Schiff muss auf einem der Felder oder daneben stehen.'
+  }
+  return null
+}
+
+function routeEdgeError(s: Snapshot, hex: Axial, dest: Axial): string | null {
+  const a = s.cells[hexKey(hex)]
+  const b = s.cells[hexKey(dest)]
+  if (!a || !b) return 'Außerhalb des Spielfelds.'
+  if (!a.revealed || !b.revealed) return 'Beide Felder müssen entdeckt sein.'
+  if (a.terrain === 'mountain' || b.terrain === 'mountain') {
+    return 'Kein Weg über einen Asteroiden.'
+  }
+  return routeReachError(s, hex, dest)
+}
+
+function placeRoute(
+  s: Snapshot,
+  hex: Axial,
+  dir: DirIndex,
+  tier: RouteTier,
+  mode: 'build' | 'upgrade',
+): Partial<Snapshot> {
+  if (s.phase !== 'act') {
+    return { log: appendLog(s.log, s.day, 'Wege nur in der Aktionsphase.') }
+  }
+  const dest = neighbor(hex, dir)
+  const key = edgeKey(hex, dest)
+  const edgeError = routeEdgeError(s, hex, dest)
+  if (edgeError) return { log: appendLog(s.log, s.day, edgeError) }
+  const player = s.activePlayer
+  const existing = s.routes[key]
+  const label = TIER_LABEL[tier]
+  if (mode === 'build') {
+    if (existing) {
+      return { log: appendLog(s.log, s.day, 'Diese Kante ist schon bebaut.') }
+    }
+    const spent = beginAction(s)
+    if (!spent.ok) return { log: appendLog(s.log, s.day, spent.message) }
+    const cost = ROUTE_BUILD_COST[tier]
+    const paid = payToBank(s.players, s.bank, player, cost)
+    if (!paid) {
+      return {
+        log: appendLog(
+          s.log,
+          s.day,
+          `Nicht genug Geld (${cost}) für einen ${label}-Weg.`,
+        ),
+      }
+    }
+    return {
+      routes: { ...s.routes, [key]: { owner: player, tier, fee: 0 } },
+      players: paid.players,
+      bank: paid.bank,
+      ...spentFields(s, spent),
+      log: appendLog(
+        s.log,
+        s.day,
+        `${playerLabel(player)} baut einen ${label}-Weg Richtung ${DIRECTIONS[dir - 1].label} für ${cost} Geld. ${spent.note}`,
+      ),
+    }
+  }
+  if (!existing) {
+    return { log: appendLog(s.log, s.day, 'Kein Weg zum Aufwerten.') }
+  }
+  if (existing.owner !== player) {
+    return {
+      log: appendLog(
+        s.log,
+        s.day,
+        `Der Weg gehört ${playerLabel(existing.owner)}.`,
+      ),
+    }
+  }
+  const cost = upgradeCost(existing.tier, tier)
+  if (cost == null) {
+    return {
+      log: appendLog(s.log, s.day, 'Dieser Weg ist schon mindestens so gut.'),
+    }
+  }
+  const spent = beginAction(s)
+  if (!spent.ok) return { log: appendLog(s.log, s.day, spent.message) }
+  const paid = payToBank(s.players, s.bank, player, cost)
+  if (!paid) {
+    return {
+      log: appendLog(s.log, s.day, `Nicht genug Geld (${cost}) für die Aufwertung.`),
+    }
+  }
+  return {
+    routes: { ...s.routes, [key]: { ...existing, tier } },
+    players: paid.players,
+    bank: paid.bank,
+    ...spentFields(s, spent),
+    log: appendLog(
+      s.log,
+      s.day,
+      `${playerLabel(player)} wertet den Weg auf ${label} auf für ${cost} Geld. ${spent.note}`,
+    ),
+  }
+}
+
+function setOwnedFee(
+  s: Snapshot,
+  owner: PlayerId | null | undefined,
+  fee: number,
+  apply: (next: number) => Partial<Snapshot>,
+): Partial<Snapshot> {
+  if (s.phase !== 'act') {
+    return {
+      log: appendLog(s.log, s.day, 'Gebühren nur in der Aktionsphase ändern.'),
+    }
+  }
+  if (owner == null) {
+    return {
+      log: appendLog(s.log, s.day, 'Neutrale Einrichtungen haben keine Gebühr.'),
+    }
+  }
+  if (owner !== s.activePlayer) {
+    return { log: appendLog(s.log, s.day, `Gehört ${playerLabel(owner)}.`) }
+  }
+  return apply(clampFee(fee))
 }
 
 export const useGame = create<GameState>()(
@@ -1617,8 +2265,33 @@ export const useGame = create<GameState>()(
       return {
         ...initialData(),
         past: [],
+        ai: emptyAi(playerIdsForCount(2)),
 
-        reset: () => set({ ...initialData(), past: [] }),
+        reset: () =>
+          set({
+            ...initialData(),
+            past: [],
+            ai: emptyAi(playerIdsForCount(2)),
+          }),
+
+        startScenario: (id, mode, difficulty = 'normal') => {
+          const snap = snapshotFromScenario(id, mode, difficulty)
+          if (!snap) return
+          set({
+            ...snap,
+            past: [],
+            ai: emptyAi(snap.playerIds),
+          })
+          syncIdSeq(
+            [],
+            snap.cells,
+          )
+        },
+
+        setAi: (player, on) =>
+          setUi((s) => ({
+            ai: { ...emptyAi(s.playerIds), ...s.ai, [player]: on },
+          })),
 
         undo: () => {
           const { past } = get()
@@ -1674,21 +2347,48 @@ export const useGame = create<GameState>()(
 
         setPhase: (phase) => {
           commit((s) => {
+            if (
+              s.phase === 'simulate' &&
+              phase !== 'simulate' &&
+              flightOpen(s)
+            ) {
+              return {
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  'Erst den Chip in der Simulation abwickeln oder abbrechen.',
+                ),
+              }
+            }
             if (s.upkeepPlayer) {
               return {
                 log: appendLog(
                   s.log,
                   s.day,
-                  'Zuerst Fabriken schließen, bis der Unterhalt bezahlbar ist.',
+                  'Zuerst Fabriken neutralisieren, bis der Unterhalt bezahlbar ist.',
                 ),
               }
             }
-            if (s.phase === phase || s.gameOver) return null
-            const log = expireActionsLog(s, s.log)
-            const entered = applyPhaseEntry(s, phase, s.day, log)
+            if (s.gameOver) return null
+            const pending = runPendingRoundStart(s)
+            if (pending.blocked) {
+              return {
+                ...pending.patch,
+                heldShip: null,
+                developingSource: false,
+                buildAimHex: null,
+                pendingHit: null,
+                tool: 'select',
+              }
+            }
+            const cur = pending.snapshot
+            if (cur.phase === phase) return pending.patch
+            const log = expireActionsLog(cur, cur.log)
+            const entered = applyPhaseEntry(cur, phase, cur.day, log)
             return {
               phase,
               ...entered,
+              orderPending: false,
               heldShip: null,
               selectedChipId: phase === 'simulate' ? s.selectedChipId : null,
               developingSource: false,
@@ -1701,34 +2401,79 @@ export const useGame = create<GameState>()(
 
         nextPhase: () => {
           commit((s) => {
+            if (s.phase === 'setup') {
+              return {
+                log: appendLog(s.log, s.day, 'Zuerst ein Szenario wählen.'),
+              }
+            }
+            if (s.phase === 'simulate' && flightOpen(s)) {
+              return {
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  'Erst den Chip in der Simulation abwickeln oder abbrechen.',
+                ),
+              }
+            }
             if (s.upkeepPlayer) {
               return {
                 log: appendLog(
                   s.log,
                   s.day,
-                  'Zuerst Fabriken schließen, bis der Unterhalt bezahlbar ist.',
+                  'Zuerst Fabriken neutralisieren, bis der Unterhalt bezahlbar ist.',
                 ),
               }
             }
             if (s.gameOver) return null
-            const i = PHASES.findIndex((p) => p.id === s.phase)
+            const pending = runPendingRoundStart(s)
+            if (pending.blocked) {
+              return {
+                ...pending.patch,
+                heldShip: null,
+                developingSource: false,
+                buildAimHex: null,
+                pendingHit: null,
+                tool: 'select',
+              }
+            }
+            const cur = pending.snapshot
+            const i = PHASES.findIndex((p) => p.id === cur.phase)
             const next = PHASES[(i + 1) % PHASES.length]
-            let day = s.day
-            let log = appendLog(s.log, s.day, `Phase → ${next.label}`)
-            log = expireActionsLog(s, log)
+            let day = cur.day
+            let log = appendLog(cur.log, cur.day, `Phase → ${next.label}`)
+            log = expireActionsLog(cur, log)
 
-            if (next.id === 'order' && s.phase === 'simulate') {
-              day = s.day + 1
+            if (next.id === 'order' && cur.phase === 'simulate') {
+              const missionEnd = evaluateMissionAfterDay(
+                cur,
+                cur.day,
+                cur.cells,
+                log,
+              )
+              if (missionEnd?.gameOver) {
+                return {
+                  ...missionEnd,
+                  heldShip: null,
+                  selectedChipId: null,
+                  developingSource: false,
+                  buildAimHex: null,
+                  pendingHit: null,
+                  tool: 'select',
+                }
+              }
+              if (missionEnd?.log) log = missionEnd.log
+              day = cur.day + 1
               log = appendLog(log, day, `Tag ${day} beginnt.`)
             }
 
-            const entered = applyPhaseEntry({ ...s, day }, next.id, day, log)
+            const entered = applyPhaseEntry({ ...cur, day }, next.id, day, log)
             return {
               phase: next.id,
               day,
               ...entered,
+              orderPending: false,
               heldShip: null,
-              selectedChipId: next.id === 'simulate' ? null : s.selectedChipId,
+              selectedChipId: next.id === 'simulate' ? null : cur.selectedChipId,
               developingSource: false,
               buildAimHex: null,
               pendingHit: null,
@@ -1737,7 +2482,19 @@ export const useGame = create<GameState>()(
           })
         },
 
-        setActivePlayer: (activePlayer) => commit(() => ({ activePlayer })),
+        setActivePlayer: (activePlayer) =>
+          commit((s) => {
+            if (s.phase === 'act' || s.phase === 'simulate') {
+              return {
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  'Der Zug wechselt am Ende der Aktion von allein.',
+                ),
+              }
+            }
+            return { activePlayer }
+          }),
 
         adjustMoney: (p, delta) =>
           commit((s) => {
@@ -1776,6 +2533,9 @@ export const useGame = create<GameState>()(
 
         selectAt: (hex) => {
           commit((s) => {
+            if (s.phase === 'simulate') {
+              return clickDuringSim(s, hex, () => uid('fly'))
+            }
             const key = hexKey(hex)
             const cell = s.cells[key]
             if (!cell) return null
@@ -1948,7 +2708,7 @@ export const useGame = create<GameState>()(
 
         endActions: () => {
           commit((s) => {
-            if (s.phase !== 'act') {
+            if (s.phase !== 'act' || s.gameOver) {
               return {
                 log: appendLog(
                   s.log,
@@ -1957,87 +2717,370 @@ export const useGame = create<GameState>()(
                 ),
               }
             }
+            if (s.upkeepPlayer) {
+              return {
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  'Zuerst Fabriken neutralisieren, bis der Unterhalt bezahlbar ist.',
+                ),
+              }
+            }
             const p = s.activePlayer
-            const next = nextClockwise(p)
             const left = s.actionsLeft[p] ?? 0
             const expired =
               left === 1
                 ? '1 Aktionspunkt verfällt'
                 : `${left} Aktionspunkte verfallen`
-            if ((s.actionsLeft[next] ?? 0) > 0) {
+            const actionsLeft = { ...s.actionsLeft, [p]: 0 }
+            const note =
+              left > 0
+                ? `${playerLabel(p)} beendet die Aktionen. ${expired}.`
+                : `${playerLabel(p)} beendet die Aktionen.`
+            const next = nextWithActions(p, s.playerIds, actionsLeft)
+            if (next != null) {
               return {
-                actionsLeft: { ...s.actionsLeft, [p]: 0 },
+                actionsLeft,
                 activePlayer: next,
                 heldShip: null,
+                selectedChipId: null,
                 developingSource: false,
+                log: appendLog(s.log, s.day, `${note} → ${playerLabel(next)}`),
+              }
+            }
+            const log = appendLog(
+              appendLog(s.log, s.day, note),
+              s.day,
+              'Phase → Simulation',
+            )
+            const entered = applyPhaseEntry(
+              { ...s, actionsLeft },
+              'simulate',
+              s.day,
+              log,
+            )
+            return {
+              phase: 'simulate',
+              actionsLeft,
+              ...entered,
+              heldShip: null,
+              selectedChipId: null,
+              developingSource: false,
+              buildAimHex: null,
+              pendingHit: null,
+            }
+          })
+        },
+
+        claimOffer: (id) => {
+          commit((s) => {
+            const offer = s.offers.find((item) => item.id === id)
+            if (!offer) {
+              return { log: appendLog(s.log, s.day, 'Dieses Angebot ist weg.') }
+            }
+            const key = hexKey(offer.hex)
+            const cell = s.cells[key]
+            if (!cell) return null
+            if (s.phase !== 'act') {
+              return {
                 log: appendLog(
                   s.log,
                   s.day,
-                  left > 0
-                    ? `${playerLabel(p)} beendet die Aktionen. ${expired}. → ${playerLabel(next)}`
-                    : `${playerLabel(p)} ist fertig. → ${playerLabel(next)}`,
+                  'Übernehmen nur in der eigenen Aktionsphase.',
                 ),
               }
             }
-            if (left <= 0) {
+            if (offer.player !== s.activePlayer) {
               return {
                 log: appendLog(
                   s.log,
                   s.day,
-                  `${playerLabel(p)} hat keine Aktionspunkte mehr. Weiter zur Simulation.`,
+                  `${playerLabel(s.activePlayer)} ist am Zug.`,
                 ),
+              }
+            }
+            if (!hexEquals(s.ships[offer.player], offer.hex)) {
+              return {
+                offers: s.offers.filter((item) => item.id !== id),
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  'Das Schiff muss auf der Einrichtung stehen.',
+                ),
+              }
+            }
+            const claimed = claimCell(cell, offer.player)
+            if ('error' in claimed) {
+              return {
+                offers: s.offers.filter((item) => item.id !== id),
+                log: appendLog(s.log, s.day, claimed.error),
               }
             }
             return {
-              actionsLeft: { ...s.actionsLeft, [p]: 0 },
-              heldShip: null,
-              developingSource: false,
+              cells: { ...s.cells, [key]: claimed.cell },
+              offers: s.offers.filter(
+                (item) =>
+                  item.hex.q !== offer.hex.q || item.hex.r !== offer.hex.r,
+              ),
+              log: appendLog(s.log, s.day, claimed.note),
+            }
+          })
+        },
+
+        declineOffer: (id) => {
+          commit((s) => {
+            const offer = s.offers.find((item) => item.id === id)
+            if (!offer) return null
+            return {
+              offers: s.offers.filter((item) => item.id !== id),
               log: appendLog(
                 s.log,
                 s.day,
-                `${playerLabel(p)} beendet die Aktionen. ${expired}.`,
+                `${playerLabel(offer.player)} lässt ${offer.label} neutral.`,
               ),
             }
           })
         },
 
-        exploreHex: (hex) => {
-          // Soft fallback: force-reveal around active ship if target is a neighbor
+        claimFacility: (hex) => {
           commit((s) => {
-            const p = s.activePlayer
-            const ship = s.ships[p]
-            if (hexDistance(ship, hex) !== 1 && !hexEquals(ship, hex)) {
+            if (s.phase !== 'act') {
               return {
                 log: appendLog(
                   s.log,
                   s.day,
-                  'Erkundung nur um das eigene Raumschiff (automatisch beim Bewegen).',
+                  'Neutrale Einrichtungen nur in der eigenen Aktionsphase übernehmen.',
                 ),
               }
             }
-            const around = revealAroundShip(
-              s.cells,
-              s.landscapeDecks,
-              s.planetNames,
-              ship,
-            )
-            if (around.revealed.length === 0) {
+            const player = s.activePlayer
+            if (!hexEquals(s.ships[player], hex)) {
               return {
                 log: appendLog(
                   s.log,
                   s.day,
-                  'Keine neuen Nachbarn (schon entdeckt oder Stapel leer).',
+                  'Das Schiff muss auf dem Feld stehen.',
+                ),
+              }
+            }
+            const key = hexKey(hex)
+            const cell = s.cells[key]
+            if (!cell?.revealed) {
+              return { log: appendLog(s.log, s.day, 'Feld ist noch unentdeckt.') }
+            }
+            const claimed = claimCell(cell, player)
+            if ('error' in claimed) {
+              return { log: appendLog(s.log, s.day, claimed.error) }
+            }
+            return {
+              cells: { ...s.cells, [key]: claimed.cell },
+              offers: s.offers.filter(
+                (item) => item.hex.q !== hex.q || item.hex.r !== hex.r,
+              ),
+              log: appendLog(s.log, s.day, claimed.note),
+            }
+          })
+        },
+
+        abandonFacility: (hex) => {
+          commit((s) => {
+            if (s.phase !== 'act') {
+              return {
+                log: appendLog(s.log, s.day, 'Aufgeben nur in der Aktionsphase.'),
+              }
+            }
+            const key = hexKey(hex)
+            const cell = s.cells[key]
+            if (!cell?.revealed) return null
+            const left = abandonCell(cell, s.activePlayer)
+            if ('error' in left) {
+              return { log: appendLog(s.log, s.day, left.error) }
+            }
+            const cells = { ...s.cells, [key]: left.cell }
+            const mission = currentMission(s)
+            if (
+              mission &&
+              cell.terrain === 'planet' &&
+              mission.planets.some((p) => p.planetName === cell.planetName)
+            ) {
+              return {
+                cells,
+                ...missionFail(
+                  { ...s, cells, log: appendLog(s.log, s.day, left.note) },
+                  `Missionsplanet ${cell.planetName} wurde aufgegeben.`,
                 ),
               }
             }
             return {
-              cells: around.cells,
-              landscapeDecks: around.decks,
-              planetNames: around.planetNames,
+              cells,
+              offers: s.offers.filter(
+                (item) => item.hex.q !== hex.q || item.hex.r !== hex.r,
+              ),
+              log: appendLog(s.log, s.day, left.note),
+            }
+          })
+        },
+
+        buildExtractor: (hex) => {
+          commit((s) => {
+            if (s.phase !== 'act') {
+              return {
+                log: appendLog(s.log, s.day, 'Extraktoren nur in der Aktionsphase.'),
+              }
+            }
+            const key = hexKey(hex)
+            const cell = s.cells[key]
+            const player = s.activePlayer
+            if (!cell?.revealed || !SOURCE_TERRAINS.has(cell.terrain)) {
+              return { log: appendLog(s.log, s.day, 'Keine Quelle auf diesem Feld.') }
+            }
+            if (cell.sourceOwner !== player) {
+              return {
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  cell.sourceOwner == null
+                    ? 'Neutrale Quelle zuerst übernehmen.'
+                    : `Quelle gehört ${playerLabel(cell.sourceOwner)}.`,
+                ),
+              }
+            }
+            if (!inShipRange(s.ships[player], hex)) {
+              return {
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  'Das Schiff muss auf der Quelle oder daneben stehen.',
+                ),
+              }
+            }
+            const spent = beginAction(s)
+            if (!spent.ok) return { log: appendLog(s.log, s.day, spent.message) }
+            const paid = payToBank(s.players, s.bank, player, EXTRACTOR_COST)
+            if (!paid) {
+              return {
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  `Nicht genug Geld (${EXTRACTOR_COST}) für einen Extraktor.`,
+                ),
+              }
+            }
+            const next = extractorCount(cell) + 1
+            const name = LANDSCAPE_LABELS[cell.terrain as 'sun' | 'water' | 'uranium']
+            return {
+              cells: {
+                ...s.cells,
+                [key]: { ...cell, extractors: next },
+              },
+              players: paid.players,
+              bank: paid.bank,
+              ...spentFields(s, spent),
               log: appendLog(
                 s.log,
                 s.day,
-                `Auto-Erkundung: ${around.revealed.join(' · ')}`,
+                `${playerLabel(player)} baut Extraktor ${next} auf ${name} (${hex.q},${hex.r}) für ${EXTRACTOR_COST} Geld. ${spent.note}`,
+              ),
+            }
+          })
+        },
+
+        rechargeTransformer: (hex) => {
+          commit((s) => {
+            const key = hexKey(hex)
+            const cell = s.cells[key]
+            const field = cell?.field
+            if (!cell || !field || field.kind !== 'transformer') {
+              return { log: appendLog(s.log, s.day, 'Kein Trafo auf diesem Feld.') }
+            }
+            if (field.owner !== s.activePlayer) {
+              return {
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  field.owner == null
+                    ? 'Neutraler Trafo muss zuerst übernommen werden.'
+                    : `Trafo gehört ${playerLabel(field.owner)}.`,
+                ),
+              }
+            }
+            if (s.phase !== 'act') {
+              return {
+                log: appendLog(s.log, s.day, 'Aufladen nur in der Aktionsphase.'),
+              }
+            }
+            if (!inShipRange(s.ships[s.activePlayer], hex)) {
+              return {
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  'Das Schiff muss auf dem Trafo oder daneben stehen.',
+                ),
+              }
+            }
+            const missing = 4 - field.charge.length
+            if (missing <= 0) {
+              return {
+                log: appendLog(s.log, s.day, 'Der Trafo hat schon vier Ladungen.'),
+              }
+            }
+            const spent = beginAction(s)
+            if (!spent.ok) return { log: appendLog(s.log, s.day, spent.message) }
+            const paid = payToBank(s.players, s.bank, s.activePlayer, TRAFO_RELOAD_COST)
+            if (!paid) {
+              return {
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  `Nicht genug Geld (${TRAFO_RELOAD_COST}) zum Aufladen.`,
+                ),
+              }
+            }
+            const charge = [...field.charge]
+            for (let i = 0; i < missing; i++) charge.push(randomColor())
+            return {
+              cells: {
+                ...s.cells,
+                [key]: { ...cell, field: { ...field, charge } },
+              },
+              players: paid.players,
+              bank: paid.bank,
+              ...spentFields(s, spent),
+              log: appendLog(
+                s.log,
+                s.day,
+                `${playerLabel(s.activePlayer)} lädt den Trafo auf 4 Spannungschips für ${TRAFO_RELOAD_COST} Geld. ${spent.note}`,
+              ),
+            }
+          })
+        },
+
+        giveMoney: (amount) => {
+          commit((s) => {
+            if (s.phase !== 'act') {
+              return {
+                log: appendLog(s.log, s.day, 'Verschenken nur in der Aktionsphase.'),
+              }
+            }
+            const from = s.activePlayer
+            const to = nextClockwise(from, s.playerIds)
+            const gift = Math.floor(amount)
+            if (gift <= 0) return null
+            if (s.players[from].money < gift) {
+              return {
+                log: appendLog(s.log, s.day, 'Nicht genug Geld zum Verschenken.'),
+              }
+            }
+            return {
+              players: {
+                ...s.players,
+                [from]: { ...s.players[from], money: s.players[from].money - gift },
+                [to]: { ...s.players[to], money: s.players[to].money + gift },
+              },
+              log: appendLog(
+                s.log,
+                s.day,
+                `${playerLabel(from)} schenkt ${playerLabel(to)} ${gift} Geld.`,
               ),
             }
           })
@@ -2057,11 +3100,16 @@ export const useGame = create<GameState>()(
                 ),
               }
             }
-            if (
-              cell.planetOwner != null &&
-              cell.planetOwner !== owner &&
-              cell.consumers.length > 0
-            ) {
+            if (cell.planetOwner == null) {
+              return {
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  'Neutrale Planeten: zuerst übernehmen, dann Verbraucher genehmigen.',
+                ),
+              }
+            }
+            if (cell.planetOwner !== owner) {
               return {
                 log: appendLog(
                   s.log,
@@ -2082,10 +3130,14 @@ export const useGame = create<GameState>()(
             const spent = beginAction(s)
             if (!spent.ok) return { log: appendLog(s.log, s.day, spent.message) }
 
-            const paid = payToBank(s.players, s.bank, owner, 1)
+            const paid = payToBank(s.players, s.bank, owner, CONSUMER_COST)
             if (!paid) {
               return {
-                log: appendLog(s.log, s.day, 'Nicht genug Geld (1) für Verbraucher.'),
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  `Nicht genug Geld (${CONSUMER_COST}) für einen Verbraucher.`,
+                ),
               }
             }
 
@@ -2100,7 +3152,6 @@ export const useGame = create<GameState>()(
                 [key]: {
                   ...cell,
                   consumers: [...cell.consumers, unit],
-                  planetOwner: owner,
                 },
               },
               players: paid.players,
@@ -2109,7 +3160,7 @@ export const useGame = create<GameState>()(
               log: appendLog(
                 s.log,
                 s.day,
-                `${playerLabel(owner)} genehmigt ${METER_LABELS[type]}-Verbraucher auf ${cell.planetName ?? `(${hex.q},${hex.r})`} — Planet gehört ${playerLabel(owner)}. ${spent.note}`,
+                `${playerLabel(owner)} genehmigt ${METER_LABELS[type]}-Verbraucher auf ${cell.planetName ?? `(${hex.q},${hex.r})`} für ${CONSUMER_COST} Geld. ${spent.note}`,
               ),
             }
           })
@@ -2117,15 +3168,8 @@ export const useGame = create<GameState>()(
 
         seedSourcesForEmit: () => {
           commit((s) => {
-            const count = Object.values(s.cells).filter(isDevelopedSource).length
-            const msg =
-              count === 0
-                ? 'Emit: keine erschlossene Quelle.'
-                : `Emit: ${count} erschlossene Quelle(n) erhalten je 1 zufälligen Chip.`
-            return {
-              cells: seedSourceCharges(s.cells),
-              log: appendLog(s.log, s.day, msg),
-            }
+            const emitted = emitRevealedSources(s.cells, s.day, s.log)
+            return { cells: emitted.cells, log: emitted.log }
           })
         },
 
@@ -2135,26 +3179,16 @@ export const useGame = create<GameState>()(
             const cell = s.cells[key]
             if (!cell || cell.terrain !== 'planet' || delta === 0) return null
             const nextValue = cell[meter] + delta
-            const cells = {
-              ...s.cells,
-              [key]: { ...cell, [meter]: nextValue },
-            }
-            const match =
-              delta > 0
-                ? cell.consumers.find((c) => c.type === meter)
-                : undefined
-            const owner = cell.planetOwner ?? match?.approver
-            if (!match || !owner) return { cells }
-            const earned = earnFromBank(s.players, s.bank, owner, delta)
             const name = cell.planetName ?? `(${hex.q},${hex.r})`
             return {
-              cells,
-              players: earned.players,
-              bank: earned.bank,
+              cells: {
+                ...s.cells,
+                [key]: { ...cell, [meter]: nextValue },
+              },
               log: appendLog(
                 s.log,
                 s.day,
-                `${name} ${METER_LABELS[meter]} ${formatMeterDelta(delta)} · ${playerLabel(owner)} +${delta} Geld${earned.owedNote}.`,
+                `${name} ${METER_LABELS[meter]} ${formatMeterDelta(delta)}.`,
               ),
             }
           })
@@ -2283,11 +3317,14 @@ export const useGame = create<GameState>()(
               }
             }
             if (recharging && cell.field && cell.field.owner !== owner) {
+              const who = cell.field.owner
               return {
                 log: appendLog(
                   s.log,
                   s.day,
-                  `Nur ${playerLabel(cell.field.owner)} kann den Trafo nachladen.`,
+                  who == null
+                    ? 'Neutraler Trafo muss zuerst übernommen werden.'
+                    : `Nur ${playerLabel(who)} kann den Trafo nachladen.`,
                 ),
               }
             }
@@ -2349,7 +3386,10 @@ export const useGame = create<GameState>()(
                   ...cell,
                   field: {
                     kind,
-                    owner: recharging && cell.field ? cell.field.owner : owner,
+                    owner:
+                      recharging && cell.field?.owner != null
+                        ? cell.field.owner
+                        : owner,
                     charge,
                     dir: recharging ? cell.field?.dir : dir,
                     fee,
@@ -2383,11 +3423,14 @@ export const useGame = create<GameState>()(
               }
             }
             if (cell.field.owner !== player) {
+              const who = cell.field.owner
               return {
                 log: appendLog(
                   s.log,
                   s.day,
-                  `Fabrik gehört ${playerLabel(cell.field.owner)}.`,
+                  who == null
+                    ? 'Neutrale Fabriken haben keinen Richtungspfeil.'
+                    : `Fabrik gehört ${playerLabel(who)}.`,
                 ),
               }
             }
@@ -2450,49 +3493,27 @@ export const useGame = create<GameState>()(
           commit((s) => {
             const key = hexKey(hex)
             const cell = s.cells[key]
-            const player = s.activePlayer
             const next = clampFee(fee)
             if (!cell?.revealed || !cell.field) {
               return { log: appendLog(s.log, s.day, 'Keine Fabrik auf diesem Feld.') }
-            }
-            if (cell.field.owner !== player) {
-              return {
-                log: appendLog(
-                  s.log,
-                  s.day,
-                  `Fabrik gehört ${playerLabel(cell.field.owner)}.`,
-                ),
-              }
-            }
-            if (!inShipRange(s.ships[player], hex)) {
-              return {
-                log: appendLog(
-                  s.log,
-                  s.day,
-                  'Zum Ändern der Gebühr muss das Schiff auf der Fabrik oder daneben stehen.',
-                ),
-              }
             }
             if (clampFee(cell.field.fee ?? 0) === next) {
               return {
                 log: appendLog(s.log, s.day, `Gebühr ist bereits ${next}.`),
               }
             }
-            const spent = beginAction(s)
-            if (!spent.ok) return { log: appendLog(s.log, s.day, spent.message) }
             const name = FIELD_DEFS[cell.field.kind].name
-            return {
+            return setOwnedFee(s, cell.field.owner, next, () => ({
               cells: {
                 ...s.cells,
-                [key]: { ...cell, field: { ...cell.field, fee: next } },
+                [key]: { ...cell, field: { ...cell.field!, fee: next } },
               },
-              ...spentFields(s, spent),
               log: appendLog(
                 s.log,
                 s.day,
-                `${playerLabel(player)} setzt die Gebühr von ${name} (${hex.q},${hex.r}) auf ${next}. ${spent.note}`,
+                `${playerLabel(s.activePlayer)} setzt die Verarbeitungsgebühr von ${name} auf ${next}.`,
               ),
-            }
+            }))
           })
         },
 
@@ -2527,6 +3548,16 @@ export const useGame = create<GameState>()(
                       s.log,
                       s.day,
                       `${FIELD_DEFS[cell.field.kind].name}: keine Interaktion — geradeaus.`,
+                    ),
+                  }
+                }
+                if (cell.field.owner == null) {
+                  return {
+                    pendingHit: null,
+                    log: appendLog(
+                      s.log,
+                      s.day,
+                      `${FIELD_DEFS[cell.field.kind].name} ist neutral und inaktiv.`,
                     ),
                   }
                 }
@@ -2635,66 +3666,181 @@ export const useGame = create<GameState>()(
 
         releaseStorage: (hex) => {
           commit((s) => {
-            const key = hexKey(hex)
-            const cell = s.cells[key]
-            const player = s.activePlayer
             if (s.phase !== 'simulate') {
               return {
                 log: appendLog(
                   s.log,
                   s.day,
-                  'Ladung abfeuern nur in der Simulation, und nur wenn der Besitzer dran ist.',
+                  'Ladung freigeben nur in der Simulation.',
                 ),
               }
             }
-            if (!cell?.revealed || cell.field?.kind !== 'pumped') {
-              return { log: appendLog(s.log, s.day, 'Kein Speicher auf diesem Feld.') }
+            return releaseStoredChip(s, hex, () => uid('fly'))
+          })
+        },
+
+        passSimulation: () => {
+          commit((s) => {
+            if (s.phase !== 'simulate') {
+              return {
+                log: appendLog(s.log, s.day, 'Passen nur in der Simulation.'),
+              }
             }
-            if (cell.field.owner !== player) {
+            return passSimulation(s)
+          })
+        },
+
+        takeSourceChip: (hex, index) => {
+          commit((s) => {
+            if (s.phase !== 'simulate') {
               return {
                 log: appendLog(
                   s.log,
                   s.day,
-                  `Speicher gehört ${playerLabel(cell.field.owner)}.`,
+                  'Chips entnehmen nur in der Simulation.',
                 ),
               }
             }
-            if (cell.field.charge.length === 0) {
-              return { log: appendLog(s.log, s.day, 'Speicher ist leer.') }
+            return takeSourceChip(s, hex, index, () => uid('fly'))
+          })
+        },
+
+        followRoute: (dir) => {
+          commit((s) => {
+            if (s.phase !== 'simulate') return null
+            return routeAlong(s, dir)
+          })
+        },
+
+        triggerFactoryEffect: () => {
+          commit((s) => {
+            if (s.phase !== 'simulate') return null
+            return triggerFactory(s, () => uid('fly'))
+          })
+        },
+
+        deliverChip: (payTariff) => {
+          commit((s) => {
+            if (s.phase !== 'simulate') return null
+            return deliverChip(s, payTariff)
+          })
+        },
+
+        abortChipTransport: () => {
+          commit((s) => {
+            if (s.phase !== 'simulate') return null
+            return abortTransport(s)
+          })
+        },
+
+        simClick: (hex) => {
+          commit((s) => {
+            if (s.phase !== 'simulate') return null
+            return clickDuringSim(s, hex, () => uid('fly'))
+          })
+        },
+
+        buildRoute: (hex, dir, tier) => {
+          commit((s) => placeRoute(s, hex, dir, tier, 'build'))
+        },
+
+        upgradeRoute: (hex, dir, tier) => {
+          commit((s) => placeRoute(s, hex, dir, tier, 'upgrade'))
+        },
+
+        removeRoute: (hex, dir) => {
+          commit((s) => {
+            const player = s.activePlayer
+            const located = routeAt(s, hex, dir)
+            if (!located) {
+              return { log: appendLog(s.log, s.day, 'Kein Weg auf dieser Kante.') }
             }
-            if (cell.field.dir == null) {
-              return { log: appendLog(s.log, s.day, 'Speicher hat keinen Pfeil.') }
+            if (located.route.owner !== player) {
+              return {
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  `Der Weg gehört ${playerLabel(located.route.owner)}.`,
+                ),
+              }
             }
-            const color = cell.field.charge[0]
-            const resource = cell.field.chargeResource ?? 'water'
-            const dir = cell.field.dir
-            const chip: Chip = {
-              id: uid('fly'),
-              color,
-              state: 'flying',
-              hex: { ...hex },
-              dir,
-              resource,
-              pilot: player,
-              stepsLeft: 5,
-            }
+            const reach = routeReachError(s, hex, located.dest)
+            if (reach) return { log: appendLog(s.log, s.day, reach) }
+            const spent = beginAction(s)
+            if (!spent.ok) return { log: appendLog(s.log, s.day, spent.message) }
+            const routes = { ...s.routes }
+            delete routes[located.key]
             return {
-              cells: {
-                ...s.cells,
-                [key]: {
-                  ...cell,
-                  field: { ...cell.field, charge: [], chargeResource: undefined },
-                },
-              },
-              chips: [...s.chips, chip],
-              selectedChipId: chip.id,
-              pendingHit: null,
+              routes,
+              ...spentFields(s, spent),
               log: appendLog(
                 s.log,
                 s.day,
-                `${playerLabel(player)} schießt ${resourceName(resource)} ${color} aus dem Speicher in Pfeilrichtung ${dir} ${DIRECTIONS[dir - 1].label}.`,
+                `${playerLabel(player)} baut den Weg ab. Baukosten werden nicht erstattet. ${spent.note}`,
               ),
             }
+          })
+        },
+
+        setRouteFee: (hex, dir, fee) => {
+          commit((s) => {
+            const located = routeAt(s, hex, dir)
+            if (!located) {
+              return { log: appendLog(s.log, s.day, 'Kein Weg auf dieser Kante.') }
+            }
+            return setOwnedFee(s, located.route.owner, fee, (next) => ({
+              routes: {
+                ...s.routes,
+                [located.key]: { ...located.route, fee: next },
+              },
+              log: appendLog(
+                s.log,
+                s.day,
+                `${playerLabel(s.activePlayer)} setzt die Weggebühr auf ${next}.`,
+              ),
+            }))
+          })
+        },
+
+        setSourceFee: (hex, fee) => {
+          commit((s) => {
+            const key = hexKey(hex)
+            const cell = s.cells[key]
+            if (!cell?.revealed || !SOURCE_TERRAINS.has(cell.terrain)) {
+              return { log: appendLog(s.log, s.day, 'Keine Quelle auf diesem Feld.') }
+            }
+            return setOwnedFee(s, cell.sourceOwner, fee, (next) => ({
+              cells: {
+                ...s.cells,
+                [key]: { ...cell, sourceFee: next },
+              },
+              log: appendLog(
+                s.log,
+                s.day,
+                `${playerLabel(s.activePlayer)} setzt die Abbaugebühr auf ${next}.`,
+              ),
+            }))
+          })
+        },
+
+        setImportFee: (hex, fee) => {
+          commit((s) => {
+            const key = hexKey(hex)
+            const cell = s.cells[key]
+            if (!cell?.revealed || cell.terrain !== 'planet') {
+              return { log: appendLog(s.log, s.day, 'Kein Planet auf diesem Feld.') }
+            }
+            return setOwnedFee(s, cell.planetOwner, fee, (next) => ({
+              cells: {
+                ...s.cells,
+                [key]: { ...cell, importFee: next },
+              },
+              log: appendLog(
+                s.log,
+                s.day,
+                `${playerLabel(s.activePlayer)} setzt den Importzoll auf ${next}.`,
+              ),
+            }))
           })
         },
 
@@ -2721,20 +3867,20 @@ export const useGame = create<GameState>()(
             const charges = cell.field.charge.length
             const cells = {
               ...s.cells,
-              [key]: { ...cell, field: undefined },
+              [key]: { ...cell, field: neutralizeFactory(cell.field) },
             }
             let log = appendLog(
               s.log,
               s.day,
-              `${playerLabel(player)} schließt ${name} (${hex.q},${hex.r}). Fabrik und ${charges} Ladung zurück in die Box.`,
+              `${playerLabel(player)} neutralisiert ${name} (${hex.q},${hex.r}). ${charges} Ladung in den Beutel.`,
             )
-            const who = firstWhoMustClose(s.players, cells, player)
+            const who = firstWhoMustClose(s.players, cells, player, s.playerIds)
             if (who) {
               log = appendLog(
                 log,
                 s.day,
                 who === player
-                  ? `Noch ${factoryCount(cells, player) - s.players[player].money} schließen.`
+                  ? `Noch ${factoriesToDrop(s.players, cells, player)} neutralisieren.`
                   : closurePrompt(who, s.players, cells),
               )
               return { cells, log, upkeepPlayer: who, activePlayer: who }
@@ -2800,44 +3946,22 @@ export const useGame = create<GameState>()(
             }
             if (cell.field) {
               const player = s.activePlayer
-              const name = FIELD_DEFS[cell.field.kind].name
-              if (cell.field.owner !== player) {
+              if (s.phase !== 'act') {
                 return {
                   log: appendLog(
                     s.log,
                     s.day,
-                    `${name} gehört ${playerLabel(cell.field.owner)}.`,
+                    'Aufgeben nur in der Aktionsphase.',
                   ),
                 }
               }
-              if (!inShipRange(s.ships[player], hex)) {
-                return {
-                  log: appendLog(
-                    s.log,
-                    s.day,
-                    'Zum Abbauen muss das Schiff auf der Fabrik oder daneben stehen.',
-                  ),
-                }
+              const left = abandonCell(cell, player)
+              if ('error' in left) {
+                return { log: appendLog(s.log, s.day, left.error) }
               }
-              const spent = beginAction(s)
-              if (!spent.ok) return { log: appendLog(s.log, s.day, spent.message) }
-              const charges = cell.field.charge.length
-              const pending =
-                s.pendingHit && hexEquals(s.pendingHit.hex, hex)
-                  ? null
-                  : s.pendingHit
               return {
-                cells: {
-                  ...s.cells,
-                  [key]: { ...cell, field: undefined },
-                },
-                pendingHit: pending,
-                ...spentFields(s, spent),
-                log: appendLog(
-                  s.log,
-                  s.day,
-                  `${playerLabel(player)} baut ${name} (${hex.q},${hex.r}) ab. Fabrik und ${charges} Ladung zurück in die Box. ${spent.note}`,
-                ),
+                cells: { ...s.cells, [key]: left.cell },
+                log: appendLog(s.log, s.day, left.note),
               }
             }
             if (cell.consumers.length > 0) {
@@ -2873,21 +3997,19 @@ export const useGame = create<GameState>()(
             }
             if (
               SOURCE_TERRAINS.has(cell.terrain) &&
-              (cell.sourceOwner != null || cell.sourceDir != null)
+              (cell.sourceOwner != null ||
+                cell.sourceDir != null ||
+                extractorCount(cell) > 0)
             ) {
               return {
                 cells: {
                   ...s.cells,
-                  [key]: {
-                    ...cell,
-                    sourceOwner: undefined,
-                    sourceDir: undefined,
-                  },
+                  [key]: neutralSource(cell),
                 },
                 log: appendLog(
                   s.log,
                   s.day,
-                  `Erschließung entfernt (${hex.q},${hex.r}).`,
+                  `Quelle neutralisiert (${hex.q},${hex.r}). Extraktoren und Lager weg.`,
                 ),
               }
             }
@@ -3178,6 +4300,15 @@ export const useGame = create<GameState>()(
 
         stepChip: (chipId) => {
           commit((s) => {
+            if (s.phase === 'simulate') {
+              return {
+                log: appendLog(
+                  s.log,
+                  s.day,
+                  'In der Simulation läuft der Chip über Transportwege.',
+                ),
+              }
+            }
             const chip = s.chips.find((c) => c.id === chipId)
             if (!chip || chip.state !== 'flying') return null
             if (s.pendingHit?.chipId === chipId) {
@@ -3237,11 +4368,28 @@ export const useGame = create<GameState>()(
         },
 
         removeChip: (chipId) => {
-          commit((s) => ({
-            chips: s.chips.filter((c) => c.id !== chipId),
-            selectedChipId:
-              s.selectedChipId === chipId ? null : s.selectedChipId,
-          }))
+          commit((s) => {
+            if (s.phase === 'simulate') {
+              const chip = s.chips.find((c) => c.id === chipId)
+              if (chip?.state === 'flying') return abortTransport(s)
+              if (s.simQueue.includes(chipId)) {
+                return {
+                  chips: s.chips.filter((c) => c.id !== chipId),
+                  simQueue: s.simQueue.filter((id) => id !== chipId),
+                  log: appendLog(
+                    s.log,
+                    s.day,
+                    'Wartender Chip zurück in den Beutel.',
+                  ),
+                }
+              }
+            }
+            return {
+              chips: s.chips.filter((c) => c.id !== chipId),
+              selectedChipId:
+                s.selectedChipId === chipId ? null : s.selectedChipId,
+            }
+          })
         },
 
         applyChipToPlanet: (chipId) => {
@@ -3442,21 +4590,14 @@ export const useGame = create<GameState>()(
             const key = hexKey(hex)
             const cell = s.cells[key]
             if (!cell) return null
-            let planetNames = s.planetNames
             let planetName = cell.planetName
             if (terrain === 'planet' && !planetName) {
-              if (planetNames.length > 0) {
-                planetName = planetNames[0]
-                planetNames = planetNames.slice(1)
-              } else {
-                planetName = `Planet-${hex.q},${hex.r}`
-              }
+              planetName = `Planet-${hex.q},${hex.r}`
             }
             if (terrain !== 'planet') planetName = undefined
             const stayingSource =
               SOURCE_TERRAINS.has(terrain) && SOURCE_TERRAINS.has(cell.terrain)
             return {
-              planetNames,
               cells: {
                 ...s.cells,
                 [key]: {
@@ -3473,6 +4614,7 @@ export const useGame = create<GameState>()(
                   sourceOwner: stayingSource ? cell.sourceOwner : undefined,
                   sourceDir: stayingSource ? cell.sourceDir : undefined,
                   sourceStock: stayingSource ? cell.sourceStock : [],
+                  extractors: stayingSource ? extractorCount(cell) : 0,
                 },
               },
             }
@@ -3524,6 +4666,7 @@ export const useGame = create<GameState>()(
       partialize: (s) => ({
         ...takeSnapshot(s),
         past: s.past,
+        ai: s.ai,
       }),
       onRehydrateStorage: () => (state) => {
         if (!state) return
@@ -3537,32 +4680,49 @@ export const useGame = create<GameState>()(
         ) {
           state.tool = 'select'
         }
-        if (!state.ships) {
-          state.ships = {
-            1: { ...SHIP_SPAWNS[1] },
-            2: { ...SHIP_SPAWNS[2] },
-          }
+        if (!state.playerIds || state.playerIds.length < 2) {
+          state.playerIds = playerIdsForCount(2)
         }
-        if (!state.landscapeDecks) state.landscapeDecks = buildLandscapeDecks()
-        if (!state.planetNames) state.planetNames = shufflePlanetNames()
-        if (state.orderHolder == null) state.orderHolder = 1
+        if (state.scenarioId === undefined) state.scenarioId = null
+        if (!state.gameMode) state.gameMode = 'versus'
+        if (!state.difficulty) state.difficulty = 'normal'
+        if (!state.freibeuters) state.freibeuters = []
+        if (state.piratePurse == null) state.piratePurse = 0
+        if (state.orderHolder == null) state.orderHolder = state.playerIds[0] ?? 1
         if (state.players) {
-          for (const p of [1, 2] as PlayerId[]) {
+          for (const p of state.playerIds) {
             if (state.players[p] && state.players[p].owed == null) {
               state.players[p].owed = 0
             }
           }
         }
         if (state.bank == null) {
-          const held =
-            (state.players?.[1]?.money ?? 0) + (state.players?.[2]?.money ?? 0)
-          state.bank = Math.max(0, BANK_START - held)
+          const held = state.playerIds.reduce(
+            (sum, p) => sum + (state.players?.[p]?.money ?? 0),
+            0,
+          )
+          state.bank = Math.max(
+            0,
+            bankForPlayers(state.playerIds.length) - held,
+          )
         }
         if (state.developingSource == null) state.developingSource = false
         if (state.buildAimHex === undefined) state.buildAimHex = null
         if (state.draftFee == null) state.draftFee = 0
         if (state.pendingHit === undefined) state.pendingHit = null
+        if (!state.routes) state.routes = {}
+        if (state.simPasses == null) state.simPasses = 0
+        if (state.simDone == null) state.simDone = false
+        if (!state.simQueue) state.simQueue = []
         if (state.upkeepPlayer === undefined) state.upkeepPlayer = null
+        if (!state.offers) state.offers = []
+        if (state.orderPending == null) state.orderPending = false
+        if (!state.ai) state.ai = emptyAi(state.playerIds)
+        else {
+          for (const p of state.playerIds) {
+            if (state.ai[p] == null) state.ai[p] = false
+          }
+        }
         const wasEnd = (state.phase as string) === 'end'
         migrateActions(state)
         if (wasEnd && !state.gameOver) {
@@ -3577,7 +4737,13 @@ export const useGame = create<GameState>()(
           if (snap.buildAimHex === undefined) snap.buildAimHex = null
           if (snap.draftFee == null) snap.draftFee = 0
           if (snap.pendingHit === undefined) snap.pendingHit = null
+          if (!snap.routes) snap.routes = {}
+          if (snap.simPasses == null) snap.simPasses = 0
+          if (snap.simDone == null) snap.simDone = false
+          if (!snap.simQueue) snap.simQueue = []
           if (snap.upkeepPlayer === undefined) snap.upkeepPlayer = null
+          if (!snap.offers) snap.offers = []
+          if (snap.orderPending == null) snap.orderPending = false
           migrateActions(snap)
           silenceUndevelopedSources(snap.cells)
         }

@@ -120,7 +120,7 @@ export function departureKind(
 
 export function clampFee(fee: number): number {
   if (!Number.isFinite(fee)) return 0
-  return Math.max(0, Math.min(10, Math.floor(fee)))
+  return Math.max(0, Math.floor(fee))
 }
 
 export function rollDir(): DirIndex {

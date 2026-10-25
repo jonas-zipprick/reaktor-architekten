@@ -1,12 +1,13 @@
-import { CRITICAL_LIMIT } from '../data/boardLayout'
+import { CONSUMER_COST, CRITICAL_LIMIT } from '../data/boardLayout'
 import { formatMeter, METER_LABELS, playerLabel } from '../data/labels'
 import { planetHue } from '../data/planetNames'
 import { hexKey } from '../hex/math'
 import { useGame } from '../state/gameStore'
-import type { CellState, MeterKind } from '../types'
+import type { CellState, MeterKind, PlayerId } from '../types'
 import './PlanetBoard.css'
 
 const METER_ORDER: MeterKind[] = ['voltage', 'water', 'heat']
+const CONSUMER_ROWS: MeterKind[] = ['water', 'heat', 'voltage']
 
 /** Visual bar from the centre (0) toward ±CRITICAL_LIMIT. */
 function MeterTrack({ value }: { value: number }) {
@@ -28,39 +29,38 @@ function byName(a: CellState, b: CellState): number {
   return (a.planetName ?? '').localeCompare(b.planetName ?? '', 'de')
 }
 
-function planetGroups(cells: Record<string, CellState>): {
-  id: '1' | '2' | 'neutral'
+function planetGroups(
+  cells: Record<string, CellState>,
+  seats: PlayerId[],
+): {
+  id: string
   label: string
   planets: CellState[]
 }[] {
   const planets = Object.values(cells).filter(
     (c) => c.revealed && c.terrain === 'planet',
   )
-  return [
-    {
-      id: '1',
-      label: 'Weiß',
-      planets: planets.filter((p) => p.planetOwner === 1).sort(byName),
-    },
-    {
-      id: '2',
-      label: 'Schwarz',
-      planets: planets.filter((p) => p.planetOwner === 2).sort(byName),
-    },
-    {
-      id: 'neutral',
-      label: 'Neutral',
-      planets: planets.filter((p) => p.planetOwner == null).sort(byName),
-    },
-  ].filter((group) => group.planets.length > 0)
+  const groups = seats.map((id) => ({
+    id: String(id),
+    label: playerLabel(id),
+    planets: planets.filter((p) => p.planetOwner === id).sort(byName),
+  }))
+  groups.push({
+    id: 'neutral',
+    label: 'Neutral',
+    planets: planets.filter((p) => p.planetOwner == null).sort(byName),
+  })
+  return groups.filter((group) => group.planets.length > 0)
 }
 
 export function PlanetBoard() {
   const cells = useGame((s) => s.cells)
+  const playerIds = useGame((s) => s.playerIds)
   const selectedHex = useGame((s) => s.selectedHex)
   const selectHex = useGame((s) => s.selectHex)
   const adjustMeter = useGame((s) => s.adjustMeter)
-  const groups = planetGroups(cells)
+  const approveConsumer = useGame((s) => s.approveConsumer)
+  const groups = planetGroups(cells, playerIds)
   const planetCount = groups.reduce((n, group) => n + group.planets.length, 0)
 
   return (
@@ -70,7 +70,7 @@ export function PlanetBoard() {
         <span className="muted">{planetCount}</span>
       </header>
       {planetCount === 0 ? (
-        <p className="planet-board-empty">Noch keine Planeten entdeckt.</p>
+        <p className="planet-board-empty">Keine Planeten auf dieser Karte.</p>
       ) : (
         <div className="planet-groups">
           {groups.map((group) => (
@@ -167,24 +167,40 @@ export function PlanetBoard() {
                     ))}
                   </div>
 
-                  <div className="planet-dice-row">
-                    <span className="muted">W4</span>
-                    {planet.consumers.length === 0 ? (
-                      <span className="planet-dice-empty">—</span>
-                    ) : (
-                      <div className="planet-dice-list">
-                        {planet.consumers.map((c) => (
-                          <span
-                            key={c.id}
-                            className={`planet-die die-${c.type}`}
-                            title={`${METER_LABELS[c.type]} · Genehmiger ${playerLabel(c.approver)}`}
-                          >
-                            {METER_LABELS[c.type]}
-                            <em>{playerLabel(c.approver)}</em>
+                  <div className="planet-consumer-rows">
+                    {CONSUMER_ROWS.map((type) => {
+                      const ofType = planet.consumers.filter((c) => c.type === type)
+                      return (
+                        <div key={type} className="planet-consumer-row">
+                          <span className="planet-consumer-label">
+                            {METER_LABELS[type]}
                           </span>
-                        ))}
-                      </div>
-                    )}
+                          <div className="planet-dice-list">
+                            {ofType.map((c) => (
+                              <span
+                                key={c.id}
+                                className={`planet-die die-${c.type}`}
+                                title={`${METER_LABELS[c.type]} · Genehmiger ${playerLabel(c.approver)}`}
+                              >
+                                <em>{playerLabel(c.approver)}</em>
+                              </span>
+                            ))}
+                            <button
+                              type="button"
+                              className={`planet-consumer-add die-${type}`}
+                              title={`${METER_LABELS[type]}-Verbraucher: ${CONSUMER_COST} Geld, 1 Aktionspunkt. Schiff auf dem Planeten oder daneben, Planet muss dir gehören.`}
+                              aria-label={`${METER_LABELS[type]}-Verbraucher hinzufügen`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                approveConsumer(planet.hex, type)
+                              }}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </button>
               </li>

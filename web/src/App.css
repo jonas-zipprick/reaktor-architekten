@@ -175,7 +175,9 @@
 }
 
 .board-legend .owner-1::before,
-.board-legend .owner-2::before {
+.board-legend .owner-2::before,
+.board-legend .owner-3::before,
+.board-legend .owner-4::before {
   border-radius: 50% 50% 35% 35%;
   width: 0.5rem;
   height: 0.7rem;
@@ -190,6 +192,18 @@
 .board-legend .owner-2::before {
   background: #16171b;
   border: 1px solid rgba(244, 241, 234, 0.75);
+  box-sizing: border-box;
+}
+
+.board-legend .owner-3::before {
+  background: #3d8f6a;
+  border: 1px solid rgba(20, 40, 30, 0.65);
+  box-sizing: border-box;
+}
+
+.board-legend .owner-4::before {
+  background: #7b5ea7;
+  border: 1px solid rgba(244, 241, 234, 0.55);
   box-sizing: border-box;
 }
 

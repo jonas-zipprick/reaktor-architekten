@@ -29,7 +29,7 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     startCharge: 0,
     accent: '#6b8f9e',
     icon: '↗',
-    blurb: 'Alles: Chip fliegt in Pfeilrichtung weiter.',
+    blurb: 'Gibt es in den aktuellen Regeln nicht. Chips wählen den Weg selbst.',
   },
   solar: {
     kind: 'solar',
@@ -40,8 +40,7 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     startCharge: 0,
     accent: '#d4a017',
     icon: '☀',
-    blurb:
-      'Licht → Spannung, fliegt in Pfeilrichtung. Andere Chips fliegen geradeaus.',
+    blurb: 'Licht → Spannung. Die Farbe bleibt. Danach wählt der Besitzer den Weg.',
   },
   thermalCell: {
     kind: 'thermalCell',
@@ -52,8 +51,7 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     startCharge: 0,
     accent: '#d4783a',
     icon: '🔆',
-    blurb:
-      'Licht → Wärme, fliegt in Pfeilrichtung. Andere Chips fliegen geradeaus.',
+    blurb: 'Licht → Wärme. Die Farbe bleibt. Danach wählt der Besitzer den Weg.',
   },
   nuclearPlant: {
     kind: 'nuclearPlant',
@@ -64,8 +62,7 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     startCharge: 0,
     accent: '#8a5a44',
     icon: '☢',
-    blurb:
-      'Uran → Wärme, fliegt in Pfeilrichtung. Andere Chips fliegen geradeaus.',
+    blurb: 'Uran → Wärme. Die Farbe bleibt. Danach wählt der Besitzer den Weg.',
   },
   turbine: {
     kind: 'turbine',
@@ -78,7 +75,7 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     accent: '#3d7a8c',
     icon: '⚙',
     blurb:
-      'Wärme bei Ladung>0: → Spannungen in Pfeilrichtung. Ohne Ladung: Würfel. Wasser: laden (<4) sonst Zufall. Spannung: Würfel (Feld bleibt).',
+      'Speichert bis zu 4 Wasser. Wärme plus eine Wasserladung ergeben zwei Spannungschips in den Farben der beiden Eingänge.',
   },
   pumped: {
     kind: 'pumped',
@@ -91,7 +88,7 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     accent: '#2f6b7a',
     icon: '💧',
     blurb:
-      'Wasser/Spannung/Wärme: leer wird Ladung, sonst geradeaus. In der Simulation schießt der Besitzer die Ladung in Pfeilrichtung.',
+      'Speichert einen Chip Wasser, Spannung oder Wärme. Er bleibt Eigentum des Einlagerers und kann später kostenlos freigegeben werden.',
   },
   transformer: {
     kind: 'transformer',
@@ -104,12 +101,11 @@ export const FIELD_DEFS: Record<FieldKind, FieldDef> = {
     accent: '#9a6b3a',
     icon: '⬡',
     blurb:
-      'Start: 4 Spannung. Geladen: 1→2 in Pfeilrichtung. Leer: Würfelrichtung.',
+      'Start: 4 Spannung. Ein Spannungschip darf eine gespeicherte Spannung mitnehmen. Leer entsteht kein zweiter Chip.',
   },
 }
 
 export const MARKET_ORDER: FieldKind[] = [
-  'divert',
   'solar',
   'thermalCell',
   'nuclearPlant',

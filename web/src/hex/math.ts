@@ -18,6 +18,27 @@ export function neighbor(h: Axial, dir: DirIndex): Axial {
   return { q: h.q + d.dq, r: h.r + d.dr }
 }
 
+/** Undirected edge. The same key is used from either hex. */
+export function edgeKey(a: Axial, b: Axial): string {
+  const ka = hexKey(a)
+  const kb = hexKey(b)
+  return ka < kb ? `${ka}|${kb}` : `${kb}|${ka}`
+}
+
+export function parseEdgeKey(key: string): [Axial, Axial] {
+  const [a, b] = key.split('|')
+  return [parseKey(a), parseKey(b)]
+}
+
+/** Direction from `from` to an adjacent hex, or null when they do not share an edge. */
+export function dirBetween(from: Axial, to: Axial): DirIndex | null {
+  for (const d of DIRECTIONS) {
+    const n = neighbor(from, d.id)
+    if (n.q === to.q && n.r === to.r) return d.id
+  }
+  return null
+}
+
 /** Cube distance */
 export function hexDistance(a: Axial, b: Axial): number {
   const aq = a.q

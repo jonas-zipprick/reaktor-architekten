@@ -1,23 +1,23 @@
-import { useMemo, type MouseEvent } from 'react'
-import {
-  BOARD_RADIUS,
-  CRITICAL_LIMIT,
-  ZONE_SHORT,
-  zoneOf,
-} from '../data/boardLayout'
+import { useMemo, useState, type MouseEvent } from 'react'
+import { CRITICAL_LIMIT } from '../data/boardLayout'
 import { FIELD_DEFS } from '../data/fields'
 import {
   axialToPixel,
   cornersToPath,
+  edgeKey,
   edgeMidpoint,
   hexCorners,
   hexDistance,
   hexEquals,
   hexKey,
+  neighbor,
+  parseEdgeKey,
 } from '../hex/math'
 import { planetHue } from '../data/planetNames'
+import { tierAllows } from '../state/simRules'
 import { useGame } from '../state/gameStore'
-import { DIRECTIONS, type Axial, type CellState, type ChipColor, type DirIndex, type PlayerId } from '../types'
+import { ActionBar, RouteChoices, useBoardFocus } from './BoardGhosts'
+import { DIRECTIONS, type Axial, type CellState, type Chip, type ChipColor, type DirIndex, type PlayerId, type Route } from '../types'
 import './HexBoard.css'
 
 const SIZE = 42
@@ -38,33 +38,6 @@ const CHIP_GRADIENT: Record<ChipColor, string> = {
 function hexNoise(hex: Axial, salt: number): number {
   const n = Math.sin(hex.q * 127.1 + hex.r * 311.7 + salt * 74.7) * 43758.5453
   return n - Math.floor(n)
-}
-
-function FogStars({ hex, cx, cy }: { hex: Axial; cx: number; cy: number }) {
-  const stars = [0, 1, 2].map((i) => {
-    const a = hexNoise(hex, i) * Math.PI * 2
-    const d = (0.18 + hexNoise(hex, i + 10) * 0.42) * SIZE
-    return {
-      x: cx + Math.cos(a) * d,
-      y: cy + Math.sin(a) * d,
-      r: 0.6 + hexNoise(hex, i + 20) * 0.9,
-      delay: hexNoise(hex, i + 30) * 4,
-    }
-  })
-  return (
-    <g className="fog-stars">
-      {stars.map((s, i) => (
-        <circle
-          key={i}
-          cx={s.x}
-          cy={s.y}
-          r={s.r}
-          className="fog-star"
-          style={{ animationDelay: `${s.delay}s` }}
-        />
-      ))}
-    </g>
-  )
 }
 
 function Asteroid({ hex, cx, cy }: { hex: Axial; cx: number; cy: number }) {
@@ -151,6 +124,30 @@ function PlanetDisc({
 }
 
 /** Square so player markers stay distinct from round resource chips. */
+function FeeMark({
+  cx,
+  cy,
+  fee,
+  label,
+}: {
+  cx: number
+  cy: number
+  fee: number
+  label: string
+}) {
+  return (
+    <g className="board-fee">
+      <title>
+        {label} {fee}
+      </title>
+      <circle cx={cx} cy={cy} r={8} className="board-fee-badge" />
+      <text x={cx} y={cy + 3} className="field-fee" textAnchor="middle">
+        {fee}
+      </text>
+    </g>
+  )
+}
+
 function OwnerPip({
   cx,
   cy,
@@ -259,11 +256,13 @@ function ChipDots({
   cx,
   cy,
   bound,
+  onPick,
 }: {
   colors: ChipColor[]
   cx: number
   cy: number
   bound: boolean
+  onPick?: (index: number) => void
 }) {
   const n = colors.length
   if (n === 0) return null
@@ -284,6 +283,14 @@ function ChipDots({
             stroke={bound ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.75)'}
             strokeWidth={bound ? 0.8 : 1.1}
             className="chip-dot"
+            onClick={
+              onPick
+                ? (event) => {
+                    event.stopPropagation()
+                    onPick(i)
+                  }
+                : undefined
+            }
           />
         )
       })}
@@ -397,6 +404,39 @@ function SourceArrow({
   )
 }
 
+function FreibeuterMarker({
+  cx,
+  cy,
+  id,
+  fee,
+  index,
+  total,
+}: {
+  cx: number
+  cy: number
+  id: string
+  fee: number
+  index: number
+  total: number
+}) {
+  const ox = total > 1 ? (index - (total - 1) / 2) * SIZE * 0.32 : 0
+  const px = cx + SIZE * 0.36 + ox
+  const py = cy - SIZE * 0.42
+  return (
+    <g className="freibeuter-marker" transform={`translate(${px} ${py})`}>
+      <title>{`${id}: Gebühr ${fee}`}</title>
+      <circle r={11} className="freibeuter-disc" />
+      <circle r={11} className="freibeuter-ring" />
+      <text y={-1} className="freibeuter-id" textAnchor="middle">
+        {id}
+      </text>
+      <text y={9} className="freibeuter-fee" textAnchor="middle">
+        {fee}
+      </text>
+    </g>
+  )
+}
+
 function ShipMarker({
   cx,
   cy,
@@ -419,6 +459,7 @@ function ShipMarker({
       style={{ transformOrigin: `${cx}px ${sy}px`, cursor: onPick ? 'pointer' : undefined }}
       onClick={onPick}
     >
+      <circle cx={cx} cy={sy} r={18} className="ship-hit" />
       <ellipse
         cx={cx}
         cy={sy + 13}
@@ -462,34 +503,93 @@ function ShipMarker({
   )
 }
 
+function Routes({
+  chips,
+  phase,
+  routes,
+  onFollow,
+}: {
+  chips: Chip[]
+  phase: string
+  routes: Record<string, Route>
+  onFollow: (dir: DirIndex) => void
+}) {
+  const flight = chips.find((c) => c.state === 'flying')
+  const legal = new Map<string, DirIndex>()
+  if (phase === 'simulate' && flight) {
+    for (const d of DIRECTIONS) {
+      const dest = neighbor(flight.hex, d.id)
+      const key = edgeKey(flight.hex, dest)
+      const route = routes[key]
+      if (route && tierAllows(route.tier, flight.color)) legal.set(key, d.id)
+    }
+  }
+  return (
+    <g className="routes">
+      {Object.entries(routes).map(([key, route]) => {
+        const [a, b] = parseEdgeKey(key)
+        const pa = axialToPixel(a, SIZE)
+        const pb = axialToPixel(b, SIZE)
+        const mx = (pa.x + pb.x) / 2
+        const my = (pa.y + pb.y) / 2
+        const dir = legal.get(key)
+        return (
+          <g
+            key={key}
+            className={`route route-${route.tier} ${dir ? 'is-legal' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (dir) onFollow(dir)
+            }}
+          >
+            <line x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y} className="route-hit" />
+            <line x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y} className="route-line" />
+            <circle
+              cx={mx}
+              cy={my}
+              r={8}
+              className={`route-badge route-owner-${route.owner}`}
+            />
+            <text x={mx} y={my + 3} className="route-fee" textAnchor="middle">
+              {route.fee}
+            </text>
+          </g>
+        )
+      })}
+    </g>
+  )
+}
+
 export function HexBoard() {
   const cells = useGame((s) => s.cells)
   const chips = useGame((s) => s.chips)
   const ships = useGame((s) => s.ships)
+  const freibeuters = useGame((s) => s.freibeuters)
+  const playerIds = useGame((s) => s.playerIds)
   const selectedHex = useGame((s) => s.selectedHex)
   const selectedChipId = useGame((s) => s.selectedChipId)
   const heldShip = useGame((s) => s.heldShip)
-  const tool = useGame((s) => s.tool)
-  const placeKind = useGame((s) => s.placeKind)
-  const approveType = useGame((s) => s.approveType)
   const developingSource = useGame((s) => s.developingSource)
   const buildAimHex = useGame((s) => s.buildAimHex)
   const phase = useGame((s) => s.phase)
   const activePlayer = useGame((s) => s.activePlayer)
   const developSource = useGame((s) => s.developSource)
-  const aimFactory = useGame((s) => s.aimFactory)
-  const armFactoryBuild = useGame((s) => s.armFactoryBuild)
   const selectHex = useGame((s) => s.selectHex)
+  const placeKind = useGame((s) => s.placeKind)
   const placeField = useGame((s) => s.placeField)
-  const approveConsumer = useGame((s) => s.approveConsumer)
+  const removeChip = useGame((s) => s.removeChip)
   const selectAt = useGame((s) => s.selectAt)
   const pickShip = useGame((s) => s.pickShip)
-  const removeAt = useGame((s) => s.removeAt)
-  const draftFee = useGame((s) => s.draftFee)
-  const setFactoryFee = useGame((s) => s.setFactoryFee)
-  const removeChip = useGame((s) => s.removeChip)
+  const moveShip = useGame((s) => s.moveShip)
+  const takeSourceChip = useGame((s) => s.takeSourceChip)
   const upkeepPlayer = useGame((s) => s.upkeepPlayer)
   const closeForUpkeep = useGame((s) => s.closeForUpkeep)
+  const routes = useGame((s) => s.routes)
+  const followRoute = useGame((s) => s.followRoute)
+  const simClick = useGame((s) => s.simClick)
+  const endActions = useGame((s) => s.endActions)
+  const passSimulation = useGame((s) => s.passSimulation)
+  const simDone = useGame((s) => s.simDone)
 
   const layout = useMemo(() => {
     const list = Object.values(cells)
@@ -529,16 +629,6 @@ export function HexBoard() {
     return cell.sourceOwner == null || cell.sourceOwner === activePlayer
   }
 
-  function canAimFactory(cell: CellState): boolean {
-    if (phase !== 'act' || !developingSource || !cell.revealed || !cell.field) {
-      return false
-    }
-    return (
-      cell.field.owner === activePlayer &&
-      hexDistance(ships[activePlayer], cell.hex) <= 1
-    )
-  }
-
   function isBuildAim(hex: Axial): boolean {
     return buildAimHex != null && hexEquals(buildAimHex, hex)
   }
@@ -554,56 +644,95 @@ export function HexBoard() {
   function onHexClick(hex: Axial, e: MouseEvent) {
     e.stopPropagation()
     if (closeOwnedFactory(hex)) return
-    selectHex(hex)
-    const cell = cells[hexKey(hex)]
-    if (!cell) return
-
-    if (tool === 'select') {
+    if (phase === 'simulate') {
+      simClick(hex)
+      return
+    }
+    if (heldShip != null) {
+      moveShip(hex, heldShip)
+      return
+    }
+    if (selectedChipId) {
       selectAt(hex)
       return
     }
-    if (tool === 'place') {
-      if (approveType) {
-        if (cell.terrain === 'planet') approveConsumer(hex, approveType)
-        return
-      }
-      const isSource =
-        cell.revealed &&
-        (cell.terrain === 'uranium' ||
-          cell.terrain === 'sun' ||
-          cell.terrain === 'water')
-      if (developingSource || isSource) return
-      const def = FIELD_DEFS[placeKind]
-      const recharging =
-        cell.field?.kind === placeKind && def.startCharge > 0
-      if (recharging) {
-        placeField(hex, placeKind, activePlayer)
-        return
-      }
-      armFactoryBuild(hex)
+    if (selectedHex && hexEquals(selectedHex, hex)) {
+      selectHex(null)
       return
     }
-    if (tool === 'remove') {
-      removeAt(hex)
-      return
-    }
-    if (tool === 'fee') {
-      setFactoryFee(hex, draftFee)
-    }
+    selectHex(hex)
   }
 
-  /** Click off the hex grid (wall / padding) while holding a chip → Beutel. */
+  function onShipClick(player: PlayerId, hex: Axial, event: MouseEvent) {
+    event.stopPropagation()
+    if (phase !== 'act' || player !== activePlayer) {
+      selectHex(hex)
+      return
+    }
+    if (heldShip === player) moveShip(hex, player)
+    else pickShip(player)
+  }
+
+  function pickOrMoveChip(hex: Axial) {
+    if (phase === 'simulate') {
+      simClick(hex)
+      return
+    }
+    if (heldShip != null) moveShip(ships[heldShip], heldShip)
+    selectAt(hex)
+  }
+
+  function onChipClick(hex: Axial, event: MouseEvent) {
+    event.stopPropagation()
+    pickOrMoveChip(hex)
+  }
+
   function onBoardBackgroundClick() {
-    if (selectedChipId) removeChip(selectedChipId)
+    if (phase !== 'act' && selectedChipId) removeChip(selectedChipId)
   }
 
-  const wallR = SIZE * (BOARD_RADIUS * 1.5 + 0.85)
-  const wallPath = cornersToPath(hexCorners(0, 0, wallR))
+  const wallPath = useMemo(() => {
+    const keys = new Set(Object.keys(cells))
+    if (keys.size === 0) return ''
+    const segments: string[] = []
+    for (const cell of Object.values(cells)) {
+      const { x, y } = axialToPixel(cell.hex, SIZE)
+      const corners = hexCorners(x, y, SIZE)
+      for (let i = 0; i < DIRECTIONS.length; i++) {
+        const dir = DIRECTIONS[i]!.id
+        const n = neighbor(cell.hex, dir)
+        if (keys.has(hexKey(n))) continue
+        const a = corners[i]!
+        const b = corners[(i + 1) % 6]!
+        segments.push(`M${a.x},${a.y} L${b.x},${b.y}`)
+      }
+    }
+    return segments.join(' ')
+  }, [cells])
+
+  const focus = useBoardFocus()
+  const focusKey = focus ? hexKey(focus.hex) : null
+  const [edgeFocus, setEdgeFocus] = useState<{ key: string; dir: DirIndex } | null>(null)
+  const edgeDir = edgeFocus && edgeFocus.key === focusKey ? edgeFocus.dir : null
+  function onEdge(dir: DirIndex | null) {
+    setEdgeFocus(dir != null && focusKey ? { key: focusKey, dir } : null)
+  }
+
+  const camera = (() => {
+    if (!focus) return 'translate(0px, 0px) scale(1)'
+    const zoom = 1.75
+    const p = axialToPixel(focus.hex, SIZE)
+    const fx = layout.ox + p.x
+    const fy = layout.oy + p.y
+    const tx = layout.width / 2 - zoom * fx
+    const ty = layout.height * 0.44 - zoom * fy
+    return `translate(${tx}px, ${ty}px) scale(${zoom})`
+  })()
 
   return (
     <div className="board-wrap" onClick={onBoardBackgroundClick}>
       <svg
-        className="hex-board"
+        className={`hex-board ${focus ? 'is-focused' : ''}`}
         viewBox={`0 0 ${layout.width} ${layout.height}`}
         role="img"
         aria-label="Spielfeld"
@@ -662,8 +791,8 @@ export function HexBoard() {
             <stop offset="100%" stopColor="#2c4a1c" />
           </radialGradient>
           <linearGradient id="hexEmpty" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#1b232c" />
-            <stop offset="100%" stopColor="#141b22" />
+            <stop offset="0%" stopColor="#10161c" />
+            <stop offset="100%" stopColor="#0c1116" />
           </linearGradient>
           <linearGradient id="hexFog" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#0d1117" />
@@ -677,6 +806,7 @@ export function HexBoard() {
           fill="url(#boardGlow)"
         />
 
+        <g className={`board-camera ${focus ? 'is-focused' : ''}`} style={{ transform: camera }}>
         <g transform={`translate(${layout.ox}, ${layout.oy})`}>
           <path
             d={wallPath}
@@ -720,11 +850,16 @@ export function HexBoard() {
                 cell.water >= CRITICAL_LIMIT ||
                 cell.heat <= -CRITICAL_LIMIT ||
                 cell.heat >= CRITICAL_LIMIT)
-            const hasShip1 = hexEquals(ships[1], cell.hex)
-            const hasShip2 = hexEquals(ships[2], cell.hex)
-            const nearActive =
-              hexDistance(ships[activePlayer], cell.hex) === 1
-            const zone = zoneOf(cell.hex)
+            const shipsHere = playerIds.filter((p) => hexEquals(ships[p], cell.hex))
+            const piratesHere = freibeuters.filter((f) =>
+              hexEquals(f.hex, cell.hex),
+            )
+            const stepTarget =
+              phase === 'act' &&
+              heldShip === activePlayer &&
+              hexDistance(ships[activePlayer], cell.hex) === 1 &&
+              cell.revealed &&
+              cell.terrain !== 'mountain'
 
             const isSource =
               cell.revealed &&
@@ -732,15 +867,17 @@ export function HexBoard() {
                 cell.terrain === 'sun' ||
                 cell.terrain === 'water')
             const aiming = canAimSource(cell)
-            const aimingFactory = canAimFactory(cell) || isBuildAim(cell.hex)
+            const aimingFactory = isBuildAim(cell.hex)
             const markerOwner = cell.field?.owner ?? cell.sourceOwner
             const closing =
               upkeepPlayer != null && cell.field?.owner === upkeepPlayer
+            const ring = focus ? hexDistance(focus.hex, cell.hex) : -1
+            const focusClass = ring > 1 ? 'focus-far' : ring === 1 ? 'focus-near' : ''
 
             return (
               <g
-                key={`${hexKey(cell.hex)}-${cell.revealed ? 'r' : 'f'}`}
-                className={`hex-cell zone-${zone} ${cell.revealed ? TERRAIN_CLASS[cell.terrain] ?? '' : 'terrain-fog'} ${cell.revealed ? 'is-revealed' : ''} ${selected ? 'is-selected' : ''} ${markerOwner ? `owner-${markerOwner}` : ''} ${critical ? 'is-critical' : ''} ${closing ? 'is-upkeep' : ''} ${nearActive && !cell.revealed ? 'is-explorable' : ''}`}
+                key={hexKey(cell.hex)}
+                className={`hex-cell ${TERRAIN_CLASS[cell.terrain] ?? ''} is-revealed ${selected ? 'is-selected' : ''} ${markerOwner ? `owner-${markerOwner}` : ''} ${critical ? 'is-critical' : ''} ${closing ? 'is-upkeep' : ''} ${stepTarget ? 'is-step' : ''} ${focusClass}`}
                 onClick={(e) => onHexClick(cell.hex, e)}
                 style={{ cursor: 'pointer' }}
               >
@@ -748,23 +885,11 @@ export function HexBoard() {
                 <path d={path} className="hex-inner" />
                 <path d={path} className="hex-stroke" />
 
-                {!cell.revealed && <FogStars hex={cell.hex} cx={cx} cy={cy} />}
-                {!cell.revealed && (
-                  <text
-                    x={cx}
-                    y={cy + SIZE * 0.42}
-                    className={`zone-tag zone-tag-${zone}`}
-                    textAnchor="middle"
-                  >
-                    {ZONE_SHORT[zone]}
-                  </text>
-                )}
-
-                {cell.revealed && cell.terrain === 'mountain' && (
+                {cell.terrain === 'mountain' && (
                   <Asteroid hex={cell.hex} cx={cx} cy={cy} />
                 )}
 
-                {cell.revealed && cell.terrain === 'planet' && (
+                {cell.terrain === 'planet' && (
                   <PlanetDisc
                     name={cell.planetName}
                     cx={cx}
@@ -795,11 +920,29 @@ export function HexBoard() {
                     {cell.sourceDir && !aiming && (
                       <SourceArrow cx={cx} cy={cy} dir={cell.sourceDir} />
                     )}
+                    {(cell.extractors ?? 0) > 0 && (
+                      <text
+                        x={cx}
+                        y={cy + SIZE * 0.46}
+                        className="hex-label"
+                        textAnchor="middle"
+                      >
+                        {cell.extractors} Extr.
+                      </text>
+                    )}
                     {cell.sourceOwner && (
                       <OwnerPip
                         cx={cx + SIZE * 0.48}
                         cy={cy - SIZE * 0.42}
                         owner={cell.sourceOwner}
+                      />
+                    )}
+                    {cell.sourceOwner != null && (
+                      <FeeMark
+                        cx={cx - SIZE * 0.46}
+                        cy={cy - SIZE * 0.38}
+                        fee={cell.sourceFee ?? 0}
+                        label="Abbaugebühr"
                       />
                     )}
                   </g>
@@ -849,55 +992,84 @@ export function HexBoard() {
                     >
                       {cell.field?.fee ?? 0}
                     </text>
-                    <OwnerPip
-                      cx={cx + SIZE * 0.48}
-                      cy={cy - SIZE * 0.38}
-                      owner={cell.field!.owner}
-                    />
+                    {cell.field && cell.field.owner != null && (
+                      <OwnerPip
+                        cx={cx + SIZE * 0.48}
+                        cy={cy - SIZE * 0.38}
+                        owner={cell.field.owner}
+                      />
+                    )}
                   </g>
                 )}
 
                 {/* Bound charges only — free chips are drawn above ships for click targeting */}
                 {cell.revealed && (
-                  <ChipDots colors={bound} cx={cx} cy={cy} bound />
+                  <ChipDots
+                    colors={bound}
+                    cx={cx}
+                    cy={cy}
+                    bound
+                    onPick={(index) => {
+                      const source =
+                        cell.terrain === 'sun' ||
+                        cell.terrain === 'water' ||
+                        cell.terrain === 'uranium'
+                      if (phase === 'simulate' && source) takeSourceChip(cell.hex, index)
+                      else pickOrMoveChip(cell.hex)
+                    }}
+                  />
                 )}
 
-                {(hasShip1 || hasShip2) && (
+                {shipsHere.length > 0 && (
                   <g className="ship-marker" filter="url(#shipGlow)">
-                    {hasShip1 && (
-                      <ShipMarker
+                    {shipsHere.map((player, index) => {
+                      const recess =
+                        phase === 'act' &&
+                        heldShip == null &&
+                        selected &&
+                        activePlayer === player
+                      const offset =
+                        shipsHere.length > 1
+                          ? (index - (shipsHere.length - 1) / 2) * SIZE * 0.35
+                          : 0
+                      const tuck = `translate(${cx - SIZE * 0.28 + offset} ${cy + SIZE * 0.22}) scale(0.78) translate(${-cx} ${-cy})`
+                      const shift =
+                        offset !== 0
+                          ? `translate(${offset} 0)`
+                          : undefined
+                      return (
+                        <g
+                          key={player}
+                          className={recess ? 'is-recessed' : undefined}
+                          transform={recess ? tuck : shift}
+                        >
+                          <ShipMarker
+                            cx={cx}
+                            cy={cy}
+                            player={player}
+                            held={heldShip === player}
+                            active={activePlayer === player}
+                            onPick={(e) => onShipClick(player, cell.hex, e)}
+                          />
+                        </g>
+                      )
+                    })}
+                  </g>
+                )}
+
+                {piratesHere.length > 0 && (
+                  <g className="freibeuter-layer">
+                    {piratesHere.map((f, index) => (
+                      <FreibeuterMarker
+                        key={f.id}
                         cx={cx}
                         cy={cy}
-                        player={1}
-                        held={heldShip === 1}
-                        active={activePlayer === 1}
-                        onPick={(e) => {
-                          e.stopPropagation()
-                          if (closeOwnedFactory(cell.hex)) return
-                          selectHex(cell.hex)
-                          if (tool === 'select') pickShip(1)
-                          else if (tool === 'remove') removeAt(cell.hex)
-                          else if (tool === 'fee') setFactoryFee(cell.hex, draftFee)
-                        }}
+                        id={f.id}
+                        fee={f.fee}
+                        index={index}
+                        total={piratesHere.length}
                       />
-                    )}
-                    {hasShip2 && (
-                      <ShipMarker
-                        cx={cx}
-                        cy={cy}
-                        player={2}
-                        held={heldShip === 2}
-                        active={activePlayer === 2}
-                        onPick={(e) => {
-                          e.stopPropagation()
-                          if (closeOwnedFactory(cell.hex)) return
-                          selectHex(cell.hex)
-                          if (tool === 'select') pickShip(2)
-                          else if (tool === 'remove') removeAt(cell.hex)
-                          else if (tool === 'fee') setFactoryFee(cell.hex, draftFee)
-                        }}
-                      />
-                    )}
+                    ))}
                   </g>
                 )}
 
@@ -911,9 +1083,27 @@ export function HexBoard() {
                     {cell.planetName ?? 'Planet'}
                   </text>
                 )}
+                {cell.revealed &&
+                  cell.terrain === 'planet' &&
+                  cell.planetOwner != null && (
+                    <FeeMark
+                      cx={cx - SIZE * 0.46}
+                      cy={cy - SIZE * 0.38}
+                      fee={cell.importFee ?? 0}
+                      label="Importzoll"
+                    />
+                  )}
               </g>
             )
           })}
+
+          <g className={focus ? 'layer-dim' : undefined}>
+          <Routes
+            chips={chips}
+            phase={phase}
+            routes={routes}
+            onFollow={followRoute}
+          />
 
           {chips
             .filter((c) => c.state === 'flying' || c.state === 'free')
@@ -927,20 +1117,7 @@ export function HexBoard() {
                 <g
                   key={chip.id}
                   className={`flying-chip chip-${chip.color} ${selected ? 'is-selected' : ''} ${chip.state === 'flying' ? 'is-flying' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (closeOwnedFactory(chip.hex)) return
-                    selectHex(chip.hex)
-                    if (tool === 'select') {
-                      selectAt(chip.hex)
-                      return
-                    }
-                    if (tool === 'remove') {
-                      removeAt(chip.hex)
-                      return
-                    }
-                    if (tool === 'fee') setFactoryFee(chip.hex, draftFee)
-                  }}
+                  onClick={(e) => onChipClick(chip.hex, e)}
                   style={{
                     cursor: 'pointer',
                     transformOrigin: `${px}px ${py}px`,
@@ -979,6 +1156,9 @@ export function HexBoard() {
                 </g>
               )
             })}
+          </g>
+
+          {focus && <RouteChoices cell={focus} edgeDir={edgeDir} onEdge={onEdge} />}
 
           {layout.positioned.map(({ cell, x, y }) => {
             if (canAimSource(cell)) {
@@ -1002,21 +1182,27 @@ export function HexBoard() {
                 />
               )
             }
-            if (canAimFactory(cell)) {
-              return (
-                <SourceAimRing
-                  key={`factory-${hexKey(cell.hex)}`}
-                  cx={x}
-                  cy={y}
-                  current={cell.field?.dir}
-                  onPick={(dir) => aimFactory(cell.hex, dir)}
-                />
-              )
-            }
             return null
           })}
         </g>
+        </g>
       </svg>
+      <ActionBar edgeDir={edgeDir} onEdge={onEdge} />
+      <div
+        className="board-dock"
+        onClick={(event) => event.stopPropagation()}
+      >
+        {phase === 'act' && (
+          <button type="button" className="dock-btn" onClick={endActions}>
+            Aktionen beenden
+          </button>
+        )}
+        {phase === 'simulate' && !simDone && !chips.some((chip) => chip.state === 'flying') && (
+          <button type="button" className="dock-btn" onClick={passSimulation}>
+            Passen
+          </button>
+        )}
+      </div>
     </div>
   )
 }

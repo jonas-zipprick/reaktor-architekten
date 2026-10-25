@@ -1,6 +1,16 @@
 /** Shared game types — adjust here when rules change. */
 
-export type PlayerId = 1 | 2
+export type PlayerId = 1 | 2 | 3 | 4
+
+export const ALL_PLAYER_IDS: PlayerId[] = [1, 2, 3, 4]
+
+/** Active seats for a scenario size (solo uses 1). */
+export function playerIdsForCount(n: 1 | 2 | 3 | 4): PlayerId[] {
+  return ALL_PLAYER_IDS.slice(0, n)
+}
+
+/** Versus is competitive; solo/coop share a mission win/lose. */
+export type GameMode = 'solo' | 'coop' | 'versus'
 
 /** Chip energy tier: blue=low(1W), purple=mid(2W), red=high(3W) */
 export type ChipColor = 'blue' | 'purple' | 'red'
@@ -69,7 +79,20 @@ export type FieldKind =
   | 'pumped'
   | 'transformer'
 
-export type PhaseId = 'order' | 'act' | 'simulate'
+/** One face-down landscape tile. Factory counts are a playtest fill; the rulebook leaves the exact mix open. */
+export type LandscapeTile =
+  | { terrain: LandscapeTerrain }
+  | { terrain: 'factory'; factory: FieldKind }
+
+/** Offered to the player who just discovered a source, factory or planet. */
+export interface DiscoveryOffer {
+  id: string
+  player: PlayerId
+  hex: Axial
+  label: string
+}
+
+export type PhaseId = 'setup' | 'order' | 'act' | 'simulate'
 
 export interface Axial {
   q: number
@@ -103,17 +126,30 @@ export interface PendingHit {
   mode: 'ship' | 'fee' | 'color'
 }
 
+/** Transport link on the shared edge of two hexes. Blue < purple < red. */
+export type RouteTier = 'blue' | 'purple' | 'red'
+
+export interface Route {
+  owner: PlayerId
+  tier: RouteTier
+  /** Fee per crossing. Own links are free. No upper bound. */
+  fee: number
+}
+
 export interface PlacedField {
   kind: FieldKind
-  owner: PlayerId
+  /** Null while the factory is neutral and inactive. */
+  owner: PlayerId | null
   /** Bound charges currently on this field */
   charge: ChipColor[]
-  /** Flight arrow, chosen when the factory is built. */
+  /** Legacy build arrow. The current rules do not steer chips with it. */
   dir?: DirIndex
-  /** Usage fee paid to the owner to trigger a non-destructive effect. 0–10. */
+  /** Processing fee per triggered effect. Own factories are free. */
   fee?: number
   /** What a Speicher charge actually is. Turbine water and trafo voltage are implied. */
   chargeResource?: ChipResource
+  /** Player who stored the Speicher chip and may release it later. */
+  storedBy?: PlayerId
 }
 
 export interface CellState {
@@ -137,12 +173,21 @@ export interface CellState {
   /** Source stock chips (bound) on a resource source */
   sourceStock: ChipColor[]
   /**
-   * Player who paid to develop this source.
-   * Unset sources stay silent: no arrow, no emission.
+   * Player who claimed this source.
+   * Neutral sources produce nothing and keep neither stock nor extractors.
    */
   sourceOwner?: PlayerId
+  /**
+   * Extractors on an owned source. Each one yields one chip at production.
+   * Removed, together with the stock, when the source becomes neutral.
+   */
+  extractors?: number
+  /** Mining fee per chip taken by someone else. Own takes are free. */
+  sourceFee?: number
   /** Firing direction, chosen when the source is developed. */
   sourceDir?: DirIndex
+  /** Import tariff per paid delivery. Skipping it still moves the meter. */
+  importFee?: number
   field?: PlacedField
 }
 
@@ -152,6 +197,6 @@ export interface PlayerState {
   owed: number
 }
 
-export type Winner = PlayerId | 'draw'
+export type Winner = PlayerId | 'draw' | 'mission'
 
 export type ToolMode = 'select' | 'place' | 'remove' | 'fee'
