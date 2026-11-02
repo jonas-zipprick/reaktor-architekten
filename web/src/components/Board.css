@@ -1,0 +1,31 @@
+.board-shell {
+  --cell-size: clamp(64px, 7.2vw, 88px);
+  overflow: auto;
+  padding: 8px 4px 24px;
+  max-width: 100%;
+}
+
+.board-grid {
+  display: grid;
+  gap: 6px;
+  width: max-content;
+  margin: 0 auto;
+  padding: 12px;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(18, 28, 48, 0.85), rgba(10, 16, 28, 0.92)),
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.04), transparent 40%);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.board-cell.missing {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .board-shell {
+    --cell-size: 58px;
+  }
+}

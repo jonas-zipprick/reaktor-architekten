@@ -1,7 +1,7 @@
 {
-  "name": "reaktor-architekten-playtest",
+  "name": "versorgungs-architekten-playtest",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,7 +20,7 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "oxlint": "^1.81.0",
-    "typescript": "~6.0.2",
-    "vite": "^8.3.0"
+    "typescript": "~5.9.3",
+    "vite": "^8.0.0"
   }
 }

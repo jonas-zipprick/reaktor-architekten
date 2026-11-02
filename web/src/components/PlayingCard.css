@@ -1,0 +1,96 @@
+.pcard {
+  width: 42px;
+  height: 58px;
+  border-radius: 8px;
+  background: linear-gradient(160deg, #f7f3ea 0%, #e8e0d0 100%);
+  border: 1px solid rgba(20, 24, 36, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.55) inset,
+    0 6px 14px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 4px 6px;
+  font-family: var(--display);
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+  position: relative;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.pcard.compact {
+  width: 34px;
+  height: 46px;
+  padding: 4px 3px 5px;
+  border-radius: 6px;
+}
+
+.pcard.stacked {
+  margin-top: -28px;
+}
+
+.pcard.stacked:first-child {
+  margin-top: 0;
+}
+
+.pcard.compact.stacked {
+  margin-top: -22px;
+}
+
+.pcard.highlight {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+  transform: translateY(-3px) scale(1.04);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.55) inset,
+    0 10px 22px rgba(240, 168, 48, 0.35);
+}
+
+.pcard-rank {
+  font-size: 0.95rem;
+  align-self: flex-start;
+}
+
+.pcard.compact .pcard-rank {
+  font-size: 0.78rem;
+}
+
+.pcard-suit {
+  font-size: 1.15rem;
+}
+
+.pcard.compact .pcard-suit {
+  font-size: 0.95rem;
+}
+
+.suit-hearts,
+.suit-diamonds {
+  color: #c62840;
+}
+
+.suit-clubs,
+.suit-spades {
+  color: #1a2233;
+}
+
+.pcard.back {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      #1e3a6e 0 6px,
+      #152a52 6px 12px
+    );
+  border: 1px solid rgba(140, 180, 255, 0.25);
+}
+
+.pcard.back::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(240, 168, 48, 0.45);
+  border-radius: 4px;
+}

@@ -1,0 +1,228 @@
+.board-cell {
+  position: relative;
+  appearance: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0;
+  margin: 0;
+  width: var(--cell-size);
+  height: calc(var(--cell-size) * 1.28);
+  background: linear-gradient(160deg, #152036, #0e1626);
+  color: inherit;
+  text-align: left;
+  overflow: hidden;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.board-cell:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+  z-index: 2;
+}
+
+.board-cell.selected {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 1px rgba(240, 168, 48, 0.45), 0 10px 24px rgba(240, 168, 48, 0.15);
+  z-index: 3;
+}
+
+.board-cell.on-path {
+  border-color: rgba(107, 159, 255, 0.7);
+  box-shadow: 0 0 18px rgba(107, 159, 255, 0.18);
+}
+
+.cell-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.kind-sun .cell-glow {
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255, 210, 110, 0.55), transparent 55%),
+    radial-gradient(circle at 50% 70%, rgba(240, 168, 48, 0.2), transparent 60%);
+  animation: sun-pulse 3.6s ease-in-out infinite;
+}
+
+@keyframes sun-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.04);
+  }
+}
+
+.kind-planet .cell-glow {
+  background:
+    radial-gradient(circle at 60% 40%, rgba(61, 207, 142, 0.35), transparent 50%),
+    radial-gradient(circle at 30% 70%, rgba(80, 140, 255, 0.2), transparent 55%);
+  animation: planet-drift 7s ease-in-out infinite;
+}
+
+@keyframes planet-drift {
+  0%,
+  100% {
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    filter: hue-rotate(12deg);
+  }
+}
+
+.kind-storage .cell-glow {
+  background: radial-gradient(circle at 50% 50%, rgba(150, 180, 255, 0.18), transparent 60%);
+}
+
+.kind-base .cell-glow {
+  background: radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.12), transparent 55%);
+}
+
+.kind-asteroid {
+  background: linear-gradient(145deg, #2a221c, #17130f);
+}
+
+.kind-asteroid .cell-glow {
+  background:
+    radial-gradient(circle at 40% 35%, rgba(180, 140, 100, 0.25), transparent 45%),
+    radial-gradient(circle at 70% 70%, rgba(90, 70, 50, 0.35), transparent 50%);
+}
+
+.owner-white.has-defense,
+.owner-white.kind-base {
+  box-shadow: inset 0 0 0 2px rgba(244, 240, 232, 0.55);
+}
+
+.owner-black.has-defense,
+.owner-black.kind-base {
+  box-shadow: inset 0 0 0 2px rgba(90, 100, 120, 0.8);
+}
+
+.owner-red.has-defense,
+.owner-red.kind-base {
+  box-shadow: inset 0 0 0 2px rgba(232, 93, 76, 0.7);
+}
+
+.owner-green.has-defense,
+.owner-green.kind-base {
+  box-shadow: inset 0 0 0 2px rgba(60, 184, 138, 0.7);
+}
+
+.cell-frame {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  gap: 4px;
+}
+
+.cell-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 1.1rem;
+}
+
+.cell-kind {
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.kind-sun .cell-kind {
+  color: #ffd27a;
+}
+
+.kind-planet .cell-kind {
+  color: #8af0c0;
+}
+
+.cell-toll {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--spade);
+  background: rgba(107, 159, 255, 0.12);
+  border: 1px solid rgba(107, 159, 255, 0.28);
+  border-radius: 999px;
+  padding: 1px 5px;
+}
+
+.cell-stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 0;
+  padding-bottom: 2px;
+}
+
+.vp-badge {
+  position: absolute;
+  top: 22px;
+  right: 5px;
+  border: 1px solid rgba(240, 168, 48, 0.45);
+  background: rgba(240, 168, 48, 0.16);
+  color: var(--amber);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  z-index: 4;
+}
+
+.vp-badge.active {
+  background: var(--amber);
+  color: #1a1205;
+}
+
+.path-cost {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #dce8ff;
+  background: rgba(20, 40, 80, 0.85);
+  border: 1px solid rgba(107, 159, 255, 0.45);
+  border-radius: 999px;
+  padding: 1px 7px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.harvest-btn {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  z-index: 5;
+  border: 1px solid rgba(240, 168, 48, 0.5);
+  background: rgba(240, 168, 48, 0.2);
+  color: var(--amber);
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 6px;
+}
+
+.harvest-btn:hover {
+  background: var(--amber);
+  color: #1a1205;
+}

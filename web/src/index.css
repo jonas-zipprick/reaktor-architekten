@@ -1,39 +1,34 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap');
-
 :root {
-  --font-display: 'Syne', sans-serif;
-  --font-ui: 'IBM Plex Sans', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
-
-  --bg: #0b0f13;
-  --ink: #efe6d6;
-  --ink-soft: #cbbfaa;
-  --muted: #8b8790;
-  --line: rgba(180, 170, 150, 0.16);
-  --line-strong: rgba(196, 163, 90, 0.42);
-  --accent: #c4a35a;
-  --accent-bright: #e2c57a;
-  --accent-glow: rgba(226, 197, 122, 0.35);
-  --danger: #e06a52;
-
-  --panel: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.035),
-    rgba(255, 255, 255, 0.012)
-  );
-  --panel-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 10px 30px -18px rgba(0, 0, 0, 0.9);
-  --radius: 12px;
-  --radius-sm: 8px;
-  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-
+  --bg-deep: #070b14;
+  --bg: #0b1220;
+  --bg-elev: #121a2b;
+  --bg-elev-2: #182236;
+  --line: rgba(180, 205, 255, 0.12);
+  --line-strong: rgba(180, 205, 255, 0.22);
+  --text: #e8eefc;
+  --text-dim: #8b9bb8;
+  --text-mute: #5d6d8a;
+  --amber: #f0a830;
+  --amber-soft: rgba(240, 168, 48, 0.18);
+  --heart: #ff5d7a;
+  --club: #3dcf8e;
+  --spade: #6b9fff;
+  --diamond: #ff9a4a;
+  --danger: #ff6b6b;
+  --ok: #3dcf8e;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  --radius: 14px;
+  --font: 'Outfit', system-ui, sans-serif;
+  --display: 'Syne', 'Outfit', sans-serif;
   color-scheme: dark;
-  font-family: var(--font-ui);
+  font-family: var(--font);
+  line-height: 1.45;
+  font-weight: 450;
+  color: var(--text);
+  background: var(--bg-deep);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 *,
@@ -50,52 +45,24 @@ body,
 }
 
 body {
-  background: var(--bg);
-  color: var(--ink);
+  min-width: 320px;
+  background:
+    radial-gradient(1200px 700px at 10% -10%, rgba(80, 120, 255, 0.16), transparent 55%),
+    radial-gradient(900px 600px at 90% 0%, rgba(240, 168, 48, 0.1), transparent 50%),
+    radial-gradient(800px 500px at 50% 100%, rgba(61, 207, 142, 0.08), transparent 55%),
+    var(--bg-deep);
 }
 
-button {
+button,
+input,
+select {
   font: inherit;
 }
 
-button:focus-visible,
-[tabindex]:focus-visible {
-  outline: 2px solid var(--accent-bright);
-  outline-offset: 2px;
+button {
+  cursor: pointer;
 }
 
 ::selection {
-  background: rgba(196, 163, 90, 0.35);
-  color: #fff;
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(196, 163, 90, 0.28);
-  border-radius: 8px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(196, 163, 90, 0.5);
-  background-clip: padding-box;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+  background: rgba(240, 168, 48, 0.35);
 }

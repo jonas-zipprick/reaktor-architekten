@@ -1,521 +1,945 @@
-# **VERSORGUNGS-ARCHITEKTEN**
+# Versorgungs-Architekten – Spielanleitung v6.6
 
-**Spielanleitung · Version 1.3 – Die Kolonialwirtschaft & Freibeuter**
+Analoges Wirtschafts-, Logistik- und Kartenspiel für 1 bis 4 Spieler · Arbeitsfassung für Playtests
 
-Ein strategisches Wirtschafts-, Infrastruktur- und Logistikspiel für 1–4 Spieler. Handelsgesellschaften erschließen Rohstoffe, betreiben Fabriken, bauen Transportnetze und versorgen Planeten. Freie Marktpreise, wirtschaftliche Abhängigkeiten und Rebellionen bestimmen den Spielverlauf.
+Versorgungs-Architekten ist ein räumliches Wirtschafts- und Strategiespiel auf einem gemeinsamen Raster aus rechteckigen Feldern.
 
-## **1\. Spielmodi und Spielziel**
+Die Spieler transportieren Energiekarten von Sonnen zu Planeten, verdienen Geld, errichten Verteidigungen und kämpfen um wirtschaftlich wichtige Transportwege. Sie können Energiekarten in Speichern sammeln und ganze Kartenstapel gemeinsam transportieren.
 
-| Modus | Spieler | Ziel |
-| ----- | ----- | ----- |
-| Solo | 1 | Ein Versorgungssystem trotz wandernder Freibeuter stabilisieren |
-| Koop | 2 | Gemeinsam Kolonien versorgen und wirtschaftliche Krisen bewältigen |
-| Versus | 2–4 | Am Spielende das größte Geldvermögen besitzen |
+Bereits gelieferte Energie kann von Planeten wieder entnommen und in Siegpunktmarker umgewandelt werden. Diese müssen anschließend zur eigenen Spielerbasis transportiert werden.
 
-**Versus:** Das Spiel endet zu Beginn einer Runde, sobald die Bank leer ist. Der reichste Spieler gewinnt; bei Gleichstand gibt es mehrere Sieger. Infrastruktur besitzt keinen zusätzlichen Schlusswert.
+Das Spiel verbindet die absteigenden Kartenfolgen von Solitaire mit räumlicher Logistik und wirtschaftlichem Wettbewerb.
 
-**Solo/Koop:** Die Spieler erfüllen innerhalb von 12 Runden ein szenarioabhängiges Versorgungsziel. Jeder Spieler behält seine eigene Kasse, Infrastruktur und 4 Aktionspunkte. Im Koop-Modus gewinnen oder verlieren beide gemeinsam.
+# 1. Spielmodi und Spielziele
 
-Für Solo und Koop gelten zusätzlich folgende Missionsregeln:
+| Modus  | Spieler | Spielziel                                                                                        |
+| ------ | ------- | ------------------------------------------------------------------------------------------------ |
+| Solo   | 1       | Missionsplanet vollständig versorgen und eine neutrale Verteidigung besiegen                     |
+| Koop   | 2       | Beide Missionsplaneten vollständig versorgen und insgesamt zwei neutrale Verteidigungen besiegen |
+| Versus | 2–4     | Bei Spielende das höchste Gesamtvermögen besitzen                                                |
 
-* Jeder Missionsplanet beginnt mit einem Verbraucher und einem festgelegten menschlichen Eigentümer.  
-* Bis Ende von Runde 8 benötigt jeder Missionsplanet mindestens zwei unterschiedliche Verbraucherarten.  
-* Am Ende der Simulationsphasen von Runde 11 **und** 12 müssen sämtliche Messgeräte jedes Missionsplaneten zwischen −3 und \+3 liegen.  
-* Rebelliert ein Missionsplanet oder wird freiwillig aufgegeben, ist die Mission sofort verloren.  
-* Sind alle Bedingungen am Ende von Runde 12 erfüllt, ist die Mission gewonnen.  
-* Eine leere Bank beendet Solo- und Koop-Partien nicht.
+Ein Planet ist vollständig versorgt, sobald sein Bedarfsstapel mit Herz Ass abgeschlossen wurde.
 
-Andere Planeten dürfen wie gewohnt rebellieren, ohne die Mission unmittelbar zu beenden.
+Eine Verteidigung gilt als besiegt, sobald eine passende offensive Karte auf ihren Stapel gespielt wird.
 
-## **2\. Spielmaterial und Aufbau**
+Im Solo- und Koop-Modus müssen die Missionsziele bis zum Spielende erfüllt werden. Bereits erreichte Missionsziele bleiben dauerhaft erfüllt.
 
-**Material:**
+## 1.1 Gesamtvermögen
 
-* Hexagon-Spielfeld gemäß Szenario  
-* Je Spieler ein Raumschiff, Eigentumsmarker und Geld  
-* Extraktoren, Transportwege (blau/lila/rot) und Gebührenmarker  
-* Ressourcenchips in drei Farben mit fünf möglichen Ressourcentypen  
-* Gemeinsamer Chipbeutel  
-* Planetenfelder mit je drei Messgeräten und W4-Verbraucherwürfeln  
-* Fabrikspeicher und Ladungsmarker  
-* Reihenfolgechip und Rundenmarker  
-* Für Solo/Koop: Freibeutermarker und separate Freibeuterkasse
+Im Versus-Modus zählt bei Spielende:
 
-**Geld:** Jeder Spieler erhält 12 Geld. Insgesamt sind 60 Geld je Spieler im Umlauf (Solo 60, Koop/2 Spieler 120, 3 Spieler 180, 4 Spieler 240). Das übrige Geld liegt in der Bank.
+\\[ \text{Gesamtvermögen}=\text{Geld}+5\times\text{gesicherte Siegpunktmarker} \\]
 
-Bau- und Unterhaltskosten gehen an die Bank, Versorgungseinnahmen kommen aus ihr. Spielergebühren werden direkt zwischen Spielern bezahlt. Alle Geldvorräte sind öffentlich.
+Offene Bankforderungen zählen ebenfalls zum Gesamtvermögen.
 
-**Aufbau:**
+Ein gesicherter Siegpunktmarker ist damit 5 Geld wert.
 
-1. Spielmodus und Szenario auswählen, alle Hexfelder offen auslegen.  
-2. Raumschiffe auf die angegebenen Startfelder stellen (Weiß, Schwarz, Grün, Lila).  
-3. Alle Einrichtungen beginnen neutral und ohne zusätzliche Infrastruktur, sofern das Szenario nichts anderes festlegt.  
-4. Alle Planetenmessgeräte beginnen bei 0\.  
-5. Solo/Koop: Vorgegebene Anfangsinfrastruktur und Freibeuter platzieren.  
-6. Rundenmarker auf 1, Reihenfolgechip auf Weiß.
+Der Wert von 5 Geld pro Siegpunktmarker ist ein vorläufiger Playtestwert.
 
-Das Spielfeld besitzt eine absorbierende Außenwand. Asteroiden sind unpassierbar und absorbieren Chips.
+# 2. Spielmaterial
 
-## **3\. Eigentum und Gebühren**
+## 2.1 Spielfelder
 
-### **Einrichtungen übernehmen**
+Das Spielfeld besteht aus rechteckigen Feldern, die in Zeilen und Spalten angeordnet werden.
 
-Quellen, Fabriken und Planeten können kostenlos und ohne Aktionspunkt übernommen werden, sobald das eigene Raumschiff direkt auf dem neutralen Feld steht. Die Übernahme ist freiwillig.
+Ein Feld misst ungefähr 70 × 95 mm.
 
-Neutrale Einrichtungen sind inaktiv:
+Es gibt folgende Feldtypen:
 
-* **Quellen:** Keine Extraktoren, keine Chips, keine Produktion.  
-* **Fabriken:** Keine Verarbeitung, Speicherung oder Unterhaltskosten; Chips dürfen das Feld durchqueren.  
-* **Planeten:** Keine Verbraucher, Importzölle oder Versorgungseinnahmen; Lieferungen verändern trotzdem die Messgeräte.
+| Feld         | Funktion                                                 |
+| ------------ | -------------------------------------------------------- |
+| Sonne        | Produziert Energiekarten                                 |
+| Planet       | Nimmt Energie auf und erzeugt Siegpunktmarker            |
+| Speicher     | Lagert Energiekarten zwischen                            |
+| Spielerbasis | Ausgangspunkt für Einheiten und Ziel für Siegpunktmarker |
+| Leeres Feld  | Kann von Einheiten besetzt werden                        |
+| Asteroid     | Verteuert den Transport                                  |
 
-Eigene Einrichtungen dürfen während der Aktionsphase jederzeit kostenlos und aus der Ferne aufgegeben werden. Dabei werden sie neutral. Quellen verlieren Extraktoren und Lagerbestände, Fabriken ihre gespeicherten Chips und Planeten ihre Verbraucher und Messwerte. Entfernte Chips gehen zurück in den Beutel. Transportwege bleiben bestehen.
+Alle Spieler teilen sich dasselbe Spielfeld.
 
-### **Freie Marktpreise**
+## 2.2 Spielkarten
 
-Eigentümer dürfen folgende Gebühren selbst festlegen:
+| Kartenfarbe | Werte           | Funktion            |
+| ----------- | --------------- | ------------------- |
+| Herz ♥      | 5, 4, 3, 2, Ass | Energie             |
+| Kreuz ♣     | 6, 5, 4, 3      | Planetenbedarf      |
+| Pik ♠       | 6, 5, 4, 3, 2   | Defensive Einheiten |
+| Karo ♦      | 5, 4, 3, 2, Ass | Offensive Einheiten |
 
-| Infrastruktur | Gebühr pro Nutzung |
-| ----- | ----- |
-| Quelle | Entnommenem Chip |
-| Fabrik | Ausgelöstem Fabrikeffekt |
-| Planet | Vergüteter Lieferung (Importzoll) |
-| Transportweg | Überquerung |
+Zusätzlich werden benötigt:
 
-* Gebühren sind beliebige nichtnegative ganze Zahlen, einschließlich 0\.  
-* Sie dürfen während der eigenen Aktionsphase kostenlos verändert werden, nicht während der Simulation.  
-* Eigene Infrastruktur ist kostenlos.  
-* Fremde Gebühren müssen vor der Nutzung bezahlt werden. Andernfalls entfällt die kostenpflichtige Funktion.  
-* Gebühren gelten für alle fremden Spieler gleichermaßen. Individuelle Nachlässe sind über Geldtransfers möglich.  
-* Optional dürfen negative Gebühren zugelassen werden: Der Eigentümer bezahlt dann den Nutzer.
+- Geldmarker
+- Siegpunktmarker
+- Eigentumsmarker für Einheiten
+- Gebührenmarker
+- Startspielermarker
+- Missionsmarker für Solo und Koop
 
-Im Koop-Modus bleiben Eigentum und Gebühren getrennt. Geldgeschenke zwischen den Partnern sind erlaubt. Zusätzliche Freibeutergebühren gelten auch auf eigener Infrastruktur.
+## 2.3 Kartenstapel
 
-## **4\. Ressourcen und Transport**
+Jede Sonne besitzt einen eigenen Energie-Nachziehstapel.
 
-### **Ressourcenchips**
+Alle Sonnen verwenden Herz-Energiekarten der Werte 5, 4, 3, 2 und Ass.
 
-Jeder Chip besitzt einen Typ (Licht, Wasser, Uran, Spannung oder Wärme) und eine Farbe:
+Die Sonnen-Nachziehstapel sind unerschöpflich. Werden sie leer, werden neue Energiekarten aus dem gemeinsamen Energievorrat gemischt.
 
-| Farbe | Energie |
-| ----- | ----- |
-| Blau | 1 |
-| Lila | 2 |
-| Rot | 3 |
+Die Planeten verwenden einen gemeinsamen, begrenzten Bedarfsvorrat aus Kreuzkarten.
 
-Chips können gelagert, verarbeitet, transportiert oder verbraucht werden. Verbrauchte und vernichtete Chips kehren in den Beutel zurück.
+Abgeräumte Kreuzkarten werden nicht wieder in diesen Vorrat gemischt.
 
-### **Transportwege**
+Die Anzahl der Bedarfskarten bestimmt mit, wie lange eine Partie dauert.
 
-Transportwege liegen auf den Kanten benachbarter Hexfelder und sind in beide Richtungen nutzbar.
+# 3. Kartenwerte und Stapelregeln
 
-| Weg | Baukosten | Zulässige Chips |
-| ----- | ----- | ----- |
-| Blau | 2 | Blau |
-| Lila | 4 | Blau, Lila |
-| Rot | 6 | Alle |
+Die gemeinsame Rangfolge lautet:
 
-**Bauen:** 1 AP, sofern beide Felder zum Spielfeld gehören, kein Asteroid die Verbindung verhindert und die Kante unbebaut ist. Das Raumschiff muss auf einem der beiden Felder oder einem unmittelbar benachbarten Feld stehen.
+## 6
 
-**Aufwerten:** 1 AP und 2 Geld pro Stufe (Blau → Rot direkt: 4 Geld). Nur eigene Wege dürfen aufgewertet werden.
+## 5
 
-**Abbauen:** Eigene Wege in Baureichweite für 1 AP, ohne Kostenerstattung.
+## 4
 
-Transportwege verursachen keinen Unterhalt, sind unbegrenzt nutzbar und besitzen keine Kapazitätsbegrenzung. Der Eigentümer bestimmt ihre Transportgebühr.
+## 3
 
-An jeder Kreuzung entscheidet der Chipbesitzer über den weiteren zulässigen Weg.
+## 2
 
-Raumschiffe benötigen keine Transportwege.
+## Ass
 
-## **5\. Quellen und Extraktoren**
+Karten dürfen nur in unmittelbar absteigender Reihenfolge aufeinandergelegt werden.
 
-| Quelle | Produktion pro Extraktor und Runde |
-| ----- | ----- |
-| Sonne | 1 Lichtchip zufälliger Farbe |
-| Wasser | 1 blauer Wasserchip |
-| Uran | 1 roter Uranchip |
+Beispiele:
 
-Bei der Sonnenquelle sind Blau, Lila und Rot gleich wahrscheinlich.
+- Auf eine 6 darf nur eine 5.
+- Auf eine 5 darf nur eine 4.
+- Auf eine 2 darf nur ein Ass.
+- Auf ein Ass darf keine weitere Karte gelegt werden.
 
-* Extraktor bauen: **2 Geld \+ 1 AP**, Raumschiff auf der Quelle oder einem Nachbarfeld.  
-* Pro Quelle sind beliebig viele Extraktoren möglich.  
-* Jeder Extraktor produziert beim Rundenstart automatisch einen Chip ohne laufende Kosten.  
-* Produzierte Chips bleiben auf ihrer Quelle liegen, bis jemand sie entnimmt.  
-* Während der Simulation darf ein Spieler pro Simulationszug einen neuen Chip entnehmen. Fremde Abbaugebühren werden dabei bezahlt.  
-* **Quellenrebellion:** Liegen bei der Kollapsprüfung mindestens 5 Chips auf einer Quelle, wird sie neutral. Sämtliche Extraktoren und gelagerten Chips werden entfernt.
+Die Kartenfarbe ist für die Rangfolge unerheblich.
 
-Neutrale Quellen produzieren nichts.
+## 3.1 Offen und verdeckt
 
-## **6\. Fabriken**
+- Karten auf Planeten, Speichern und Verteidigungsstapeln liegen offen.
+- Energie-Nachziehstapel und Einheiten-Nachziehstapel liegen verdeckt, mit Ausnahme ihrer jeweils obersten Karte.
+- Verdeckte Karten dürfen nicht betrachtet werden.
+- Sobald die oberste verdeckte Karte freigelegt wird, wird sie sofort kostenlos aufgedeckt.
+- Karten aus der Mitte eines Stapels dürfen nicht einzeln entnommen werden.
 
-Fabriken sind auf der Karte vorgegeben und können nicht neu gebaut werden.
+## 3.2 Gemeinsamer Stapeltransport
 
-Jede besessene Fabrik kostet **2 Geld Unterhalt pro Runde**. Kann oder möchte der Besitzer nicht bezahlen, wird sie neutral und inaktiv.
+Ein Spieler darf mehrere Karten gleichzeitig bewegen, wenn sie zusammen eine lückenlose absteigende Kartenfolge bilden.
 
-Der Eigentümer bestimmt eine Verarbeitungsgebühr. Sie fällt pro ausgelöstem Effekt an, auch wenn dabei zwei Chips entstehen. Eigene Fabriken sind kostenlos nutzbar. Chips dürfen Fabriken ohne Verarbeitung durchqueren.
+Dabei gelten folgende Regeln:
 
-| Fabrik | Funktion |
-| ----- | ----- |
-| Solarzelle | Licht → Spannung, gleiche Farbe |
-| Thermische Zelle | Licht → Wärme, gleiche Farbe |
-| Atomkraftwerk | Uran → Wärme, gleiche Farbe |
-| Turbine | Speichert bis zu 4 Wasserchips. Ein Wärmechip \+ ein gespeicherter Wasserchip können zu zwei Spannungschips ihrer jeweiligen Eingangsfarben werden |
-| Speicher | Speichert einen Wasser-, Spannungs- oder Wärmechip. Der Einlagernde kann ihn später kostenlos freigeben; Einlagerung kostet die Fabrikgebühr |
-| Trafo | Beginnt mit 4 zufälligen Spannungschips. Ein eintreffender Spannungschip kann einen gespeicherten Spannungschip zusätzlich freisetzen; beide werden vom Lieferanten kontrolliert |
+1. Ein einzelner Stapeltransport zählt als genau eine Kartenaktion.
+2. Die Karten bleiben während des Transports in ihrer bisherigen Reihenfolge.
+3. Die Transportgebühren werden für den gesamten Stapel nur einmal bezahlt.
+4. Die unterste Karte des transportierten Stapels muss beim Ablegen genau einen Rang niedriger sein als die oberste Karte des Zielstapels.
+5. Der transportierte Teil muss aus oben zugänglichen Karten bestehen.
+6. Es dürfen keine verdeckten Karten transportiert werden.
+7. Ein Spieler darf weiterhin einzelne Karten transportieren.
 
-**Trafo aufladen:** Der Eigentümer füllt ihn für 2 Geld und 1 AP auf vier Chips auf. Das Raumschiff muss auf dem Trafo oder benachbart stehen.
+### Beispiel
 
-Gespeicherte Chips bleiben bis zur Verwendung liegen. Bei Neutralisierung werden sie entfernt. Bei erneuter Übernahme erhält eine Fabrik ihre vorgesehene Anfangsausstattung.
+Auf einem Speicher liegen:
 
-Fabriken besitzen keine feste Ausgangsrichtung. Der Chipbesitzer wählt den weiteren Transportweg.
+♥ 5 – ♥ 4 – ♥ 3
 
-## **7\. Planeten und Verbraucher**
+Auf einem Planeten liegt Kreuz 6.
 
-Jeder Planet besitzt drei Messgeräte:
+Der Spieler darf den gesamten Energiestapel in einer einzigen Aktion zum Planeten transportieren.
 
-* Spannung  
-* Wasser  
-* Wärme
+Beträgt die Transportgebühr 4 Geld, zahlt er insgesamt nur 4 Geld.
 
-Sie beginnen bei 0\. Negative Werte bedeuten Unterversorgung, positive Überschüsse.
+Alle drei Energiekarten werden regelkonform geliefert.
 
-**Verbraucher genehmigen:** 2 Geld \+ 1 AP; Raumschiff auf dem Planeten oder benachbart. Verbraucher können für jede der drei Ressourcenarten genehmigt werden, auch mehrfach.
+Der Spieler erhält dafür insgesamt 12 Geld aus der Bank.
 
-Jeder Verbraucher würfelt zu Rundenbeginn einen W4 mit den Ergebnissen:
+Wichtig: Die gemeinsame Bewegung spart Aktionen und Transportkosten. Jede gelieferte Energiekarte bringt weiterhin ihre normale Auszahlung.
 
-**−3 / −2 / −1 / \+1**
+## 3.3 Einschränkungen beim Stapeltransport
 
-Das Ergebnis verändert das zugehörige Messgerät. Unterversorgung und Überschüsse bleiben über mehrere Runden bestehen. Das Ergebnis \+1 erzeugt keine Einnahmen.
+Die persönlichen verdeckten Einheitenstapel auf den Spielerbasen dürfen nicht als Ganzes bewegt werden. Von ihnen darf jeweils nur die oberste offene Karte ausgespielt werden.
 
-**Planetenrebellion:** Erreicht bei der Kollapsprüfung ein Messgerät mindestens \+8 oder höchstens −8, wird der Planet neutral. Eigentümer und Verbraucher werden entfernt, Messgeräte auf 0 gesetzt, Importzoll aufgehoben. Transportwege bleiben.
+Einheiten dürfen nur von ihrem Eigentümer bewegt werden.
 
-### **Versorgung und Einnahmen**
+Ein Spieler darf deshalb keine fremde oder neutrale defensive Einheit als Teil eines Stapeltransports bewegen.
 
-Nur Spannung, Wasser und Wärme können an Planeten geliefert werden. Ein Chip erhöht den entsprechenden Messwert um seinen Energiewert (+1/+2/+3).
+Offen liegende Energiekarten dürfen dagegen unabhängig davon bewegt werden, wer sie ursprünglich abgelegt hat.
 
-Eine Lieferung erzeugt nur Einnahmen, wenn:
+Wird eine eigene defensive Einheit zusammen mit darüberliegenden Energiekarten bewegt, bleibt ihre Gebühr erhalten.
 
-* Ein passender Verbraucher existiert.  
-* Sie bestehende Unterversorgung ausgleicht.  
-* Ein gegebenenfalls fälliger Importzoll bezahlt wurde.
+# 4. Spielaufbau
 
-Ohne Importzollzahlung verändert die Lieferung dennoch das Messgerät, bringt aber kein Geld. Das ermöglicht auch absichtliche Überversorgung.
+1. Spielmodus und Szenario auswählen.
+2. Die rechteckigen Spielfelder gemäß Szenariokarte auslegen.
+3. Jeder Spieler erhält eine Spielerbasis und eine Spielerfarbe.
+4. Jeder Spieler erhält 12 Geld.
+5. Der restliche Geldvorrat kommt in die Bank.
+6. Alle Sonnen, Speicher und Planeten beginnen neutral.
+7. Auf jeden Planeten wird eine zufällige Kreuz-Bedarfskarte offen gelegt.
+8. Der restliche Kreuzkartenstapel bildet den verdeckten Bedarfsvorrat.
+9. Die neutralen Verteidigungen werden gemäß Szenario platziert.
+10. Jeder Spieler mischt seinen persönlichen Einheitenstapel.
+11. Die Sonnen erhalten ihre gemischten Energie-Nachziehstapel.
+12. Der Startspieler wird ausgelost.
 
-**Berechnung:** Sei (m) der Messwert vor der Lieferung.
+## 4.1 Geldmenge
 
-* Blau: (E\_1=\\max(0,-m))  
-* Lila: (E\_2=\\max(0,-m)+\\max(0,-m-1))  
-* Rot: (E\_3=\\max(0,-m)+\\max(0,-m-1)+\\max(0,-m-2))
+| Spieler | Gesamtgeld | Startgeld der Spieler | Bank |
+| ------- | ---------- | --------------------- | ---- |
+| 1       | 60         | 12                    | 48   |
+| 2       | 120        | 24                    | 96   |
+| 3       | 180        | 36                    | 144  |
+| 4       | 240        | 48                    | 192  |
 
-Der Lieferant erhält den Betrag aus der Bank. Anschließend wird der Messwert erhöht und der Chip zurückgelegt.
+Die Geldvorräte aller Spieler sind jederzeit offen.
 
-**Beispiel:** Ein roter Spannungschip trifft auf Spannung −5. Er bringt 5+4+3 \= **12 Geld** und hebt den Messwert auf −2.
+## 4.2 Persönlicher Einheitenstapel
 
-## **8\. Freibeuter (Solo und Koop)**
+Jeder Spieler erhält:
 
-Freibeuter sind automatische Gebührenmarker. Sie besitzen keine Infrastruktur oder Firmenkasse und führen keine normalen Spieleraktionen aus.
+- Karo Ass
+- Karo 3
+- Pik 2
+- Pik 4
 
-Jeder Freibeuter hat einen festen Gebührenwert und bewegt sich auf einer im Szenario vorgegebenen Route.
+Diese vier Karten werden verdeckt gemischt und auf der Spielerbasis abgelegt.
 
-### **Bewegung**
+Die oberste Karte wird aufgedeckt.
 
-* Freibeuter starten auf ihrer angegebenen Position.  
-* Ab Runde 2 bewegen sie sich zu Rundenbeginn genau **ein Hexfeld**.  
-* Kreispatrouillen laufen endlos im Kreis; Pendelpatrouillen kehren an den Endpunkten um.  
-* Freibeuter benötigen keine Wege, blockieren keine Raumschiffe und können Quellen, Fabriken und Planeten besetzen.  
-* Ihre Route ist vollständig sichtbar und vorhersehbar.
+Wird sie ausgespielt, wird die nächste Karte automatisch aufgedeckt.
 
-### **Gebühren**
+# 5. Bewegung und Transportwege
 
-* Jeder Ressourcenchip bezahlt die Freibeutergebühr beim Betreten eines besetzten Feldes.  
-* Auf einer besetzten Quelle fällt sie bereits bei der Entnahme an; bei einem besetzten Fabrikspeicher bei der Freigabe.  
-* Die Gebühr gilt auch bei eigener Infrastruktur und kommt zu gewöhnlichen Spielergebühren hinzu.  
-* Pro Chip und Feldbesuch wird sie einmal erhoben, auch bei einer zusätzlichen Fabrikverarbeitung. Entstehen zwei Ausgangschips, fällt für den auslösenden Fabrikbesuch nur eine Freibeutergebühr an.  
-* Bei erneutem Betreten wird erneut bezahlt; mehrere Freibeuter auf einem Feld addieren ihre Gebühren.  
-* Wer nicht bezahlen kann oder möchte, darf das Feld nicht betreten beziehungsweise den Chip dort nicht entnehmen oder freigeben.  
-* Freibeutergebühren gehen in eine **separate Kasse**, nicht in die Bank. Sie werden nicht wieder ausgegeben.  
-* Raumschiffe, Übernahmen und Bauaktionen werden nicht besteuert.
+Karten dürfen über beliebig viele zusammenhängende Felder transportiert werden.
 
-Freibeuter verändern weder Eigentum noch Produktion und zerstören keine Infrastruktur. Ihre Wirkung besteht ausschließlich in den zusätzlichen Kosten.
+Bewegungen sind nur orthogonal erlaubt:
 
-## **9\. Rundenablauf**
+- Nach oben
+- Nach unten
+- Nach links
+- Nach rechts
 
-### **Phase I – Rundenstart**
+Diagonale Bewegungen sind nicht erlaubt.
 
-Die folgenden Schritte erfolgen in dieser Reihenfolge:
+Eine Bewegung über mehrere Felder zählt trotzdem als nur eine Kartenaktion.
 
-1. **Spielende prüfen:** Versus endet bei leerer Bank. Solo/Koop endet nach Missionsregeln.  
-2. **Freibeuter bewegen:** Ab Runde 2 jeweils ein Feld (nur Solo/Koop).  
-3. **Quellenrebellion:** Quellen mit mindestens 5 gelagerten Chips werden neutral.  
-4. **Planetenrebellion:** Planeten mit Messwert ≥+8 oder ≤−8 werden neutral.  
-5. **Fabrikunterhalt:** 2 Geld pro besessener Fabrik; unbezahlte Fabriken werden neutral.  
-6. **Reihenfolge:** Der ärmste Spieler beginnt; bei Gleichstand der erste Gleichplatzierte im Uhrzeigersinn nach dem bisherigen Inhaber.  
-7. **Verbraucher würfeln:** Alle W4 verändern ihre Messgeräte. Neue kritische Werte werden erst bei der nächsten Kollapsprüfung wirksam.  
-8. **Quellenproduktion:** Ein Chip pro Extraktor auf besessenen Quellen.
+## 5.1 Transportkosten
 
-### **Phase II – Aktionsphase**
+Die Kosten werden für jedes durchquerte Zwischenfeld berechnet.
 
-Beginnend mit dem Reihenfolgechip führt jeder Spieler seine vier Aktionspunkte aus.
+Start- und Zielfeld kosten nichts.
 
-| Aktion | AP | Geld |
-| ----- | ----- | ----- |
-| Raumschiff 1 Hex bewegen | 1 | 0 |
-| Extraktor bauen | 1 | 2 |
-| Weg bauen (blau/lila/rot) | 1 | 2/4/6 |
-| Weg aufwerten | 1 | 2 je Stufe |
-| Eigenen Weg abbauen | 1 | 0 |
-| Verbraucher genehmigen | 1 | 2 |
-| Trafo auffüllen | 1 | 2 |
-| Neutrale Einrichtung übernehmen | 0 | 0 |
-| Eigene Einrichtung aufgeben | 0 | 0 |
-| Gebühren ändern | 0 | 0 |
-| Geld verschenken | 0 | Beliebig |
+| Durchquertes Feld              | Kosten                            |
+| ------------------------------ | --------------------------------- |
+| Leeres Feld                    | 1 Geld an die Bank                |
+| Asteroid                       | 3 Geld an die Bank                |
+| Sonne                          | Kostenlos                         |
+| Speicher                       | Kostenlos                         |
+| Planet                         | Kostenlos                         |
+| Eigene Spielerbasis            | 1 Geld an die Bank                |
+| Fremde Spielerbasis            | 1 Geld an die Bank                |
+| Offensive Karo-Einheit         | 1 Geld an die Bank                |
+| Eigene defensive Pik-Einheit   | Kostenlos                         |
+| Fremde defensive Pik-Einheit   | Vom Eigentümer festgelegte Gebühr |
+| Neutrale defensive Pik-Einheit | Szenariogebühr an die Bank        |
 
-Ungenutzte AP verfallen.
+Für einen Stapeltransport werden sämtliche Gebühren nur einmal bezahlt.
 
-Raumschiffe bewegen sich auf benachbarte betretbare Felder. Andere menschliche Raumschiffe blockieren ein Feld; Freibeuter nicht.
+Kann ein Spieler die Transportkosten nicht vollständig bezahlen, darf er die Bewegung nicht durchführen.
 
-### **Phase III – Simulationsphase**
+## 5.2 Asteroiden
 
-Beginnend mit dem Reihenfolgechip führen die Spieler abwechselnd Simulationszüge aus.
+Asteroiden dürfen durchquert werden.
 
-Pro Zug darf ein Spieler:
+Sie dürfen jedoch nicht als Zielfeld für Energiekarten oder Einheiten verwendet werden.
 
-* Einen neuen Chip aus einer Quelle entnehmen oder  
-* Einen eigenen gespeicherten Chip freigeben.
+# 6. Sonnen und Energieproduktion
 
-Der Chip wird vollständig abgewickelt, bevor der nächste Spieler an der Reihe ist.
+Jede Sonne besitzt einen eigenen verdeckten Energie-Nachziehstapel.
 
-Der Besitzer bestimmt den Weg, bezahlt gegebenenfalls Gebühren und kann passende Fabrikeffekte auslösen oder an Planeten liefern. Zwei durch einen Fabrikeffekt entstehende Chips werden im selben Zug abgewickelt.
+Die oberste Karte liegt offen.
 
-Der Transport darf jederzeit abgebrochen werden; der Chip geht dann in den Beutel. Erreicht ein Chip zum dritten Mal dasselbe Hexfeld, wird er vernichtet.
+Ein Spieler darf diese Energiekarte gemäß den Bewegungsregeln verwenden.
 
-Die Simulation endet, sobald alle Spieler nacheinander auf weitere Entnahmen beziehungsweise Freigaben verzichten. Nicht verwendete Chips bleiben gelagert.
+Sobald sie entnommen wurde, wird automatisch die nächste Karte aufgedeckt.
 
-### **Diplomatie**
+Ist der Nachziehstapel vollständig aufgebraucht, werden neue Energiekarten gemischt und bereitgestellt.
 
-Spieler dürfen jederzeit verhandeln, Geld verschenken, Lieferketten gemeinsam finanzieren und Bündnisse schließen. Mündliche Vereinbarungen sind nicht automatisch bindend. Gebühren bleiben während der Simulation unverändert.
+Sonnen sind unerschöpflich.
 
-## **10\. Spielende und Bank**
+Die Entnahme selbst kostet kein Geld. Es fallen ausschließlich die Gebühren der durchquerten Zwischenfelder an.
 
-**Versus:** Zu Rundenbeginn wird geprüft, ob die Bank leer ist. Ist sie während der vorherigen Simulation leer geworden, wird diese Runde trotzdem vollständig abgeschlossen.
+Sonnen sind neutral und können von allen Spielern genutzt werden.
 
-Die Bank wird niemals negativ. Kann sie Versorgungseinnahmen nicht vollständig auszahlen, erhält der Spieler das vorhandene Geld; der Rest wird als offene Forderung notiert.
+# 7. Energiespeicher
 
-Bei der kompetitiven Schlusswertung zählen offene Forderungen zum Geldvermögen.
+Jeder Speicher besitzt Platz für einen offenen Energiestapel.
 
-**Solo/Koop:** Offene Forderungen zählen nicht als verfügbares Geld. Die reguläre Bankendbedingung entfällt; die Mission endet nach ihrer Rundenzahl oder einer Niederlagebedingung.
+Ist der Speicher leer, darf eine beliebige Energiekarte dort abgelegt werden.
 
----
+Befinden sich bereits Karten im Speicher, dürfen weitere Karten nur gemäß der absteigenden Stapelregel hinzugefügt werden.
 
-# **11\. Szenarien**
+### Beispiel
 
-Die Szenarien verwenden **axiale Hexkoordinaten `(q,r)`**. Benachbart sind:
+Auf einem Speicher liegt Herz 5.
 
-`(+1,0), (−1,0), (0,+1), (0,−1), (+1,−1), (−1,+1)`
+Dort darf Herz 4 abgelegt werden.
 
-Die q-Achse verläuft waagerecht, die r-Achse schräg von rechts oben nach links unten.
+Anschließend darf Herz 3 hinzugefügt werden.
 
-Alle nicht ausdrücklich belegten Felder innerhalb einer Szenariogrenze sind leerer Weltraum.
+Es entsteht:
 
-### **Allgemeiner Solo-/Koop-Start**
+♥ 5 – ♥ 4 – ♥ 3
 
-Jeder Spieler erhält gemäß Szenario kostenlos:
+Dieser gesamte Stapel darf später gemeinsam transportiert werden.
 
-* Eine eigene Quelle mit einem Extraktor  
-* Eine eigene Fabrik  
-* Einen Missionsplaneten mit einem Verbraucher  
-* Zwei rote Transportwege, die diese drei Einrichtungen verbinden
+## 7.1 Speicherregeln
 
-Die 12 Geld Startkapital bleiben unverändert. Fabrikunterhalt und Verbraucherbedarf beginnen ab Runde 1\.
+- Speicher sind neutral.
+- Jeder Spieler darf gespeicherte Energiekarten verwenden.
+- Das Einlagern kostet eine Kartenaktion.
+- Das Entnehmen kostet eine Kartenaktion.
+- Es dürfen einzelne Karten oder zulässige absteigende Teilstapel entnommen werden.
+- Die normalen Transportgebühren gelten.
+- Gespeicherte Energie bringt noch kein Geld.
 
-Im Versus-Modus entfällt diese Anfangsinfrastruktur vollständig; alle Einrichtungen beginnen neutral.
+# 8. Planeten und Energieversorgung
 
-## **Szenario A – Polarität**
+Jeder Planet besitzt einen aktiven Bedarfsstapel.
 
-**Modi:** Solo, Koop, 2-Spieler-Versus
+Dieser beginnt mit einer offenen Kreuzkarte.
 
-Zwei getrennte Industriegebiete mit einer zentralen Wasserquelle. Westen und Osten besitzen unterschiedliche Verarbeitungsanlagen.
+Energiekarten dürfen auf diesen Stapel gelegt werden, wenn sie unmittelbar einen Rang niedriger sind als die oberste Karte.
 
-**Kartenform:** Vollständiges Hexagon mit Radius 3:
+### Beispiel
 
-(\\max(|q|,|r|,|q+r|)\\leq3)
+Vollständiger Bedarfszyklus
 
-| Einrichtung | Koordinate |
-| ----- | ----- |
-| Planet A / B | (−2,0) / (2,0) |
-| Sonnenquelle West / Ost | (−3,1) / (3,−1) |
-| Wasserquelle | (0,0) |
-| Solarzelle / Thermische Zelle | (−2,1) / (2,−1) |
-| Speicher / Trafo | (−1,0) / (1,0) |
-| Asteroiden | (−1,−2), (1,2) |
+## ♣6
 
-**Start:** Weiß (−3,0), Schwarz (3,0).
+## ♥5
 
-**Koop-Anfangsinfrastruktur:**
+## ♥4
 
-* Weiß: Planet A (Spannungsverbraucher), westliche Sonne mit Extraktor, Solarzelle; rote Wege `(−3,1)–(−2,1)–(−2,0)`.  
-* Schwarz: Planet B (Wärmeverbraucher), östliche Sonne mit Extraktor, Thermische Zelle; rote Wege `(3,−1)–(2,−1)–(2,0)`.
+## ♥3
 
-Solo verwendet nur Weiß.
+## ♥2
 
-**Freibeuter:**
+## ♥A
 
-* F1, Gebühr 2, Kreisroute: `(0,1) → (−1,1) → (−1,0) → (0,−1) → (1,−1) → (1,0) → (0,0) → (0,1)`. Start `(0,1)`.  
-* F2, Gebühr 2, Kreisroute: `(3,0) → (3,−1) → (2,−1) → (2,0) → (3,0)`. Start `(3,0)`.
+Planet vollständig versorgt
 
-Solo: nur F1. Koop: F1 und F2. Versus: keine Freibeuter.
+## 8.1 Einkommen
 
-**Mission Solo:** Planet A benötigt bis Runde 8 Spannung und Wasser.
+Jede gültig gelieferte Energiekarte bringt Geld aus der Bank.
 
-**Mission Koop:** Planet A benötigt Spannung und Wasser, Planet B Wärme und Wasser.
+| Energiekarte | Einkommen |
+| ------------ | --------- |
+| Herz 5       | 5 Geld    |
+| Herz 4       | 4 Geld    |
+| Herz 3       | 3 Geld    |
+| Herz 2       | 2 Geld    |
+| Herz Ass     | 1 Geld    |
 
-Alle Missionsplaneten müssen bis zum Ende stabil sein (Abschnitt 1).
+Die Einnahmen werden sofort ausgezahlt.
 
-## **Szenario B – Kanalwelt**
+Bei einem Stapeltransport erhält der Spieler die Summe der Werte aller gültig gelieferten Energiekarten.
 
-**Modi:** Solo, Koop, 2-Spieler-Versus
+Die Transportgebühren werden zuvor bezahlt.
 
-Zwei Kolonien liegen am unteren Ende eines U-förmigen Systems. Der einzige durchgehende Verbindungskorridor verläuft über den nördlichen Industriesektor.
+## 8.2 Vollständige Versorgung
 
-**Kartenform:**
+Sobald Herz Ass auf einen Planeten gelegt wurde, ist dessen Bedarfszyklus abgeschlossen.
 
-* Linker Arm: `q = −3 oder −2`, `r = −2 bis +2`  
-* Rechter Arm: `q = 2 oder 3`, `r = −2 bis +2`  
-* Oberer Korridor: `q = −1 bis +1`, `r = −2 oder −1`
+Es geschieht sofort Folgendes:
 
-Alle übrigen Felder existieren nicht.
+1. Der liefernde Spieler erhält die normale Auszahlung.
+2. Im Solo- und Koop-Modus wird ein entsprechender Missionserfolg festgehalten.
+3. Die Kreuzkarte wird auf den Bedarf-Ablagestapel gelegt.
+4. Die Energiekarten gehen in den gemeinsamen Energievorrat zurück.
+5. Eine neue zufällige Kreuzkarte wird vom Bedarfsvorrat aufgedeckt.
 
-| Einrichtung | Koordinate |
-| ----- | ----- |
-| Planet A / B | (−2,2) / (2,2) |
-| Sonnenquelle West / Ost | (−3,1) / (3,1) |
-| Wasserquelle West / Ost | (−3,−2) / (3,−2) |
-| Uranquelle | (0,−1) |
-| Solarzelle / Thermische Zelle | (−2,1) / (2,1) |
-| Atomkraftwerk / Turbine | (−1,−1) / (1,−1) |
-| Speicher / Trafo | (0,−2) / (−2,−1) |
+Dieser Vorgang kostet keine zusätzliche Kartenaktion.
 
-**Start:** Weiß (−3,2), Schwarz (3,2).
+Ist keine neue Bedarfskarte mehr verfügbar, endet das Spiel sofort.
 
-**Koop-Anfangsinfrastruktur:**
+# 9. Energiekarten von Planeten entfernen
 
-* Weiß: Planet A (Spannungsverbraucher), westliche Sonne mit Extraktor, Solarzelle; rote Wege `(−3,1)–(−2,1)–(−2,2)`.  
-* Schwarz: Planet B (Wärmeverbraucher), östliche Sonne mit Extraktor, Thermische Zelle; rote Wege `(3,1)–(2,1)–(2,2)`.
+Spieler dürfen bereits gelieferte Energiekarten wieder von Planeten entfernen.
 
-Solo verwendet nur Weiß.
+Dadurch können sie Siegpunktmarker erzeugen.
 
-**Freibeuter:**
+## 9.1 Siegpunktgewinnung
 
-Beide verwenden dieselbe Pendelroute:
+Ein Spieler darf die oberste Energiekarte oder einen zusammenhängenden, oben zugänglichen absteigenden Energiestapel eines Planeten entfernen.
 
-`(−3,2) → (−3,1) → (−3,0) → (−3,−1) → (−3,−2) → (−2,−2) → (−1,−2) → (0,−2) → (1,−2) → (2,−2) → (3,−2) → (3,−1) → (3,0) → (3,1) → (3,2)`
+Dabei gilt:
 
-* F1: Gebühr 2, startet `(0,−2)`, bewegt sich zunächst nach Westen.  
-* F2: Gebühr 3, startet `(2,−2)`, bewegt sich zunächst nach Osten.
+1. Das Entfernen kostet eine Kartenaktion.
+2. Die entfernten Energiekarten gehen auf den Energie-Ablagestapel.
+3. Für jede entfernte Energiekarte wird ein Siegpunktmarker auf dem Planeten erzeugt.
+4. Die darunterliegende Karte wird zum neuen sichtbaren Bedarf des Planeten.
+5. Die Siegpunktmarker liegen neben dem Bedarfsstapel und beeinflussen die Kartenfolge nicht.
 
-Solo: nur F1. Koop: beide. Versus: keine.
+### Beispiel
 
-**Mission Solo:** Planet A benötigt bis Runde 8 Spannung und Wasser.
+Auf einem Planeten liegt:
 
-**Mission Koop:** Planet A benötigt Spannung und Wasser, Planet B Wärme und Wasser.
+♣ 6 – ♥ 5 – ♥ 4 – ♥ 3
 
-Alle Missionsplaneten müssen bis zum Ende stabil sein (Abschnitt 1).
+Ein Spieler entfernt die beiden obersten Energiekarten als gemeinsamen Stapel.
 
-## **Szenario C – Triade**
+Herz 3 und Herz 4 gehen zurück in den Energievorrat.
 
-**Modus:** 3-Spieler-Versus
+Auf dem Planeten werden zwei Siegpunktmarker erzeugt.
 
-Drei äußere Sonnenquellen, keine Wasserquelle und eine zentrale Uranquelle. Die Kontrolle über Rohstoffe und Verarbeitungsanlagen bestimmt die wirtschaftliche Macht.
+Der Bedarfsstapel lautet anschließend:
 
-**Kartenform:** Hexagon mit Radius 4:
+♣ 6 – ♥ 5
 
-(\\max(|q|,|r|,|q+r|)\\leq4)
+Der Planet benötigt erneut Herz 4.
 
-| Einrichtung | Koordinate |
-| ----- | ----- |
-| Planeten A / B / C | (−3,0), (0,−3), (3,0) |
-| Sonnenquellen | (−4,0), (0,−4), (4,0) |
-| Uranquelle | (0,0) |
-| Solarzelle | (−2,0) |
-| Thermische Zelle | (0,−2) |
-| Atomkraftwerk | (2,0) |
-| Speicher / Trafo / Turbine | (0,−1), (−1,0), (1,−1) |
-| Asteroiden | (−2,2), (2,−2), (1,2), (−2,−1) |
+## 9.2 Siegpunktmarker transportieren
 
-**Startpositionen:**
+Siegpunktmarker liegen zunächst neutral auf dem Planeten.
 
-* Weiß: (−4,1)  
-* Schwarz: (1,−4)  
-* Grün: (4,−1)
+Jeder Spieler darf einen solchen Marker zur eigenen Spielerbasis transportieren.
 
-Alle Einrichtungen sind neutral. Keine Freibeuter oder vorgebauten Transportwege.
+Dabei gelten folgende Regeln:
 
-**Sieg:** Größtes Geldvermögen bei leerer Bank.
+- Der Transport eines Markers zählt als eine Kartenaktion.
+- Pro Aktion wird genau ein Siegpunktmarker bewegt.
+- Es gelten die normalen Transportgebühren.
+- Der Marker muss auf der eigenen Spielerbasis abgelegt werden.
+- Dort ist er dauerhaft gesichert.
+- Gesicherte Siegpunktmarker können nicht mehr bewegt oder gestohlen werden.
 
-## **Szenario D – King of the Hill**
+Siegpunktmarker sind keine Energiekarten und unterliegen nicht der absteigenden Kartenfolge.
 
-**Modus:** 4-Spieler-Versus
+## 9.3 Neutrale Siegpunktmarker
 
-Ein zentraler Industriekomplex mit Sonne, Speicher und Trafo liegt zwischen drei äußeren Kolonien. Ein Asteroidenring schafft strategische Engpässe.
+Ein Siegpunktmarker gehört zunächst niemandem.
 
-**Kartenform:** Hexagon mit Radius 4:
+Es spielt keine Rolle, welcher Spieler die Energiekarte ursprünglich geliefert oder entfernt hat.
 
-(\\max(|q|,|r|,|q+r|)\\leq4)
+Erst durch den Transport zur eigenen Basis wird der Marker Eigentum des Spielers.
 
-| Einrichtung | Koordinate |
-| ----- | ----- |
-| Trafo / Speicher / Sonne (Zentrum) | (0,0), (1,0), (0,1) |
-| Planeten West / Nord / Ost | (−3,1), (1,−3), (3,0) |
-| Wasserquellen West / Nord / Ost | (−4,0), (2,−4), (4,0) |
-| Solarzellen West / Nord | (−2,1), (1,−2) |
-| Thermische Zelle Ost | (2,1) |
-| Asteroiden | (−1,1), (−1,2), (0,2), (1,−1), (1,1), (2,−1) |
+Dadurch können Spieler um die auf Planeten liegenden Siegpunktmarker konkurrieren.
 
-Drei wichtige Durchgänge zum Zentrum liegen auf `(−1,0)`, `(0,−1)` und `(2,0)`.
+## 9.4 Wert der Siegpunktmarker
 
-**Startpositionen:**
+Jeder gesicherte Siegpunktmarker zählt bei der Schlusswertung als 5 Geld.
 
-* Weiß: (−4,1)  
-* Schwarz: (1,−4)  
-* Grün: (4,−1)  
-* Lila: (0,0)
+Der Wert ist ein vorläufiger Playtestwert.
 
-Alle Einrichtungen beginnen neutral und ohne Transportwege. Lila steht bereits auf dem Trafo und kann ihn in seiner ersten Aktionsphase übernehmen.
+Im Solo- und Koop-Modus können die gesicherten Marker zusätzlich als Erfolgsmaß verwendet werden. Für die eigentlichen Missionsziele sind sie nicht erforderlich.
 
-**Sieg:** Größtes Geldvermögen bei leerer Bank.
+# 10. Offensive und defensive Einheiten
 
----
+## 10.1 Offensive Einheiten
 
-## **12\. Schwierigkeitsgrade (Solo/Koop)**
+Karo-Karten sind offensive Einheiten.
 
-| Schwierigkeit | Freibeutergebühr | Missionsdauer | Stabile Schlussrunden |
-| ----- | ----- | ----- | ----- |
-| Leicht | −1, mindestens 1 | 14 | 13 und 14 |
-| Normal | Szenariowert | 12 | 11 und 12 |
-| Schwer | \+1 | 12 | 11 und 12 |
-| Extrem | \+1 | 10 | 9 und 10 |
+Sie dürfen:
 
-Die Verbraucher-Ausbaufrist bleibt Runde 8, außer bei Leicht (Runde 10).
+- Von der eigenen Spielerbasis auf ein leeres Feld bewegt werden.
+- Von einem leeren Feld auf ein anderes leeres Feld bewegt werden.
+- Eine passende defensive Einheit angreifen.
 
-## **13\. Regelübersicht**
+Eine Angriffskarte darf nur auf einen Verteidigungsstapel gelegt werden, wenn ihr Wert genau einen Rang niedriger ist als die oberste Karte des Verteidigungsstapels.
 
-| Mechanik | Wert |
-| ----- | ----- |
-| Startgeld | 12 pro Spieler |
-| Aktionspunkte | 4 pro Spieler/Runde |
-| Quelle übernehmen | Kostenlos, Raumschiff auf Feld |
-| Extraktor | 2 Geld, 1 AP |
-| Produktion | 1 Chip/Extraktor/Runde |
-| Quellenrebellion | Ab 5 gelagerten Chips |
-| Fabrikunterhalt | 2 Geld/Runde |
-| Verbraucher | 2 Geld, 1 AP |
-| Verbraucherwürfel | −3, −2, −1, \+1 |
-| Planetenrebellion | Ab \+8 oder −8 |
-| Blauer/lila/roter Weg | 2/4/6 Geld |
-| Wegaufwertung | 2 Geld pro Stufe |
-| Freibeuterbewegung | 1 Hex/Runde, ab Runde 2 |
-| Freibeutergebühren | Auch auf eigener Infrastruktur |
-| Versus-Sieg | Höchstes Geldvermögen bei leerer Bank |
-| Solo-/Koop-Sieg | Missionsbedingungen erfüllt |
+### Beispiel
 
-**Spielprinzip:** Dieselben Grundregeln erzeugen unterschiedliche Herausforderungen: Im Versus-Modus bestimmen die Spieler durch Gebühren, Monopole und Diplomatie ihre wirtschaftlichen Beziehungen. In Solo und Koop verändern wandernde Freibeuter die Kosten bestehender Lieferketten und erzwingen gemeinsame Planung, alternative Transportwege und flexible Versorgungssysteme.
+Auf Pik 6 darf Karo 5 gelegt werden.
+
+Auf Pik 4 darf Karo 3 gelegt werden.
+
+## 10.2 Defensive Einheiten
+
+Pik-Karten sind defensive Einheiten.
+
+Sie kontrollieren ihr jeweiliges Feld.
+
+Ihre Eigentümer dürfen eine beliebige nichtnegative ganzzahlige Durchgangsgebühr festlegen.
+
+Neue Verteidigungen beginnen mit einer Gebühr von 0 Geld.
+
+Der Eigentümer darf die Gebühren seiner Verteidigungen während seines eigenen Zuges kostenlos ändern.
+
+Eigene Verteidigungen dürfen kostenlos durchquert werden.
+
+Fremde Spieler bezahlen die festgelegte Gebühr an den Eigentümer.
+
+## 10.3 Verteidigungen mit Energie schwächen
+
+Energiekarten dürfen auf Verteidigungsstapel gelegt werden.
+
+Dabei gilt die normale absteigende Rangfolge.
+
+Beispiel:
+
+♠ 6 – ♥ 5 – ♥ 4
+
+Jetzt darf Karo 3 auf diesen Stapel gelegt werden.
+
+Sobald eine passende Angriffskarte auf einer Verteidigung landet, wird der gesamte Verteidigungsstapel einschließlich der Angriffskarte abgeräumt.
+
+Die Verteidigung ist besiegt.
+
+Das Feld ist anschließend leer.
+
+## 10.4 Bewegung von Verteidigungen
+
+Eigene defensive Einheiten dürfen auf andere leere Felder bewegt werden.
+
+Befinden sich Energiekarten auf einer eigenen Verteidigung, darf sie zusammen mit diesen Karten bewegt werden, sofern der gesamte bewegte Stapel die absteigende Rangfolge erfüllt.
+
+Der Gebührenmarker bewegt sich mit der Verteidigung.
+
+Fremde und neutrale Verteidigungen dürfen nicht bewegt werden.
+
+## 10.5 Neutrale Verteidigungen
+
+Neutrale Verteidigungen werden gemäß Szenario aufgebaut.
+
+Sie bewegen sich nicht.
+
+Ihre Gebühren sind festgelegt und werden an die Bank bezahlt.
+
+Sie können auf dieselbe Weise geschwächt und besiegt werden wie fremde Verteidigungen.
+
+# 11. Spielablauf
+
+Das Spiel verläuft ohne automatische Rundenereignisse.
+
+Es gibt insbesondere keine automatische Bedarfsentfernung mehr.
+
+Die Spieler sind in fester Reihenfolge reihum am Zug.
+
+Jeder Spieler darf während seines Zuges genau eine Kartenaktion ausführen.
+
+Anschließend ist sofort der nächste Spieler an der Reihe.
+
+## 11.1 Mögliche Kartenaktionen
+
+| Aktion                   | Beschreibung                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| Energie liefern          | Eine Energiekarte oder einen zulässigen Energiestapel auf einen Planeten legen |
+| Energie speichern        | Energie in einen Speicher transportieren                                       |
+| Energie umlagern         | Energie zwischen Speichern bewegen                                             |
+| Verteidigung schwächen   | Energiekarten auf einen Verteidigungsstapel legen                              |
+| Einheit einsetzen        | Oberste Einheit der eigenen Spielerbasis ausspielen                            |
+| Einheit bewegen          | Eine eigene Einheit umpositionieren                                            |
+| Angriff durchführen      | Eine passende offensive Karte auf eine Verteidigung legen                      |
+| Siegpunkte erzeugen      | Energiekarten vom Planeten entfernen und Marker erzeugen                       |
+| Siegpunkt transportieren | Einen neutralen Siegpunktmarker zur eigenen Basis bringen                      |
+
+Jede Aktion darf nur eine einzelne Karte, einen zulässigen Kartenstapel oder einen Siegpunktmarker bewegen beziehungsweise einsetzen.
+
+## 11.2 Kostenlose Handlungen
+
+Während seines Zuges darf ein Spieler zusätzlich:
+
+- Die Gebühren aller eigenen Verteidigungen beliebig oft ändern.
+- Geld an Mitspieler verschenken.
+
+Diese Handlungen verbrauchen keine Kartenaktion.
+
+## 11.3 Aussetzen
+
+Kann ein Spieler keine legale und bezahlbare Kartenaktion ausführen, setzt er aus.
+
+Sobald kein Spieler mehr irgendeine legale und bezahlbare Kartenaktion ausführen kann, endet die Partie.
+
+# 12. Spielende
+
+Die Partie endet sofort, sobald eine der folgenden Bedingungen erfüllt ist:
+
+1. Die Bank ist leer.
+2. Ein Planet müsste eine neue Bedarfskarte erhalten, aber der Bedarfsvorrat ist leer.
+3. Niemand kann mehr eine legale und bezahlbare Kartenaktion ausführen.
+
+## 12.1 Leere Bank
+
+Wenn die letzte Auszahlung größer ist als das noch vorhandene Bankgeld, wird nur der vorhandene Betrag ausgezahlt.
+
+Der unbezahlte Rest wird als offene Bankforderung des Spielers notiert.
+
+Im Versus-Modus zählt diese Forderung zum Gesamtvermögen.
+
+## 12.2 Versus
+
+Der Spieler mit dem höchsten Gesamtvermögen gewinnt.
+
+\\[ \text{Gesamtvermögen}=\text{Geld}+\text{Bankforderungen}+5\times\text{gesicherte Siegpunktmarker} \\]
+
+Bei Gleichstand teilen sich die betreffenden Spieler den Sieg.
+
+## 12.3 Solo
+
+Der Spieler gewinnt, wenn er bis zum Spielende:
+
+- Seinen Missionsplaneten mindestens einmal vollständig versorgt hat.
+- Mindestens eine vorgegebene neutrale Verteidigung mit einer offensiven Karte besiegt hat.
+
+Andernfalls verliert er.
+
+## 12.4 Koop
+
+Das Team gewinnt, wenn es bis zum Spielende:
+
+- Beide Missionsplaneten jeweils mindestens einmal vollständig versorgt hat.
+- Insgesamt mindestens zwei vorgegebene neutrale Verteidigungen besiegt hat.
+
+Die Geldvorräte der beiden Spieler bleiben getrennt.
+
+Geldgeschenke sind erlaubt.
+
+# 13. Szenarien
+
+Es gelten rechteckige Rasterkoordinaten `(x, y)`:
+
+- x wächst nach rechts.
+- y wächst nach unten.
+- Es zählen nur orthogonale Nachbarschaften.
+- Nicht aufgeführte Felder innerhalb der Szenariogrenzen sind leer.
+
+## Szenario A – Polarität
+
+
+
+Solo
+
+2 Spieler Koop
+
+2 Spieler Versus
+
+
+
+Vollständiges 9 × 9-Raster.
+
+Koordinaten jeweils von −4 bis +4.
+
+| Feld          | Koordinaten |
+| ------------- | ----------- |
+| Planet A      | (−4,−4)     |
+| Planet B      | (4,4)       |
+| Westsonne     | (−4,0)      |
+| Ostsonne      | (4,0)       |
+| Westspeicher  | (−2,0)      |
+| Ostspeicher   | (2,0)       |
+| Asteroid      | (−1,−2)     |
+| Asteroid      | (1,2)       |
+| Basis Weiß    | (−4,2)      |
+| Basis Schwarz | (4,2)       |
+
+Im Solo-Modus wird nur die weiße Basis verwendet.
+
+### Neutrale Verteidigungen
+
+| Feld    | Karte | Gebühr |
+| ------- | ----- | ------ |
+| (−3,−4) | Pik 4 | 2      |
+| (−4,−3) | Pik 5 | 2      |
+| (0,0)   | Pik 3 | 3      |
+| (3,4)   | Pik 6 | 3      |
+| (4,3)   | Pik 4 | 2      |
+
+Solo verwendet nur die ersten drei Verteidigungen.
+
+Koop verwendet alle fünf.
+
+Versus verwendet keine neutralen Startverteidigungen.
+
+### Missionsziele
+
+Solo:
+
+- Planet A vollständig versorgen.
+- Eine neutrale Verteidigung besiegen.
+
+Koop:
+
+- Planet A und B vollständig versorgen.
+- Zwei neutrale Verteidigungen besiegen.
+
+## Szenario B – Kanalwelt
+
+
+
+Solo
+
+2 Spieler Koop
+
+2 Spieler Versus
+
+
+
+U-förmiges Raster.
+
+Der linke Arm umfasst:
+
+- x = −5 oder −4
+- y von −3 bis +3
+
+Der rechte Arm umfasst:
+
+- x = 4 oder 5
+- y von −3 bis +3
+
+Der obere Verbindungskorridor umfasst:
+
+- x von −3 bis +3
+- y = −3 oder −2
+
+| Feld          | Koordinaten |
+| ------------- | ----------- |
+| Planet A      | (−5,3)      |
+| Planet B      | (5,3)       |
+| Westsonne     | (−5,0)      |
+| Ostsonne      | (5,0)       |
+| Westspeicher  | (−4,−1)     |
+| Ostspeicher   | (4,−1)      |
+| Basis Weiß    | (−5,−2)     |
+| Basis Schwarz | (5,−2)      |
+
+### Neutrale Verteidigungen
+
+| Feld   | Karte | Gebühr |
+| ------ | ----- | ------ |
+| (−5,2) | Pik 4 | 2      |
+| (−4,3) | Pik 3 | 2      |
+| (0,−3) | Pik 5 | 4      |
+| (5,2)  | Pik 6 | 3      |
+| (4,3)  | Pik 4 | 2      |
+
+Solo verwendet die ersten drei Verteidigungen.
+
+Koop verwendet alle fünf.
+
+Versus verwendet keine neutralen Startverteidigungen.
+
+### Missionsziele
+
+Solo:
+
+- Planet A vollständig versorgen.
+- Eine neutrale Verteidigung besiegen.
+
+Koop:
+
+- Beide Planeten vollständig versorgen.
+- Zwei neutrale Verteidigungen besiegen.
+
+## Szenario C – Triade
+
+3 Spieler Versus
+
+Vollständiges 9 × 9-Raster.
+
+Koordinaten von −4 bis +4.
+
+| Feld            | Koordinaten |
+| --------------- | ----------- |
+| Planet Nordwest | (−4,−4)     |
+| Planet Nordost  | (4,−4)      |
+| Planet Südost   | (4,4)       |
+| Westsonne       | (−4,0)      |
+| Nordsonne       | (0,−4)      |
+| Ostsonne        | (4,0)       |
+| Westspeicher    | (−2,0)      |
+| Nordspeicher    | (0,−2)      |
+| Ostspeicher     | (2,0)       |
+| Asteroid        | (−1,−1)     |
+| Asteroid        | (1,−1)      |
+| Asteroid        | (−1,2)      |
+| Asteroid        | (1,2)       |
+| Basis Weiß      | (−4,2)      |
+| Basis Schwarz   | (−1,−4)     |
+| Basis Rot       | (4,2)       |
+
+Es gibt keine neutralen Startverteidigungen.
+
+Der Spieler mit dem höchsten Gesamtvermögen gewinnt.
+
+## Szenario D – King of the Hill
+
+4 Spieler Versus
+
+Vollständiges 9 × 9-Raster.
+
+Koordinaten von −4 bis +4.
+
+| Feld            | Koordinaten |
+| --------------- | ----------- |
+| Planet Nordwest | (−4,−4)     |
+| Planet Nordost  | (4,−4)      |
+| Planet Südwest  | (−4,4)      |
+| Westsonne       | (−4,0)      |
+| Nordsonne       | (0,−4)      |
+| Ostsonne        | (4,0)       |
+| Zentralsonne    | (0,0)       |
+| Westspeicher    | (−3,1)      |
+| Nordspeicher    | (1,−2)      |
+| Ostspeicher     | (3,1)       |
+| Zentralspeicher | (−1,1)      |
+| Asteroid        | (−2,−1)     |
+| Asteroid        | (2,−1)      |
+| Asteroid        | (−2,1)      |
+| Asteroid        | (2,1)       |
+| Asteroid        | (0,−2)      |
+| Asteroid        | (0,3)       |
+| Basis Weiß      | (−4,2)      |
+| Basis Schwarz   | (1,−4)      |
+| Basis Rot       | (4,2)       |
+| Basis Grün      | (0,2)       |
+
+Es gibt keine neutralen Startverteidigungen.
+
+Der Spieler mit dem höchsten Gesamtvermögen gewinnt.
+
+# 14. Beispiele
+
+## Beispiel A – Gemeinsamer Energietransport
+
+Ein Speicher enthält:
+
+♥ 5 – ♥ 4 – ♥ 3
+
+Ein Planet benötigt Herz 5 und zeigt Kreuz 6.
+
+Ein Spieler transportiert den gesamten Stapel zum Planeten.
+
+Die Route kostet 3 Geld.
+
+Der Spieler bezahlt 3 Geld und erhält:
+
+5 + 4 + 3 = 12 Geld.
+
+Sein Nettogewinn beträgt 9 Geld.
+
+Der Transport benötigt nur eine Kartenaktion.
+
+## Beispiel B – Siegpunkte erzeugen
+
+Auf einem Planeten liegt:
+
+♣ 6 – ♥ 5 – ♥ 4 – ♥ 3
+
+Ein Spieler entfernt Herz 3 und Herz 4 als gemeinsamen Stapel.
+
+Beide Energiekarten kommen auf den Energie-Ablagestapel.
+
+Zwei Siegpunktmarker werden auf dem Planeten erzeugt.
+
+Danach liegt auf dem Planeten:
+
+♣ 6 – ♥ 5
+
+## Beispiel C – Siegpunkt sichern
+
+Auf Planet A liegen zwei neutrale Siegpunktmarker.
+
+Weiß transportiert einen Marker zur eigenen Basis.
+
+Der Transport führt über drei leere Zwischenfelder und kostet 3 Geld.
+
+Weiß bezahlt 3 Geld und sichert den Marker.
+
+Bei der Schlusswertung ist er 5 Geld wert.
+
+Der zweite Marker bleibt auf dem Planeten und kann weiterhin von jedem Spieler transportiert werden.
+
+## Beispiel D – Verteidigung besiegen
+
+Auf einem Feld liegt:
+
+♠ 6 – ♥ 5 – ♥ 4
+
+Ein Spieler bewegt seine Karo 3 auf den Stapel.
+
+Die Folge ist gültig.
+
+Der gesamte Stapel wird abgeräumt.
+
+Das Feld ist anschließend leer.
+
+## Beispiel E – Gemeinsame Vorbereitung eines Angriffs
+
+Weiß besitzt einen Speicher mit:
+
+♥ 5 – ♥ 4
+
+Eine neutrale Pik 6 kontrolliert einen wichtigen Transportweg.
+
+Weiß bewegt beide Energiekarten gemeinsam auf Pik 6.
+
+Anschließend liegt dort:
+
+♠ 6 – ♥ 5 – ♥ 4
+
+Schwarz kann später mit Karo 3 angreifen.
+
+Damit können Spieler im Koop-Modus ihre Angriffe gemeinsam vorbereiten.
+
+# 15. Playtestfragen
+
+## Wirtschaft
+
+1. Sind die Einnahmen von 5/4/3/2/1 Geld pro Energiekarte angemessen?
+2. Wie stark verbessert der gemeinsame Stapeltransport die Rentabilität?
+3. Werden Speicher häufiger genutzt, weil sich große Energietransporte vorbereiten lassen?
+4. Sind 5 Geld pro gesichertem Siegpunktmarker ein sinnvoller Wert?
+5. Lohnen sich die zusätzlichen Aktionen für die Siegpunktgewinnung und den Rücktransport?
+
+## Kampf und Transport
+
+6. Wie stark beeinflussen die Verteidigungen die Wahl der Transportwege?
+7. Werden Verteidigungen aus wirtschaftlichen Gründen angegriffen?
+8. Entstehen durch das Bewegen mehrerer Karten interessante neue Angriffsstrategien?
+9. Sind die neutralen Gebühren sinnvoll?
+10. Können Spieler ihre eigenen Verteidigungen effektiv zur Optimierung von Transportwegen verwenden?
+
+## Planeten und Siegpunkte
+
+11. Werden Energiekarten häufig von Planeten entfernt?
+12. Führt die Siegpunktgewinnung dazu, dass Spieler die vollständige Versorgung von Planeten vermeiden?
+13. Entsteht ein interessanter Wettbewerb um neutrale Siegpunktmarker?
+14. Werden die Spielerbasen durch den Rücktransport der Marker strategisch wichtiger?
+15. Sind große Kartenstapel zu mächtig, weil sie mehrere Siegpunkte in einer Aktion erzeugen können?
+
+## Spielende und Balance
+
+16. Wie lange dauern Partien ohne automatischen Bedarfsabbau?
+17. Wird der begrenzte Bedarfsvorrat zuverlässig aufgebraucht?
+18. Wie häufig endet eine Partie durch eine leere Bank?
+19. Sind Solo- und Koop-Missionsziele mit dem neuen Stapeltransport angemessen schwierig?
+20. Gibt es wirtschaftlich profitable Aktionen, die unbegrenzt wiederholt werden können und dadurch die Partie dominieren?
+
+## 16. Vorläufige Playtestwerte und noch offene Feinabstimmung
+
+Folgende Werte sind noch nicht endgültig ausbalanciert:
+
+| Regel                            | Aktueller Stand                         |
+| -------------------------------- | --------------------------------------- |
+| Siegpunktwert                    | 5 Geld pro gesichertem Marker           |
+| Siegpunktgewinnung               | 1 Marker je entnommener Energiekarte    |
+| Siegpunkttransport               | 1 Marker pro Kartenaktion               |
+| Stapeltransport                  | Mehrere Karten, nur einmal Gebühren     |
+| Auszahlung bei Stapellieferungen | Summe aller gelieferten Energiekarten   |
+| Automatischer Bedarfsabbau       | Vollständig entfernt                    |
+| Sonnen                           | Unerschöpflich                          |
+| Bedarfsvorrat                    | Begrenzt; Größe vor dem Spiel festlegen |
+| Neutrale Gebühren                | Gemäß Szenariokarte                     |
+
+Die konkrete Anzahl der Bedarfskarten muss noch durch Playtests bestimmt werden. Für erste Tests würde ich mit einem Vorrat von ungefähr 10 Kreuzkarten pro Planet beginnen.
+
+Versorgungs-Architekten v6.6 verbindet damit vier zentrale Mechaniken:
+
+1. Energiekarten in absteigenden Folgen sammeln und transportieren.
+2. Durch effiziente Energielieferungen Geld verdienen.
+3. Durch Verteidigungen Transportwege wirtschaftlich kontrollieren.
+4. Bereits gelieferte Energie in Siegpunktmarker umwandeln und diese zur eigenen Basis bringen.
+
+Die wichtigste Neuerung gegenüber v6.5 ist, dass sich jetzt nicht nur Energiekarten, sondern auch Siegpunkte räumlich über das Spielfeld bewegen. Dadurch entstehen zwei miteinander verbundene Transportaufgaben, die um dieselben günstigen Wege konkurrieren.

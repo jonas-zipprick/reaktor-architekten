@@ -1,202 +1,164 @@
-/** Shared game types — adjust here when rules change. */
+export type Suit = 'hearts' | 'clubs' | 'spades' | 'diamonds'
+export type Rank = 6 | 5 | 4 | 3 | 2 | 1 // 1 = Ass
 
-export type PlayerId = 1 | 2 | 3 | 4
-
-export const ALL_PLAYER_IDS: PlayerId[] = [1, 2, 3, 4]
-
-/** Active seats for a scenario size (solo uses 1). */
-export function playerIdsForCount(n: 1 | 2 | 3 | 4): PlayerId[] {
-  return ALL_PLAYER_IDS.slice(0, n)
-}
-
-/** Versus is competitive; solo/coop share a mission win/lose. */
+export type PlayerId = 'white' | 'black' | 'red' | 'green'
 export type GameMode = 'solo' | 'coop' | 'versus'
+export type ScenarioId = 'A' | 'B' | 'C' | 'D'
 
-/** Chip energy tier: blue=low(1W), purple=mid(2W), red=high(3W) */
-export type ChipColor = 'blue' | 'purple' | 'red'
-
-/**
- * What a flying/free chip currently “is” (State by Location / conversion).
- * Planets accept voltage, water, heat.
- */
-export type ChipResource = 'voltage' | 'water' | 'heat' | 'uranium' | 'light'
-
-/** Planet meter / consumer type (±8 at round end is critical). */
-export type MeterKind = 'voltage' | 'water' | 'heat'
-
-/**
- * Hex edge directions for pointy-top hexes.
- * Index matches die faces: 1 = NW … clockwise.
- */
-export const DIRECTIONS = [
-  { id: 1, key: 'NW', label: 'NW', dq: 0, dr: -1 },
-  { id: 2, key: 'NE', label: 'NE', dq: 1, dr: -1 },
-  { id: 3, key: 'E', label: 'O', dq: 1, dr: 0 },
-  { id: 4, key: 'SE', label: 'SO', dq: 0, dr: 1 },
-  { id: 5, key: 'SW', label: 'SW', dq: -1, dr: 1 },
-  { id: 6, key: 'W', label: 'W', dq: -1, dr: 0 },
-] as const
-
-export type DirIndex = 1 | 2 | 3 | 4 | 5 | 6
-
-export type TerrainKind =
+export type CellKind =
   | 'empty'
-  | 'mountain'
-  | 'uranium'
   | 'sun'
-  | 'water'
   | 'planet'
+  | 'storage'
+  | 'base'
+  | 'asteroid'
 
-/** Landscape tiles that come from a face-down zone stack. */
-export type LandscapeTerrain =
-  | 'empty'
-  | 'uranium'
-  | 'sun'
-  | 'water'
-  | 'mountain'
-  | 'planet'
+export interface Coord {
+  x: number
+  y: number
+}
 
-/**
- * Board zones (gameRules.md §1).
- * Four start zones plus the contested center. Each has its own landscape stack.
- */
-export type ZoneId = 's1' | 's2' | 's3' | 's4' | 'center'
-
-/** One settled consumer on a planet (1 die each; no personal meter). */
-export interface ConsumerUnit {
+export interface Card {
   id: string
-  type: MeterKind
-  /** Player who paid to approve this consumer */
-  approver: PlayerId
+  suit: Suit
+  rank: Rank
+  faceUp: boolean
 }
 
-export type FieldKind =
-  | 'divert'
-  | 'solar'
-  | 'thermalCell'
-  | 'nuclearPlant'
-  | 'turbine'
-  | 'pumped'
-  | 'transformer'
-
-/** One face-down landscape tile. Factory counts are a playtest fill; the rulebook leaves the exact mix open. */
-export type LandscapeTile =
-  | { terrain: LandscapeTerrain }
-  | { terrain: 'factory'; factory: FieldKind }
-
-/** Offered to the player who just discovered a source, factory or planet. */
-export interface DiscoveryOffer {
-  id: string
-  player: PlayerId
-  hex: Axial
-  label: string
+export interface NeutralDefenseSpec {
+  x: number
+  y: number
+  rank: Rank
+  toll: number
 }
 
-export type PhaseId = 'setup' | 'order' | 'act' | 'simulate'
-
-export interface Axial {
-  q: number
-  r: number
+export interface ScenarioField {
+  x: number
+  y: number
+  kind: CellKind
+  label?: string
+  owner?: PlayerId
 }
 
-export interface Chip {
-  id: string
-  color: ChipColor
-  /** bound = charge on a tile; free = unbound on tile; flying = in flight */
-  state: 'bound' | 'free' | 'flying'
-  hex: Axial
-  dir?: DirIndex
-  /** Resource identity while free/flying (soft playtest) */
-  resource?: ChipResource
-  /** Remaining steps this player's move (soft guide, max 5) */
-  stepsLeft?: number
-  /** Next step uses dir from a W6 roll instead of a factory arrow. */
-  dieStep?: boolean
-  /** Player who is simulating this chip. Fees and planet income use this. */
-  pilot?: PlayerId
-  /** How often this flight has already landed on each hex. The third landing ends the chip. */
-  seen?: Record<string, number>
-}
-
-/** A flying chip is waiting on a factory or planet. */
-export interface PendingHit {
-  chipId: string
-  hex: Axial
-  /** ship: trigger or redirect. fee: pay or fly straight. color: nuclear swap. */
-  mode: 'ship' | 'fee' | 'color'
-}
-
-/** Transport link on the shared edge of two hexes. Blue < purple < red. */
-export type RouteTier = 'blue' | 'purple' | 'red'
-
-export interface Route {
-  owner: PlayerId
-  tier: RouteTier
-  /** Fee per crossing. Own links are free. No upper bound. */
-  fee: number
-}
-
-export interface PlacedField {
-  kind: FieldKind
-  /** Null while the factory is neutral and inactive. */
-  owner: PlayerId | null
-  /** Bound charges currently on this field */
-  charge: ChipColor[]
-  /** Legacy build arrow. The current rules do not steer chips with it. */
-  dir?: DirIndex
-  /** Processing fee per triggered effect. Own factories are free. */
-  fee?: number
-  /** What a Speicher charge actually is. Turbine water and trafo voltage are implied. */
-  chargeResource?: ChipResource
-  /** Player who stored the Speicher chip and may release it later. */
-  storedBy?: PlayerId
+export interface ScenarioDef {
+  id: ScenarioId
+  name: string
+  modes: GameMode[]
+  description: string
+  /** Inclusive bounds for rectangular maps; Channel World uses explicit cells. */
+  bounds?: { minX: number; maxX: number; minY: number; maxY: number }
+  cells: ScenarioField[]
+  defenses: {
+    solo: NeutralDefenseSpec[]
+    coop: NeutralDefenseSpec[]
+    versus: NeutralDefenseSpec[]
+  }
+  missions: {
+    solo: { planets: string[]; defenses: number }
+    coop: { planets: string[]; defenses: number }
+  }
 }
 
 export interface CellState {
-  hex: Axial
-  /** Fog of war — false until explored from a ship */
-  revealed: boolean
-  terrain: TerrainKind
-  /** Unique name when terrain is planet */
-  planetName?: string
-  /** Planet meters (voltage / water / heat); unused on non-planets */
-  voltage: number
-  water: number
-  heat: number
-  /** Settled consumers (only on planets) */
-  consumers: ConsumerUnit[]
-  /**
-   * Planet owner while consumers present (first approver).
-   * Cleared when colony is destroyed.
-   */
-  planetOwner?: PlayerId
-  /** Source stock chips (bound) on a resource source */
-  sourceStock: ChipColor[]
-  /**
-   * Player who claimed this source.
-   * Neutral sources produce nothing and keep neither stock nor extractors.
-   */
-  sourceOwner?: PlayerId
-  /**
-   * Extractors on an owned source. Each one yields one chip at production.
-   * Removed, together with the stock, when the source becomes neutral.
-   */
-  extractors?: number
-  /** Mining fee per chip taken by someone else. Own takes are free. */
-  sourceFee?: number
-  /** Firing direction, chosen when the source is developed. */
-  sourceDir?: DirIndex
-  /** Import tariff per paid delivery. Skipping it still moves the meter. */
-  importFee?: number
-  field?: PlacedField
+  x: number
+  y: number
+  kind: CellKind
+  label?: string
+  /** Base owner, or defense owner */
+  owner?: PlayerId | 'neutral'
+  /** Open stacks on this cell (bottom → top). */
+  stack: Card[]
+  /** Covered draw pile under the top face-up card (suns / bases). */
+  drawPile: Card[]
+  /** Toll for defensive units on this cell. */
+  toll: number
+  /** Neutral VP markers waiting on planets. */
+  vpMarkers: number
 }
 
 export interface PlayerState {
+  id: PlayerId
+  name: string
   money: number
-  /** Virtual money earned after the bank ran out (counts for winning). */
-  owed: number
+  bankClaims: number
+  securedVp: number
+  color: string
 }
 
-export type Winner = PlayerId | 'draw' | 'mission'
+export interface MissionProgress {
+  suppliedPlanets: string[]
+  defensesDefeated: number
+  requiredPlanets: string[]
+  requiredDefenses: number
+}
 
-export type ToolMode = 'select' | 'place' | 'remove' | 'fee'
+export interface GameLogEntry {
+  id: number
+  text: string
+  tone?: 'info' | 'money' | 'combat' | 'vp' | 'end'
+}
+
+export type Selection =
+  | { type: 'stack'; x: number; y: number; count: number }
+  | { type: 'vp'; x: number; y: number }
+  | null
+
+export interface GameState {
+  scenarioId: ScenarioId
+  mode: GameMode
+  cells: Record<string, CellState>
+  players: PlayerState[]
+  currentPlayerIndex: number
+  bank: number
+  demandDeck: Card[]
+  energyReserve: Card[]
+  energyDiscard: Card[]
+  demandDiscard: Card[]
+  missions: MissionProgress | null
+  selection: Selection
+  pathPreview: Coord[] | null
+  pathCost: number | null
+  log: GameLogEntry[]
+  logSeq: number
+  turn: number
+  ended: boolean
+  winnerText: string | null
+  rngSeed: number
+}
+
+export function keyOf(x: number, y: number): string {
+  return `${x},${y}`
+}
+
+export function rankLabel(rank: Rank): string {
+  return rank === 1 ? 'A' : String(rank)
+}
+
+export function suitSymbol(suit: Suit): string {
+  switch (suit) {
+    case 'hearts':
+      return '♥'
+    case 'clubs':
+      return '♣'
+    case 'spades':
+      return '♠'
+    case 'diamonds':
+      return '♦'
+  }
+}
+
+export function energyPayout(rank: Rank): number {
+  return rank
+}
+
+export function canStackOn(movingBottom: Rank, targetTop: Rank): boolean {
+  return movingBottom === targetTop - 1
+}
+
+export function isDescendingRun(cards: Card[]): boolean {
+  if (cards.length === 0) return false
+  for (let i = 1; i < cards.length; i++) {
+    if (cards[i].rank !== cards[i - 1].rank - 1) return false
+  }
+  return true
+}
