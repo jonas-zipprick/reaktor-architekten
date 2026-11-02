@@ -1,9 +1,14 @@
-import { useMemo, type MouseEvent } from 'react'
+import { useEffect, useMemo, type MouseEvent } from 'react'
 import type { CellState, GameState } from '../types'
 import { keyOf } from '../types'
 import { useGameStore } from '../state/gameStore'
-import { canSelectVp, selectableCounts } from '../state/rules'
+import {
+  isMoveTarget,
+  isVacantEmpty,
+  selectableCounts,
+} from '../state/rules'
 import { BoardCell } from './BoardCell'
+import { PlayingCard } from './PlayingCard'
 import './Board.css'
 
 function boardBounds(cells: Record<string, CellState>) {
@@ -19,11 +24,10 @@ function boardBounds(cells: Record<string, CellState>) {
 
 export function Board({ game }: { game: GameState }) {
   const selectStack = useGameStore((s) => s.selectStack)
-  const selectVp = useGameStore((s) => s.selectVp)
   const moveTo = useGameStore((s) => s.moveTo)
+  const setWaypoint = useGameStore((s) => s.setWaypoint)
   const hover = useGameStore((s) => s.hover)
   const clearSelection = useGameStore((s) => s.clearSelection)
-  const harvestVp = useGameStore((s) => s.harvestVp)
 
   const { minX, maxX, minY, maxY } = useMemo(
     () => boardBounds(game.cells),
@@ -36,38 +40,46 @@ export function Board({ game }: { game: GameState }) {
     return set
   }, [game.pathPreview])
 
+  const waypointIndex = useMemo(() => {
+    const map = new Map<string, number>()
+    game.waypoints.forEach((w, i) => map.set(keyOf(w.x, w.y), i + 1))
+    return map
+  }, [game.waypoints])
+
   const cols = maxX - minX + 1
   const rows = maxY - minY + 1
 
-  const onCellClick = (cell: CellState) => {
+  const onCellClick = (cell: CellState, e: MouseEvent) => {
     if (game.ended) return
 
-    // If something selected, try move
     if (game.selection) {
       if (
         game.selection.type === 'stack' &&
         game.selection.x === cell.x &&
         game.selection.y === cell.y
       ) {
-        // Cycle count or clear
         const counts = selectableCounts(game, cell.x, cell.y)
         const idx = counts.indexOf(game.selection.count)
         if (idx >= 0 && idx < counts.length - 1) {
           selectStack(cell.x, cell.y, counts[idx + 1])
-        } else {
-          clearSelection()
+        } else if (counts.length > 1) {
+          selectStack(cell.x, cell.y, counts[0])
         }
         return
       }
 
-      // Planet energy harvest: selecting on planet means create VP
-      if (
-        game.selection.type === 'stack' &&
-        game.cells[keyOf(game.selection.x, game.selection.y)]?.kind ===
-          'planet'
-      ) {
-        // Clicking elsewhere cancels; harvest via panel button
-        moveTo({ x: cell.x, y: cell.y })
+      // Shift+click: Wegpunkt auf freiem leerem Feld (auch für Verteidigung).
+      if (e.shiftKey) {
+        if (isVacantEmpty(cell)) {
+          setWaypoint({ x: cell.x, y: cell.y })
+        }
+        return
+      }
+
+      const asMove = isMoveTarget(game, { x: cell.x, y: cell.y })
+      // Ohne Shift: leere Felder, die kein Ziel sind, als Wegpunkt nutzen (z. B. Energie).
+      if (isVacantEmpty(cell) && !asMove) {
+        setWaypoint({ x: cell.x, y: cell.y })
         return
       }
 
@@ -75,38 +87,35 @@ export function Board({ game }: { game: GameState }) {
       return
     }
 
-    // Fresh selection
-    if (canSelectVp(game, cell.x, cell.y) && cell.stack.every((c) => c.suit === 'clubs' || !c)) {
-      // Prefer cards if energy selectable
-    }
-
     const counts = selectableCounts(game, cell.x, cell.y)
     if (counts.length) {
-      // On planet: selecting energy prepares harvest (confirm in panel)
       selectStack(cell.x, cell.y, counts[0])
-      return
-    }
-    if (canSelectVp(game, cell.x, cell.y)) {
-      selectVp(cell.x, cell.y)
     }
   }
 
-  const onVpBadgeClick = (cell: CellState, e: MouseEvent) => {
-    e.stopPropagation()
-    if (game.selection?.type === 'vp' && game.selection.x === cell.x) {
-      clearSelection()
-      return
-    }
-    if (canSelectVp(game, cell.x, cell.y)) selectVp(cell.x, cell.y)
+  const onContextMenu = (e: MouseEvent) => {
+    e.preventDefault()
+    if (game.selection) clearSelection()
   }
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (!useGameStore.getState().game?.selection) return
+      e.preventDefault()
+      clearSelection()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [clearSelection])
 
   return (
-    <div className="board-shell">
+    <div className="board-shell" onContextMenu={onContextMenu}>
       <div
         className="board-grid"
         style={{
           gridTemplateColumns: `repeat(${cols}, var(--cell-size))`,
-          gridTemplateRows: `repeat(${rows}, calc(var(--cell-size) * 1.28))`,
+          gridTemplateRows: `repeat(${rows}, var(--cell-height))`,
         }}
         onMouseLeave={() => hover(null)}
       >
@@ -130,18 +139,20 @@ export function Board({ game }: { game: GameState }) {
               game.selection.x === x &&
               game.selection.y === y
                 ? game.selection.count
-                : game.selection?.type === 'vp' &&
-                    game.selection.x === x &&
-                    game.selection.y === y
-                  ? -1
-                  : 0
+                : 0
 
             return (
               <BoardCell
                 key={`${x},${y}`}
                 cell={cell}
                 selectedCount={selected}
+                currentPlayerId={game.players[game.currentPlayerIndex].id}
+                demandFlash={game.demandRollSeq > 0}
+                demandFlashKey={game.demandRollSeq}
+                limitFlash={game.planetLimitSeq > 0}
+                limitFlashKey={game.planetLimitSeq}
                 onPath={pathSet.has(keyOf(x, y))}
+                waypoint={waypointIndex.get(keyOf(x, y)) ?? null}
                 pathCost={
                   game.pathPreview?.length &&
                   game.pathPreview[game.pathPreview.length - 1]?.x === x &&
@@ -149,26 +160,35 @@ export function Board({ game }: { game: GameState }) {
                     ? game.pathCost
                     : null
                 }
-                onClick={() => onCellClick(cell)}
-                onVpClick={(e) => onVpBadgeClick(cell, e)}
+                onClick={(e) => onCellClick(cell, e)}
                 onMouseEnter={() => {
                   if (game.selection) hover({ x, y })
-                }}
-                onHarvest={() => {
-                  if (
-                    game.selection?.type === 'stack' &&
-                    game.selection.x === x &&
-                    game.selection.y === y &&
-                    cell.kind === 'planet'
-                  ) {
-                    harvestVp(x, y, game.selection.count)
-                  }
                 }}
               />
             )
           })
         })}
       </div>
+
+      <aside
+        className="board-discard"
+        title={`Energie-Ablage (${game.energyDiscard.length})`}
+        aria-label={`Energie-Ablage mit ${game.energyDiscard.length} Karten`}
+      >
+        <span className="board-discard-label">Ablage</span>
+        <div className="board-discard-stack sun-deck">
+          {game.energyDiscard.map((card, i) => (
+            <PlayingCard
+              key={card.id}
+              card={{ ...card, faceUp: true }}
+              compact
+              stacked={i > 0}
+              stackIndex={i}
+            />
+          ))}
+        </div>
+        <span className="board-discard-count">{game.energyDiscard.length}</span>
+      </aside>
     </div>
   )
 }

@@ -1,12 +1,12 @@
-# Versorgungs-Architekten – Spielanleitung v6.6
+# Versorgungs-Architekten – Spielanleitung v
 
 Analoges Wirtschafts-, Logistik- und Kartenspiel für 1 bis 4 Spieler · Arbeitsfassung für Playtests
 
 Versorgungs-Architekten ist ein räumliches Wirtschafts- und Strategiespiel auf einem gemeinsamen Raster aus rechteckigen Feldern.
 
-Die Spieler transportieren Energiekarten von Sonnen zu Planeten, verdienen Geld, errichten Verteidigungen und kämpfen um wirtschaftlich wichtige Transportwege. Sie können Energiekarten in Speichern sammeln und ganze Kartenstapel gemeinsam transportieren.
+Die Spieler transportieren Energiekarten von Sonnen zu Planeten, verdienen Geld und kontrollieren Wege mit Gebührenmarkern auf Energiestapeln. Energie darf auf beliebige leere Felder gelegt werden; dort entstehen Zwischenlager und optionale Gebührenfelder.
 
-Bereits gelieferte Energie kann von Planeten wieder entnommen und in Siegpunktmarker umgewandelt werden. Diese müssen anschließend zur eigenen Spielerbasis transportiert werden.
+Jeder Planet hat einen Spannungsmesser (−6 bis +6). Deckt ein Spieler ein Ass auf einer Sonne auf, muss er sofort Bedarf würfeln. Die Kartenaktion beendet den Zug. Bei Spannung genau ±6 wird der Stapel abgeräumt; ein Verlust durch Spannung gibt es nicht.
 
 Das Spiel verbindet die absteigenden Kartenfolgen von Solitaire mit räumlicher Logistik und wirtschaftlichem Wettbewerb.
 
@@ -18,9 +18,9 @@ Das Spiel verbindet die absteigenden Kartenfolgen von Solitaire mit räumlicher 
 | Koop   | 2       | Beide Missionsplaneten vollständig versorgen und insgesamt zwei neutrale Verteidigungen besiegen |
 | Versus | 2–4     | Bei Spielende das höchste Gesamtvermögen besitzen                                                |
 
-Ein Planet ist vollständig versorgt, sobald sein Bedarfsstapel mit Herz Ass abgeschlossen wurde.
+Ein Planet ist vollständig versorgt, sobald auf ihm Herz Ass abgelegt wurde.
 
-Eine Verteidigung gilt als besiegt, sobald eine passende offensive Karte auf ihren Stapel gespielt wird.
+Eine Verteidigung gilt als besiegt, sobald Herz Ass auf ihren Stapel gelegt wurde.
 
 Im Solo- und Koop-Modus müssen die Missionsziele bis zum Spielende erfüllt werden. Bereits erreichte Missionsziele bleiben dauerhaft erfüllt.
 
@@ -28,13 +28,11 @@ Im Solo- und Koop-Modus müssen die Missionsziele bis zum Spielende erfüllt wer
 
 Im Versus-Modus zählt bei Spielende:
 
-\\[ \text{Gesamtvermögen}=\text{Geld}+5\times\text{gesicherte Siegpunktmarker} \\]
+\\[ \text{Gesamtvermögen}=\text{Geld}+\text{Bankforderungen}+5\times\text{Siegpunkte} \\]
 
-Offene Bankforderungen zählen ebenfalls zum Gesamtvermögen.
+Jeder Siegpunkt zählt 5 Geld (vorläufiger Playtestwert).
 
-Ein gesicherter Siegpunktmarker ist damit 5 Geld wert.
-
-Der Wert von 5 Geld pro Siegpunktmarker ist ein vorläufiger Playtestwert.
+Siegpunkte erhält man durch Bedarf würfeln beim Aufdecken eines Asses (1◆ pro Würfelung).
 
 # 2. Spielmaterial
 
@@ -46,14 +44,14 @@ Ein Feld misst ungefähr 70 × 95 mm.
 
 Es gibt folgende Feldtypen:
 
-| Feld         | Funktion                                                 |
-| ------------ | -------------------------------------------------------- |
-| Sonne        | Produziert Energiekarten                                 |
-| Planet       | Nimmt Energie auf und erzeugt Siegpunktmarker            |
-| Speicher     | Lagert Energiekarten zwischen                            |
-| Spielerbasis | Ausgangspunkt für Einheiten und Ziel für Siegpunktmarker |
-| Leeres Feld  | Kann von Einheiten besetzt werden                        |
-| Asteroid     | Verteuert den Transport                                  |
+| Feld         | Funktion                                      |
+| ------------ | --------------------------------------------- |
+| Sonne        | Produziert Energiekarten                      |
+| Planet       | Nimmt Energie auf; Spannungsmesser −6…+6      |
+| Leeres Feld  | Nimmt Energie auf; kann Gebührenmarker tragen |
+| Asteroid     | Verteuert den Transport                       |
+
+Es gibt keine Speicher und keine Spielerbasen.
 
 Alle Spieler teilen sich dasselbe Spielfeld.
 
@@ -62,32 +60,26 @@ Alle Spieler teilen sich dasselbe Spielfeld.
 | Kartenfarbe | Werte           | Funktion            |
 | ----------- | --------------- | ------------------- |
 | Herz ♥      | 5, 4, 3, 2, Ass | Energie             |
-| Kreuz ♣     | 6, 5, 4, 3      | Planetenbedarf      |
 | Pik ♠       | 6, 5, 4, 3, 2   | Defensive Einheiten |
-| Karo ♦      | 5, 4, 3, 2, Ass | Offensive Einheiten |
 
 Zusätzlich werden benötigt:
 
 - Geldmarker
-- Siegpunktmarker
-- Eigentumsmarker für Einheiten
-- Gebührenmarker
+- Spannungsmarker (Stein) pro Planet
+- Gebührenmarker (Spielerfarbe)
 - Startspielermarker
 - Missionsmarker für Solo und Koop
+- Je ein W4 für Spannungswürfe
 
 ## 2.3 Kartenstapel
 
 Jede Sonne besitzt einen eigenen Energie-Nachziehstapel.
 
-Alle Sonnen verwenden Herz-Energiekarten der Werte 5, 4, 3, 2 und Ass.
+Jede Sonne erhält einen gemischten Stapel aus 30 Herz-Energiekarten: 2×5, 4×4, 6×3, 8×2, 10×Ass.
 
 Die Sonnen-Nachziehstapel sind unerschöpflich. Werden sie leer, werden neue Energiekarten aus dem gemeinsamen Energievorrat gemischt.
 
-Die Planeten verwenden einen gemeinsamen, begrenzten Bedarfsvorrat aus Kreuzkarten.
-
-Abgeräumte Kreuzkarten werden nicht wieder in diesen Vorrat gemischt.
-
-Die Anzahl der Bedarfskarten bestimmt mit, wie lange eine Partie dauert.
+Es gibt keine Kreuz-Bedarfskarten. Planeten beginnen leer.
 
 # 3. Kartenwerte und Stapelregeln
 
@@ -118,7 +110,7 @@ Die Kartenfarbe ist für die Rangfolge unerheblich.
 
 ## 3.1 Offen und verdeckt
 
-- Karten auf Planeten, Speichern und Verteidigungsstapeln liegen offen.
+- Karten auf Planeten, offenen Feldern und Verteidigungsstapeln liegen offen.
 - Energie-Nachziehstapel und Einheiten-Nachziehstapel liegen verdeckt, mit Ausnahme ihrer jeweils obersten Karte.
 - Verdeckte Karten dürfen nicht betrachtet werden.
 - Sobald die oberste verdeckte Karte freigelegt wird, wird sie sofort kostenlos aufgedeckt.
@@ -140,11 +132,11 @@ Dabei gelten folgende Regeln:
 
 ### Beispiel
 
-Auf einem Speicher liegen:
+Auf einem leeren Feld liegen:
 
 ♥ 5 – ♥ 4 – ♥ 3
 
-Auf einem Planeten liegt Kreuz 6.
+Auf dem Planeten liegt ♥ 6 (oder der Planet ist leer und nimmt ♥ 5 als Startkarte).
 
 Der Spieler darf den gesamten Energiestapel in einer einzigen Aktion zum Planeten transportieren.
 
@@ -154,34 +146,25 @@ Alle drei Energiekarten werden regelkonform geliefert.
 
 Der Spieler erhält dafür insgesamt 12 Geld aus der Bank.
 
-Wichtig: Die gemeinsame Bewegung spart Aktionen und Transportkosten. Jede gelieferte Energiekarte bringt weiterhin ihre normale Auszahlung.
+Wichtig: Die gemeinsame Bewegung spart Aktionen und Transportkosten. Die Auszahlung richtet sich nach der Spannung vor der Ablieferung.
 
 ## 3.3 Einschränkungen beim Stapeltransport
 
-Die persönlichen verdeckten Einheitenstapel auf den Spielerbasen dürfen nicht als Ganzes bewegt werden. Von ihnen darf jeweils nur die oberste offene Karte ausgespielt werden.
-
-Einheiten dürfen nur von ihrem Eigentümer bewegt werden.
-
-Ein Spieler darf deshalb keine fremde oder neutrale defensive Einheit als Teil eines Stapeltransports bewegen.
-
-Offen liegende Energiekarten dürfen dagegen unabhängig davon bewegt werden, wer sie ursprünglich abgelegt hat.
-
-Wird eine eigene defensive Einheit zusammen mit darüberliegenden Energiekarten bewegt, bleibt ihre Gebühr erhalten.
+Energiekarten auf leeren Feldern dürfen nur von dem Spieler genommen werden, dessen Gebührenmarker dort liegt.
 
 # 4. Spielaufbau
 
 1. Spielmodus und Szenario auswählen.
 2. Die rechteckigen Spielfelder gemäß Szenariokarte auslegen.
-3. Jeder Spieler erhält eine Spielerbasis und eine Spielerfarbe.
+3. Jeder Spieler erhält eine Spielerfarbe und Gebührenmarker.
 4. Jeder Spieler erhält 12 Geld.
 5. Der restliche Geldvorrat kommt in die Bank.
-6. Alle Sonnen, Speicher und Planeten beginnen neutral.
-7. Auf jeden Planeten wird eine zufällige Kreuz-Bedarfskarte offen gelegt.
-8. Der restliche Kreuzkartenstapel bildet den verdeckten Bedarfsvorrat.
+6. Alle Sonnen und Planeten beginnen neutral.
+7. Alle Planeten beginnen ohne Karten (leer).
+8. (entfällt — kein Bedarfsvorrat / keine Basen / keine Speicher)
 9. Die neutralen Verteidigungen werden gemäß Szenario platziert.
-10. Jeder Spieler mischt seinen persönlichen Einheitenstapel.
-11. Die Sonnen erhalten ihre gemischten Energie-Nachziehstapel.
-12. Der Startspieler wird ausgelost.
+10. Die Sonnen erhalten ihre gemischten Energie-Nachziehstapel.
+11. Der Startspieler wird ausgelost.
 
 ## 4.1 Geldmenge
 
@@ -194,20 +177,11 @@ Wird eine eigene defensive Einheit zusammen mit darüberliegenden Energiekarten 
 
 Die Geldvorräte aller Spieler sind jederzeit offen.
 
-## 4.2 Persönlicher Einheitenstapel
+## 4.2 Einheiten und Basen
 
-Jeder Spieler erhält:
+Es gibt keine persönlichen Einheitenstapel und keine Spielerbasen.
 
-- Karo Ass
-- Karo 3
-- Pik 2
-- Pik 4
-
-Diese vier Karten werden verdeckt gemischt und auf der Spielerbasis abgelegt.
-
-Die oberste Karte wird aufgedeckt.
-
-Wird sie ausgespielt, wird die nächste Karte automatisch aufgedeckt.
+Spieler kontrollieren Wege ausschließlich über Energiestapel mit Gebührenmarker auf leeren Feldern. Neutrale Verteidigungen kommen nur aus dem Szenario.
 
 # 5. Bewegung und Transportwege
 
@@ -226,23 +200,19 @@ Eine Bewegung über mehrere Felder zählt trotzdem als nur eine Kartenaktion.
 
 ## 5.1 Transportkosten
 
-Die Kosten werden für jedes durchquerte Zwischenfeld berechnet.
+Die Kosten werden für jedes betretene Feld berechnet (Zwischenfelder und Zielfeld).
 
-Start- und Zielfeld kosten nichts.
+Nur das Startfeld kostet nichts.
 
-| Durchquertes Feld              | Kosten                            |
-| ------------------------------ | --------------------------------- |
-| Leeres Feld                    | 1 Geld an die Bank                |
-| Asteroid                       | 3 Geld an die Bank                |
-| Sonne                          | Kostenlos                         |
-| Speicher                       | Kostenlos                         |
-| Planet                         | Kostenlos                         |
-| Eigene Spielerbasis            | 1 Geld an die Bank                |
-| Fremde Spielerbasis            | 1 Geld an die Bank                |
-| Offensive Karo-Einheit         | 1 Geld an die Bank                |
-| Eigene defensive Pik-Einheit   | Kostenlos                         |
-| Fremde defensive Pik-Einheit   | Vom Eigentümer festgelegte Gebühr |
-| Neutrale defensive Pik-Einheit | Szenariogebühr an die Bank        |
+| Feld / Situation                         | Kosten                            |
+| ---------------------------------------- | --------------------------------- |
+| Leeres Feld (ohne Gebühr)                | 1 Geld an die Bank                |
+| Asteroid                                 | 3 Geld an die Bank                |
+| Sonne                                    | 1 Geld an die Bank                |
+| Planet                                   | 1 Geld an die Bank                |
+| Eigenes Gebührenfeld (leeres Feld)       | Kostenlos                         |
+| Fremdes/neutrales leeres Gebührenfeld **darüber** | Volle Gebühr an den Inhaber (bzw. Bank) |
+| Fremdes/neutrales leeres Gebührenfeld **darauf ablegen** | 1 Geld an die Bank        |
 
 Für einen Stapeltransport werden sämtliche Gebühren nur einmal bezahlt.
 
@@ -272,17 +242,17 @@ Die Entnahme selbst kostet kein Geld. Es fallen ausschließlich die Gebühren de
 
 Sonnen sind neutral und können von allen Spielern genutzt werden.
 
-# 7. Energiespeicher
+# 7. Energie auf leeren Feldern
 
-Jeder Speicher besitzt Platz für einen offenen Energiestapel.
+Es gibt keine Speicher. Energiekarten dürfen von der Sonne oder von **eigenen** Gebührenfeldern auf **beliebige leere Felder** (sowie Planeten und Verteidigungen) gelegt werden.
 
-Ist der Speicher leer, darf eine beliebige Energiekarte dort abgelegt werden.
+Ist das Zielfeld leer, darf eine beliebige Energiekarte dort abgelegt werden. Der Spieler legt dabei seinen **Gebührenmarker** auf das Feld (Startgebühr 0).
 
-Befinden sich bereits Karten im Speicher, dürfen weitere Karten nur gemäß der absteigenden Stapelregel hinzugefügt werden.
+Befinden sich bereits Energiekarten auf dem Feld, dürfen weitere Karten nur gemäß der absteigenden Stapelregel hinzugefügt werden.
 
 ### Beispiel
 
-Auf einem Speicher liegt Herz 5.
+Auf einem leeren Feld liegt Herz 5.
 
 Dort darf Herz 4 abgelegt werden.
 
@@ -294,29 +264,25 @@ Es entsteht:
 
 Dieser gesamte Stapel darf später gemeinsam transportiert werden.
 
-## 7.1 Speicherregeln
+## 7.1 Gebührenmarker und Ass
 
-- Speicher sind neutral.
-- Jeder Spieler darf gespeicherte Energiekarten verwenden.
-- Das Einlagern kostet eine Kartenaktion.
-- Das Entnehmen kostet eine Kartenaktion.
-- Es dürfen einzelne Karten oder zulässige absteigende Teilstapel entnommen werden.
-- Die normalen Transportgebühren gelten.
-- Gespeicherte Energie bringt noch kein Geld.
+- Wer zuerst Energie auf ein leeres Feld legt, setzt seinen Gebührenmarker darauf.
+- Der Eigentümer darf die Gebühr während seines Zuges kostenlos ändern.
+- Eigene Gebührenfelder sind kostenlos zu durchqueren; fremde kosten die festgelegte Gebühr.
+- Energiekarten dürfen **nur** von leeren Feldern genommen werden, auf denen die **eigene** Gebührenmarke liegt.
+- Fremde oder neutrale Energiestapel dürfen nicht entnommen werden (man darf aber weiterhin Karten darauf ablegen).
+- Sobald **Herz Ass** auf einem solchen Energiestapel landet, wird der **gesamte Stapel** abgeräumt und der **Gebührenmarker verschwindet**.
+- Die Energiekarten kommen auf den Energie-Ablagestapel.
 
 # 8. Planeten und Energieversorgung
 
-Jeder Planet besitzt einen aktiven Bedarfsstapel.
+Jeder Planet beginnt leer.
 
-Dieser beginnt mit einer offenen Kreuzkarte.
+Auf einen leeren Planeten darf eine beliebige Energiekarte gelegt werden. Planeten haben **keine Gebührenmarker** und gehören niemandem.
 
-Energiekarten dürfen auf diesen Stapel gelegt werden, wenn sie unmittelbar einen Rang niedriger sind als die oberste Karte.
+Sobald mindestens eine Energiekarte auf dem Planeten liegt, dürfen weitere Energiekarten nur gemäß der absteigenden Stapelregel daraufgelegt werden (unmittelbar einen Rang niedriger als die oberste Karte).
 
 ### Beispiel
-
-Vollständiger Bedarfszyklus
-
-## ♣6
 
 ## ♥5
 
@@ -332,182 +298,77 @@ Planet vollständig versorgt
 
 ## 8.1 Einkommen
 
-Jede gültig gelieferte Energiekarte bringt Geld aus der Bank.
+Eine gültige Energielieferung an einen Planeten bringt Geld aus der Bank entsprechend der **Spannung vor der Ablieferung**:
 
-| Energiekarte | Einkommen |
-| ------------ | --------- |
-| Herz 5       | 5 Geld    |
-| Herz 4       | 4 Geld    |
-| Herz 3       | 3 Geld    |
-| Herz 2       | 2 Geld    |
-| Herz Ass     | 1 Geld    |
+| Spannung vor Ablieferung | Einkommen |
+| ------------------------ | --------- |
+| −1                       | 1 Geld    |
+| −2                       | 2 Geld    |
+| −3                       | 3 Geld    |
+| …                        | …         |
+| −6                       | 6 Geld    |
+| 0 oder positiv           | 0 Geld    |
 
-Die Einnahmen werden sofort ausgezahlt.
+Die Auszahlung gilt einmal pro Lieferaktion (auch bei einem Stapel), nicht pro Karte.
 
-Bei einem Stapeltransport erhält der Spieler die Summe der Werte aller gültig gelieferten Energiekarten.
+Die Einnahmen werden sofort ausgezahlt. Danach steigt die Spannung um +1 je gelieferte Karte.
 
 Die Transportgebühren werden zuvor bezahlt.
 
-## 8.2 Vollständige Versorgung
+## 8.2 Abräumen des Stapels
 
-Sobald Herz Ass auf einen Planeten gelegt wurde, ist dessen Bedarfszyklus abgeschlossen.
+Der Energiestapel auf einem Planeten verschwindet sofort, wenn:
 
-Es geschieht sofort Folgendes:
+- **Herz Ass** auf den Stapel gelegt wird, oder
+- die Spannung genau **−6** oder **+6** erreicht.
 
-1. Der liefernde Spieler erhält die normale Auszahlung.
-2. Im Solo- und Koop-Modus wird ein entsprechender Missionserfolg festgehalten.
-3. Die Kreuzkarte wird auf den Bedarf-Ablagestapel gelegt.
-4. Die Energiekarten gehen in den gemeinsamen Energievorrat zurück.
-5. Eine neue zufällige Kreuzkarte wird vom Bedarfsvorrat aufgedeckt.
+Dann geschieht Folgendes:
 
-Dieser Vorgang kostet keine zusätzliche Kartenaktion.
+1. Bei Ass: spannungsbasierte Auszahlung und ggf. Missionserfolg; Spannung bleibt stehen.
+2. Bei ±6: Spannung wird auf 0 zurückgesetzt.
+3. Der Stapel wird abgeräumt (Energie auf die gemeinsame Ablage).
+4. Der Planet ist wieder leer und kann erneut begonnen werden.
 
-Ist keine neue Bedarfskarte mehr verfügbar, endet das Spiel sofort.
+Die Spannung bleibt stets im Bereich −6…+6 (wird ggf. begrenzt). Es gibt keinen Sofortverlust durch Spannung.
 
-# 9. Energiekarten von Planeten entfernen
+# 9. Spannungsmesser und „Bedarf würfeln“
 
-Spieler dürfen bereits gelieferte Energiekarten wieder von Planeten entfernen.
+## 9.1 Spannungsmesser
 
-Dadurch können sie Siegpunktmarker erzeugen.
+Jeder Planet hat einen Spannungsmesser von −6 bis +6.
 
-## 9.1 Siegpunktgewinnung
+Bei Spielbeginn steht der Stein auf −2.
 
-Ein Spieler darf die oberste Energiekarte oder einen zusammenhängenden, oben zugänglichen absteigenden Energiestapel eines Planeten entfernen.
+Die Spannung wird als Stein auf einer Skala auf dem Planeten dargestellt.
 
-Dabei gilt:
+Jede auf den Planeten gelieferte Energiekarte verschiebt den Stein um 1 nach rechts (+1 Spannung), nachdem die Auszahlung für die Lieferaktion berechnet wurde.
 
-1. Das Entfernen kostet eine Kartenaktion.
-2. Die entfernten Energiekarten gehen auf den Energie-Ablagestapel.
-3. Für jede entfernte Energiekarte wird ein Siegpunktmarker auf dem Planeten erzeugt.
-4. Die darunterliegende Karte wird zum neuen sichtbaren Bedarf des Planeten.
-5. Die Siegpunktmarker liegen neben dem Bedarfsstapel und beeinflussen die Kartenfolge nicht.
+Gelieferte Energie darf nicht vom Planeten entfernt werden.
 
-### Beispiel
+## 9.2 Bedarf würfeln (beim Ass aufdecken)
 
-Auf einem Planeten liegt:
+Es gibt keine freie Würfel-Aktion mehr.
 
-♣ 6 – ♥ 5 – ♥ 4 – ♥ 3
+Sobald ein Spieler durch seine Kartenaktion ein Ass auf einer Sonne aufdeckt (neue offene Oberkarte), muss er sofort Bedarf würfeln:
 
-Ein Spieler entfernt die beiden obersten Energiekarten als gemeinsamen Stapel.
+1. Für jeden Planeten wird ein W4 gewürfelt.
+2. Bei 1, 2 oder 3: Spannung dieses Planeten um den Würfelwert senken.
+3. Bei 4: Spannung dieses Planeten um 1 erhöhen.
+4. Der aufdeckende Spieler erhält **1 Siegpunkt**.
 
-Herz 3 und Herz 4 gehen zurück in den Energievorrat.
+# 10. Neutrale Verteidigungen
 
-Auf dem Planeten werden zwei Siegpunktmarker erzeugt.
+Spieler stellen keine eigenen Pik-Einheiten mehr auf. Wege werden über Energiestapel mit Gebührenmarker kontrolliert (siehe Abschnitt 7).
 
-Der Bedarfsstapel lautet anschließend:
+Neutrale Verteidigungen werden gemäß Szenario mit Pik-Karten aufgebaut.
 
-♣ 6 – ♥ 5
+Sie bewegen sich nicht. Ihre Gebühren sind festgelegt und werden an die Bank bezahlt.
 
-Der Planet benötigt erneut Herz 4.
-
-## 9.2 Siegpunktmarker transportieren
-
-Siegpunktmarker liegen zunächst neutral auf dem Planeten.
-
-Jeder Spieler darf einen solchen Marker zur eigenen Spielerbasis transportieren.
-
-Dabei gelten folgende Regeln:
-
-- Der Transport eines Markers zählt als eine Kartenaktion.
-- Pro Aktion wird genau ein Siegpunktmarker bewegt.
-- Es gelten die normalen Transportgebühren.
-- Der Marker muss auf der eigenen Spielerbasis abgelegt werden.
-- Dort ist er dauerhaft gesichert.
-- Gesicherte Siegpunktmarker können nicht mehr bewegt oder gestohlen werden.
-
-Siegpunktmarker sind keine Energiekarten und unterliegen nicht der absteigenden Kartenfolge.
-
-## 9.3 Neutrale Siegpunktmarker
-
-Ein Siegpunktmarker gehört zunächst niemandem.
-
-Es spielt keine Rolle, welcher Spieler die Energiekarte ursprünglich geliefert oder entfernt hat.
-
-Erst durch den Transport zur eigenen Basis wird der Marker Eigentum des Spielers.
-
-Dadurch können Spieler um die auf Planeten liegenden Siegpunktmarker konkurrieren.
-
-## 9.4 Wert der Siegpunktmarker
-
-Jeder gesicherte Siegpunktmarker zählt bei der Schlusswertung als 5 Geld.
-
-Der Wert ist ein vorläufiger Playtestwert.
-
-Im Solo- und Koop-Modus können die gesicherten Marker zusätzlich als Erfolgsmaß verwendet werden. Für die eigentlichen Missionsziele sind sie nicht erforderlich.
-
-# 10. Offensive und defensive Einheiten
-
-## 10.1 Offensive Einheiten
-
-Karo-Karten sind offensive Einheiten.
-
-Sie dürfen:
-
-- Von der eigenen Spielerbasis auf ein leeres Feld bewegt werden.
-- Von einem leeren Feld auf ein anderes leeres Feld bewegt werden.
-- Eine passende defensive Einheit angreifen.
-
-Eine Angriffskarte darf nur auf einen Verteidigungsstapel gelegt werden, wenn ihr Wert genau einen Rang niedriger ist als die oberste Karte des Verteidigungsstapels.
-
-### Beispiel
-
-Auf Pik 6 darf Karo 5 gelegt werden.
-
-Auf Pik 4 darf Karo 3 gelegt werden.
-
-## 10.2 Defensive Einheiten
-
-Pik-Karten sind defensive Einheiten.
-
-Sie kontrollieren ihr jeweiliges Feld.
-
-Ihre Eigentümer dürfen eine beliebige nichtnegative ganzzahlige Durchgangsgebühr festlegen.
-
-Neue Verteidigungen beginnen mit einer Gebühr von 0 Geld.
-
-Der Eigentümer darf die Gebühren seiner Verteidigungen während seines eigenen Zuges kostenlos ändern.
-
-Eigene Verteidigungen dürfen kostenlos durchquert werden.
-
-Fremde Spieler bezahlen die festgelegte Gebühr an den Eigentümer.
-
-## 10.3 Verteidigungen mit Energie schwächen
-
-Energiekarten dürfen auf Verteidigungsstapel gelegt werden.
-
-Dabei gilt die normale absteigende Rangfolge.
+Energiekarten dürfen auf Verteidigungsstapel gelegt werden (absteigende Rangfolge). Sobald Herz Ass darauf landet, wird der gesamte Stapel abgeräumt — die Verteidigung ist besiegt.
 
 Beispiel:
 
-♠ 6 – ♥ 5 – ♥ 4
-
-Jetzt darf Karo 3 auf diesen Stapel gelegt werden.
-
-Sobald eine passende Angriffskarte auf einer Verteidigung landet, wird der gesamte Verteidigungsstapel einschließlich der Angriffskarte abgeräumt.
-
-Die Verteidigung ist besiegt.
-
-Das Feld ist anschließend leer.
-
-## 10.4 Bewegung von Verteidigungen
-
-Eigene defensive Einheiten dürfen auf andere leere Felder bewegt werden.
-
-Befinden sich Energiekarten auf einer eigenen Verteidigung, darf sie zusammen mit diesen Karten bewegt werden, sofern der gesamte bewegte Stapel die absteigende Rangfolge erfüllt.
-
-Der Gebührenmarker bewegt sich mit der Verteidigung.
-
-Fremde und neutrale Verteidigungen dürfen nicht bewegt werden.
-
-## 10.5 Neutrale Verteidigungen
-
-Neutrale Verteidigungen werden gemäß Szenario aufgebaut.
-
-Sie bewegen sich nicht.
-
-Ihre Gebühren sind festgelegt und werden an die Bank bezahlt.
-
-Sie können auf dieselbe Weise geschwächt und besiegt werden wie fremde Verteidigungen.
+♠ 6 – ♥ 5 – ♥ 4 – ♥ 3 – ♥ 2 – ♥ Ass
 
 # 11. Spielablauf
 
@@ -517,48 +378,35 @@ Es gibt insbesondere keine automatische Bedarfsentfernung mehr.
 
 Die Spieler sind in fester Reihenfolge reihum am Zug.
 
-Jeder Spieler darf während seines Zuges genau eine Kartenaktion ausführen.
+Jeder Spieler führt in seinem Zug genau **eine Kartenaktion** aus.
 
-Anschließend ist sofort der nächste Spieler an der Reihe.
+Die Kartenaktion beendet den Zug; danach ist der nächste Spieler an der Reihe.
 
-## 11.1 Mögliche Kartenaktionen
+Deckt die Aktion ein Ass auf einer Sonne auf, würfelt der Spieler sofort Bedarf (siehe 9.2).
 
-| Aktion                   | Beschreibung                                                                   |
-| ------------------------ | ------------------------------------------------------------------------------ |
-| Energie liefern          | Eine Energiekarte oder einen zulässigen Energiestapel auf einen Planeten legen |
-| Energie speichern        | Energie in einen Speicher transportieren                                       |
-| Energie umlagern         | Energie zwischen Speichern bewegen                                             |
-| Verteidigung schwächen   | Energiekarten auf einen Verteidigungsstapel legen                              |
-| Einheit einsetzen        | Oberste Einheit der eigenen Spielerbasis ausspielen                            |
-| Einheit bewegen          | Eine eigene Einheit umpositionieren                                            |
-| Angriff durchführen      | Eine passende offensive Karte auf eine Verteidigung legen                      |
-| Siegpunkte erzeugen      | Energiekarten vom Planeten entfernen und Marker erzeugen                       |
-| Siegpunkt transportieren | Einen neutralen Siegpunktmarker zur eigenen Basis bringen                      |
+## 11.1 Mögliche Aktionen
 
-Jede Aktion darf nur eine einzelne Karte, einen zulässigen Kartenstapel oder einen Siegpunktmarker bewegen beziehungsweise einsetzen.
+| Aktion                 | Beschreibung                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------ |
+| Energie liefern        | Energie auf einen Planeten legen                                               |
+| Energie ablegen        | Energie auf ein leeres Feld legen (Gebührenmarker setzen)                      |
+| Energie umlagern       | Energie zwischen offenen Feldern bewegen                                       |
+| Verteidigung abräumen  | Energie bis Herz Ass auf eine neutrale Verteidigung legen                      |
+
+Eine Kartenaktion darf nur eine einzelne Karte oder einen zulässigen Kartenstapel bewegen beziehungsweise einsetzen.
 
 ## 11.2 Kostenlose Handlungen
 
 Während seines Zuges darf ein Spieler zusätzlich:
 
-- Die Gebühren aller eigenen Verteidigungen beliebig oft ändern.
+- Die Gebühren aller eigenen Gebührenfelder beliebig oft ändern.
 - Geld an Mitspieler verschenken.
 
-Diese Handlungen verbrauchen keine Kartenaktion.
-
-## 11.3 Aussetzen
-
-Kann ein Spieler keine legale und bezahlbare Kartenaktion ausführen, setzt er aus.
-
-Sobald kein Spieler mehr irgendeine legale und bezahlbare Kartenaktion ausführen kann, endet die Partie.
+Gebühren ändern verbraucht keine Kartenaktion und beendet den Zug nicht.
 
 # 12. Spielende
 
-Die Partie endet sofort, sobald eine der folgenden Bedingungen erfüllt ist:
-
-1. Die Bank ist leer.
-2. Ein Planet müsste eine neue Bedarfskarte erhalten, aber der Bedarfsvorrat ist leer.
-3. Niemand kann mehr eine legale und bezahlbare Kartenaktion ausführen.
+Die Partie endet sofort, sobald die Bank leer ist.
 
 ## 12.1 Leere Bank
 
@@ -572,7 +420,7 @@ Im Versus-Modus zählt diese Forderung zum Gesamtvermögen.
 
 Der Spieler mit dem höchsten Gesamtvermögen gewinnt.
 
-\\[ \text{Gesamtvermögen}=\text{Geld}+\text{Bankforderungen}+5\times\text{gesicherte Siegpunktmarker} \\]
+\\[ \text{Gesamtvermögen}=\text{Geld}+\text{Bankforderungen}+5\times\text{Siegpunkte} \\]
 
 Bei Gleichstand teilen sich die betreffenden Spieler den Sieg.
 
@@ -581,7 +429,7 @@ Bei Gleichstand teilen sich die betreffenden Spieler den Sieg.
 Der Spieler gewinnt, wenn er bis zum Spielende:
 
 - Seinen Missionsplaneten mindestens einmal vollständig versorgt hat.
-- Mindestens eine vorgegebene neutrale Verteidigung mit einer offensiven Karte besiegt hat.
+- Mindestens eine vorgegebene neutrale Verteidigung mit Energie (bis Herz Ass) besiegt hat.
 
 Andernfalls verliert er.
 
@@ -617,34 +465,30 @@ Solo
 
 
 
-Vollständiges 9 × 9-Raster.
+Vollständiges 8 × 5-Raster.
 
-Koordinaten jeweils von −4 bis +4.
+Koordinaten: x von −4 bis +3, y von −2 bis +2.
 
 | Feld          | Koordinaten |
 | ------------- | ----------- |
-| Planet A      | (−4,−4)     |
-| Planet B      | (4,4)       |
-| Westsonne     | (−4,0)      |
-| Ostsonne      | (4,0)       |
-| Westspeicher  | (−2,0)      |
-| Ostspeicher   | (2,0)       |
+| Planet A      | (−4,−2)     |
+| Planet B      | (3,2)       |
+| Sonne         | (−4,0)      |
+| Sonne         | (3,0)       |
 | Asteroid      | (−1,−2)     |
-| Asteroid      | (1,2)       |
-| Basis Weiß    | (−4,2)      |
-| Basis Schwarz | (4,2)       |
+| Asteroid      | (0,2)       |
 
-Im Solo-Modus wird nur die weiße Basis verwendet.
+Keine Speicher und keine Basen — Energie liegt auf leeren Feldern.
 
 ### Neutrale Verteidigungen
 
 | Feld    | Karte | Gebühr |
 | ------- | ----- | ------ |
-| (−3,−4) | Pik 4 | 2      |
-| (−4,−3) | Pik 5 | 2      |
+| (−3,−2) | Pik 4 | 2      |
+| (−4,−1) | Pik 5 | 2      |
 | (0,0)   | Pik 3 | 3      |
-| (3,4)   | Pik 6 | 3      |
-| (4,3)   | Pik 4 | 2      |
+| (2,2)   | Pik 6 | 3      |
+| (3,1)   | Pik 4 | 2      |
 
 Solo verwendet nur die ersten drei Verteidigungen.
 
@@ -697,12 +541,8 @@ Der obere Verbindungskorridor umfasst:
 | ------------- | ----------- |
 | Planet A      | (−5,3)      |
 | Planet B      | (5,3)       |
-| Westsonne     | (−5,0)      |
-| Ostsonne      | (5,0)       |
-| Westspeicher  | (−4,−1)     |
-| Ostspeicher   | (4,−1)      |
-| Basis Weiß    | (−5,−2)     |
-| Basis Schwarz | (5,−2)      |
+| Sonne         | (−5,0)      |
+| Sonne         | (5,0)       |
 
 ### Neutrale Verteidigungen
 
@@ -745,19 +585,13 @@ Koordinaten von −4 bis +4.
 | Planet Nordwest | (−4,−4)     |
 | Planet Nordost  | (4,−4)      |
 | Planet Südost   | (4,4)       |
-| Westsonne       | (−4,0)      |
-| Nordsonne       | (0,−4)      |
-| Ostsonne        | (4,0)       |
-| Westspeicher    | (−2,0)      |
-| Nordspeicher    | (0,−2)      |
-| Ostspeicher     | (2,0)       |
+| Sonne           | (−4,0)      |
+| Sonne           | (0,−4)      |
+| Sonne           | (4,0)       |
 | Asteroid        | (−1,−1)     |
 | Asteroid        | (1,−1)      |
 | Asteroid        | (−1,2)      |
 | Asteroid        | (1,2)       |
-| Basis Weiß      | (−4,2)      |
-| Basis Schwarz   | (−1,−4)     |
-| Basis Rot       | (4,2)       |
 
 Es gibt keine neutralen Startverteidigungen.
 
@@ -776,24 +610,16 @@ Koordinaten von −4 bis +4.
 | Planet Nordwest | (−4,−4)     |
 | Planet Nordost  | (4,−4)      |
 | Planet Südwest  | (−4,4)      |
-| Westsonne       | (−4,0)      |
-| Nordsonne       | (0,−4)      |
-| Ostsonne        | (4,0)       |
-| Zentralsonne    | (0,0)       |
-| Westspeicher    | (−3,1)      |
-| Nordspeicher    | (1,−2)      |
-| Ostspeicher     | (3,1)       |
-| Zentralspeicher | (−1,1)      |
+| Sonne           | (−4,0)      |
+| Sonne           | (0,−4)      |
+| Sonne           | (4,0)       |
+| Sonne           | (0,0)       |
 | Asteroid        | (−2,−1)     |
 | Asteroid        | (2,−1)      |
 | Asteroid        | (−2,1)      |
 | Asteroid        | (2,1)       |
 | Asteroid        | (0,−2)      |
 | Asteroid        | (0,3)       |
-| Basis Weiß      | (−4,2)      |
-| Basis Schwarz   | (1,−4)      |
-| Basis Rot       | (4,2)       |
-| Basis Grün      | (0,2)       |
 
 Es gibt keine neutralen Startverteidigungen.
 
@@ -803,47 +629,27 @@ Der Spieler mit dem höchsten Gesamtvermögen gewinnt.
 
 ## Beispiel A – Gemeinsamer Energietransport
 
-Ein Speicher enthält:
+Auf einem leeren Feld liegen:
 
 ♥ 5 – ♥ 4 – ♥ 3
 
-Ein Planet benötigt Herz 5 und zeigt Kreuz 6.
+Auf dem Planeten liegt ♥ 6.
 
 Ein Spieler transportiert den gesamten Stapel zum Planeten.
 
 Die Route kostet 3 Geld.
 
-Der Spieler bezahlt 3 Geld und erhält:
-
-5 + 4 + 3 = 12 Geld.
-
-Sein Nettogewinn beträgt 9 Geld.
+Der Spieler bezahlt 3 Geld. Die Auszahlung richtet sich nach der Spannung vor der Ablieferung (z. B. bei −4 Spannung: 4 Geld).
 
 Der Transport benötigt nur eine Kartenaktion.
 
-## Beispiel B – Siegpunkte erzeugen
+## Beispiel B – Leerer Planet
 
-Auf einem Planeten liegt:
+Ein Planet ist leer.
 
-♣ 6 – ♥ 5 – ♥ 4 – ♥ 3
+Ein Spieler liefert ♥ 3 dorthin — das ist erlaubt, weil der Planet leer ist.
 
-Ein Spieler entfernt Herz 3 und Herz 4 als gemeinsamen Stapel.
-
-Beide Energiekarten kommen auf den Energie-Ablagestapel.
-
-Zwei Siegpunktmarker werden auf dem Planeten erzeugt.
-
-Danach liegt auf dem Planeten:
-
-♣ 6 – ♥ 5
-
-## Beispiel C – Siegpunkt sichern
-
-Auf Planet A liegen zwei neutrale Siegpunktmarker.
-
-Weiß transportiert einen Marker zur eigenen Basis.
-
-Der Transport führt über drei leere Zwischenfelder und kostet 3 Geld.
+Danach darf nur noch ♥ 2 (dann ♥ Ass) aufgelegt werden.
 
 Weiß bezahlt 3 Geld und sichert den Marker.
 
@@ -855,41 +661,37 @@ Der zweite Marker bleibt auf dem Planeten und kann weiterhin von jedem Spieler t
 
 Auf einem Feld liegt:
 
-♠ 6 – ♥ 5 – ♥ 4
+♠ 4 – ♥ 3 – ♥ 2
 
-Ein Spieler bewegt seine Karo 3 auf den Stapel.
-
-Die Folge ist gültig.
+Ein Spieler legt ♥ Ass auf den Stapel.
 
 Der gesamte Stapel wird abgeräumt.
 
 Das Feld ist anschließend leer.
 
-## Beispiel E – Gemeinsame Vorbereitung eines Angriffs
+## Beispiel E – Gemeinsame Vorbereitung
 
-Weiß besitzt einen Speicher mit:
+Weiß hat auf einem Feld:
 
-♥ 5 – ♥ 4
+♥ 5 – ♥ 4 – ♥ 3
 
 Eine neutrale Pik 6 kontrolliert einen wichtigen Transportweg.
 
-Weiß bewegt beide Energiekarten gemeinsam auf Pik 6.
+Weiß bewegt alle drei Energiekarten gemeinsam auf Pik 6.
 
 Anschließend liegt dort:
 
-♠ 6 – ♥ 5 – ♥ 4
+♠ 6 – ♥ 5 – ♥ 4 – ♥ 3
 
-Schwarz kann später mit Karo 3 angreifen.
-
-Damit können Spieler im Koop-Modus ihre Angriffe gemeinsam vorbereiten.
+Schwarz kann später ♥ 2 und ♥ Ass nachliefern und die Verteidigung abräumen.
 
 # 15. Playtestfragen
 
 ## Wirtschaft
 
-1. Sind die Einnahmen von 5/4/3/2/1 Geld pro Energiekarte angemessen?
+1. Ist die spannungsbasierte Auszahlung (max(0, −Spannung) pro Lieferung) angemessen?
 2. Wie stark verbessert der gemeinsame Stapeltransport die Rentabilität?
-3. Werden Speicher häufiger genutzt, weil sich große Energietransporte vorbereiten lassen?
+3. Werden offene Felder als Zwischenlager und Gebührenfelder sinnvoll genutzt?
 4. Sind 5 Geld pro gesichertem Siegpunktmarker ein sinnvoller Wert?
 5. Lohnen sich die zusätzlichen Aktionen für die Siegpunktgewinnung und den Rücktransport?
 
@@ -897,7 +699,7 @@ Damit können Spieler im Koop-Modus ihre Angriffe gemeinsam vorbereiten.
 
 6. Wie stark beeinflussen die Verteidigungen die Wahl der Transportwege?
 7. Werden Verteidigungen aus wirtschaftlichen Gründen angegriffen?
-8. Entstehen durch das Bewegen mehrerer Karten interessante neue Angriffsstrategien?
+8. Lohnt sich das gemeinsame Ablegen großer Energiestapel auf Verteidigungen?
 9. Sind die neutralen Gebühren sinnvoll?
 10. Können Spieler ihre eigenen Verteidigungen effektiv zur Optimierung von Transportwegen verwenden?
 
@@ -911,11 +713,10 @@ Damit können Spieler im Koop-Modus ihre Angriffe gemeinsam vorbereiten.
 
 ## Spielende und Balance
 
-16. Wie lange dauern Partien ohne automatischen Bedarfsabbau?
-17. Wird der begrenzte Bedarfsvorrat zuverlässig aufgebraucht?
-18. Wie häufig endet eine Partie durch eine leere Bank?
-19. Sind Solo- und Koop-Missionsziele mit dem neuen Stapeltransport angemessen schwierig?
-20. Gibt es wirtschaftlich profitable Aktionen, die unbegrenzt wiederholt werden können und dadurch die Partie dominieren?
+16. Wie lange dauern Partien mit leeren Planeten und Ass-Abschluss?
+17. Wie häufig endet eine Partie durch eine leere Bank?
+18. Sind Solo- und Koop-Missionsziele mit dem neuen Stapeltransport angemessen schwierig?
+19. Gibt es wirtschaftlich profitable Aktionen, die unbegrenzt wiederholt werden können und dadurch die Partie dominieren?
 
 ## 16. Vorläufige Playtestwerte und noch offene Feinabstimmung
 
@@ -923,23 +724,20 @@ Folgende Werte sind noch nicht endgültig ausbalanciert:
 
 | Regel                            | Aktueller Stand                         |
 | -------------------------------- | --------------------------------------- |
-| Siegpunktwert                    | 5 Geld pro gesichertem Marker           |
-| Siegpunktgewinnung               | 1 Marker je entnommener Energiekarte    |
-| Siegpunkttransport               | 1 Marker pro Kartenaktion               |
+| Spannungsmesser                  | −6…+6, Start −2; bei ±6 Stapel weg         |
+| Energielieferung                 | +1 Spannung je gelieferte Karte         |
+| Bedarf würfeln                   | Beim Ass-Aufdecken auf der Sonne; +1◆   |
+| Siegpunktwert                    | 5 Geld pro Siegpunkt (Playtest)         |
+| W4-Effekt                        | 1–3: −n; 4: +1 Spannung                 |
 | Stapeltransport                  | Mehrere Karten, nur einmal Gebühren     |
-| Auszahlung bei Stapellieferungen | Summe aller gelieferten Energiekarten   |
-| Automatischer Bedarfsabbau       | Vollständig entfernt                    |
+| Auszahlung bei Energielieferung  | max(0, −Spannung) vor der Ablieferung   |
+| Planetabschluss                  | Stapel abräumen, Planet wieder leer     |
 | Sonnen                           | Unerschöpflich                          |
-| Bedarfsvorrat                    | Begrenzt; Größe vor dem Spiel festlegen |
 | Neutrale Gebühren                | Gemäß Szenariokarte                     |
 
-Die konkrete Anzahl der Bedarfskarten muss noch durch Playtests bestimmt werden. Für erste Tests würde ich mit einem Vorrat von ungefähr 10 Kreuzkarten pro Planet beginnen.
-
-Versorgungs-Architekten v6.6 verbindet damit vier zentrale Mechaniken:
+Versorgungs-Architekten v6.7 verbindet damit vier zentrale Mechaniken:
 
 1. Energiekarten in absteigenden Folgen sammeln und transportieren.
 2. Durch effiziente Energielieferungen Geld verdienen.
 3. Durch Verteidigungen Transportwege wirtschaftlich kontrollieren.
-4. Bereits gelieferte Energie in Siegpunktmarker umwandeln und diese zur eigenen Basis bringen.
-
-Die wichtigste Neuerung gegenüber v6.5 ist, dass sich jetzt nicht nur Energiekarten, sondern auch Siegpunkte räumlich über das Spielfeld bewegen. Dadurch entstehen zwei miteinander verbundene Transportaufgaben, die um dieselben günstigen Wege konkurrieren.
+4. Spannung auf Planeten durch Ass-Aufdecken managen, ohne den Messbereich zu verlassen.

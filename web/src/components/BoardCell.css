@@ -6,11 +6,11 @@
   padding: 0;
   margin: 0;
   width: var(--cell-size);
-  height: calc(var(--cell-size) * 1.28);
+  height: var(--cell-height);
   background: linear-gradient(160deg, #152036, #0e1626);
   color: inherit;
   text-align: left;
-  overflow: hidden;
+  overflow: visible;
   transition:
     transform 140ms ease,
     border-color 140ms ease,
@@ -38,33 +38,51 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.55;
+  opacity: 1;
+}
+
+/* Sonne — goldenes Plasma */
+.kind-sun {
+  background: linear-gradient(160deg, #5a3a12 0%, #2a1a08 100%);
+  border-color: rgba(240, 168, 48, 0.45);
 }
 
 .kind-sun .cell-glow {
   background:
-    radial-gradient(circle at 50% 35%, rgba(255, 210, 110, 0.55), transparent 55%),
-    radial-gradient(circle at 50% 70%, rgba(240, 168, 48, 0.2), transparent 60%);
+    radial-gradient(circle at 50% 28%, rgba(255, 236, 170, 0.85), transparent 42%),
+    radial-gradient(circle at 50% 55%, rgba(240, 168, 48, 0.45), transparent 58%),
+    repeating-conic-gradient(
+      from 0deg at 50% 40%,
+      rgba(255, 210, 110, 0.12) 0deg 12deg,
+      transparent 12deg 24deg
+    );
   animation: sun-pulse 3.6s ease-in-out infinite;
 }
 
 @keyframes sun-pulse {
   0%,
   100% {
-    opacity: 0.5;
+    opacity: 0.75;
     transform: scale(1);
   }
   50% {
-    opacity: 0.85;
-    transform: scale(1.04);
+    opacity: 1;
+    transform: scale(1.05);
   }
+}
+
+/* Planet — Orbit / Teal */
+.kind-planet {
+  background: linear-gradient(165deg, #0d3d36 0%, #082428 55%, #0a1a28 100%);
+  border-color: rgba(61, 207, 142, 0.4);
 }
 
 .kind-planet .cell-glow {
   background:
-    radial-gradient(circle at 60% 40%, rgba(61, 207, 142, 0.35), transparent 50%),
-    radial-gradient(circle at 30% 70%, rgba(80, 140, 255, 0.2), transparent 55%);
-  animation: planet-drift 7s ease-in-out infinite;
+    radial-gradient(circle at 68% 38%, rgba(90, 220, 170, 0.55), transparent 38%),
+    radial-gradient(circle at 30% 72%, rgba(70, 140, 220, 0.28), transparent 48%),
+    radial-gradient(circle at 50% 50%, transparent 42%, rgba(61, 207, 142, 0.12) 43%, transparent 46%);
+  animation: planet-drift 8s ease-in-out infinite;
 }
 
 @keyframes planet-drift {
@@ -73,26 +91,53 @@
     filter: hue-rotate(0deg);
   }
   50% {
-    filter: hue-rotate(12deg);
+    filter: hue-rotate(14deg);
   }
 }
 
+/* Speicher — industrielles Violettgrau */
+.kind-storage {
+  background: linear-gradient(160deg, #2a2540 0%, #161828 100%);
+  border-color: rgba(170, 150, 255, 0.35);
+}
+
 .kind-storage .cell-glow {
-  background: radial-gradient(circle at 50% 50%, rgba(150, 180, 255, 0.18), transparent 60%);
+  background:
+    linear-gradient(180deg, rgba(160, 140, 255, 0.14), transparent 40%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 7px,
+      rgba(180, 170, 255, 0.08) 7px 8px
+    ),
+    radial-gradient(circle at 50% 80%, rgba(120, 100, 220, 0.22), transparent 55%);
+}
+
+/* Basis — warmes Station-Deck */
+.kind-base {
+  background: linear-gradient(165deg, #3a342c 0%, #1c1a16 100%);
+  border-color: rgba(230, 210, 170, 0.35);
 }
 
 .kind-base .cell-glow {
-  background: radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.12), transparent 55%);
+  background:
+    linear-gradient(180deg, rgba(255, 240, 210, 0.12), transparent 35%),
+    radial-gradient(circle at 50% 100%, rgba(240, 200, 120, 0.2), transparent 55%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 9px,
+      rgba(255, 255, 255, 0.04) 9px 10px
+    );
 }
 
 .kind-asteroid {
   background: linear-gradient(145deg, #2a221c, #17130f);
+  border-color: rgba(160, 120, 80, 0.3);
 }
 
 .kind-asteroid .cell-glow {
   background:
-    radial-gradient(circle at 40% 35%, rgba(180, 140, 100, 0.25), transparent 45%),
-    radial-gradient(circle at 70% 70%, rgba(90, 70, 50, 0.35), transparent 50%);
+    radial-gradient(circle at 40% 35%, rgba(180, 140, 100, 0.3), transparent 45%),
+    radial-gradient(circle at 70% 70%, rgba(90, 70, 50, 0.4), transparent 50%);
 }
 
 .owner-white.has-defense,
@@ -113,6 +158,20 @@
 .owner-green.has-defense,
 .owner-green.kind-base {
   box-shadow: inset 0 0 0 2px rgba(60, 184, 138, 0.7);
+}
+
+.board-cell.has-defense.defense-neutral {
+  border-color: rgba(180, 170, 150, 0.55);
+  box-shadow: inset 0 0 0 2px rgba(160, 150, 130, 0.45);
+  background: linear-gradient(160deg, #2a2824, #161410);
+}
+
+.board-cell.has-defense.defense-enemy {
+  border-color: rgba(180, 120, 220, 0.45);
+}
+
+.board-cell.has-defense.defense-own {
+  border-color: rgba(120, 170, 255, 0.45);
 }
 
 .cell-frame {
@@ -145,22 +204,45 @@
 }
 
 .kind-sun .cell-kind {
-  color: #ffd27a;
+  color: #ffe29a;
 }
 
 .kind-planet .cell-kind {
   color: #8af0c0;
 }
 
+.kind-storage .cell-kind {
+  color: #c8b8ff;
+}
+
+.kind-base .cell-kind {
+  color: #f0e2c0;
+}
+
 .cell-toll {
   flex-shrink: 0;
   font-size: 0.65rem;
-  font-weight: 600;
-  color: var(--spade);
-  background: rgba(107, 159, 255, 0.12);
-  border: 1px solid rgba(107, 159, 255, 0.28);
+  font-weight: 700;
   border-radius: 999px;
   padding: 1px 5px;
+}
+
+.cell-toll.toll-neutral {
+  color: #d8dee9;
+  background: rgba(160, 170, 190, 0.2);
+  border: 1px solid rgba(180, 190, 210, 0.45);
+}
+
+.cell-toll.toll-own {
+  color: #0d2a1c;
+  background: #3dcf8e;
+  border: 1px solid #7af0b8;
+}
+
+.cell-toll.toll-enemy {
+  color: #fff0f0;
+  background: #c62840;
+  border: 1px solid #ff7a8a;
 }
 
 .cell-stack {
@@ -171,25 +253,218 @@
   justify-content: flex-end;
   min-height: 0;
   padding-bottom: 2px;
+  isolation: isolate;
 }
 
-.vp-badge {
+/* Dicht gestapelt, damit der Sonnenstapel sichtbar schrumpft. */
+.sun-deck {
+  position: relative;
+}
+
+.sun-deck .pcard.compact.stacked {
+  margin-top: -42px;
+}
+
+.sun-pile-count {
   position: absolute;
-  top: 22px;
-  right: 5px;
-  border: 1px solid rgba(240, 168, 48, 0.45);
-  background: rgba(240, 168, 48, 0.16);
-  color: var(--amber);
+  top: 0;
+  right: calc(50% - 23px);
+  z-index: 20;
+  min-width: 1.1rem;
+  padding: 0 3px;
   border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #2a1805;
+  background: #ffe29a;
+  border: 1px solid rgba(240, 168, 48, 0.7);
+  pointer-events: none;
+}
+
+.tension-meter {
+  width: 100%;
+  padding: 0 1px 2px;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tension-scale {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  align-items: stretch;
+  height: 18px;
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    rgba(239, 90, 69, 0.35),
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(239, 90, 69, 0.35)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.tension-tick {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-style: normal;
+}
+
+.tension-line {
+  position: absolute;
+  top: 0;
+  bottom: 7px;
+  left: 50%;
+  width: 1px;
+  margin-left: -0.5px;
+  background: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.tension-tick.major .tension-line {
+  bottom: 8px;
+  width: 1.5px;
+  margin-left: -0.75px;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.tension-tick.zero .tension-line {
+  background: rgba(255, 236, 170, 0.9);
+  width: 2px;
+  margin-left: -1px;
+}
+
+.tension-tick em {
+  position: relative;
+  z-index: 1;
+  font-style: normal;
+  font-size: 0.42rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  padding-bottom: 1px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tension-tick.major em {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 700;
+  font-size: 0.45rem;
+}
+
+.tension-tick.zero em {
+  color: #ffe29a;
+}
+
+.tension-tick.active em {
+  color: #fff;
+  font-weight: 800;
+}
+
+.tension-tick.active .tension-line {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.tension-stone {
+  position: absolute;
+  top: 1px;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4f0e6, #8a7a5c 55%, #3a3224);
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.tension-value {
+  align-self: flex-end;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.75);
+  font-variant-numeric: tabular-nums;
+}
+
+.tension-meter.danger .tension-scale {
+  border-color: rgba(239, 90, 69, 0.7);
+  box-shadow: 0 0 8px rgba(239, 90, 69, 0.35);
+}
+
+.tension-meter.demand-pulse {
+  animation: demand-meter-pulse 1.2s ease;
+}
+
+.tension-meter.limit-pulse {
+  animation: limit-meter-pulse 1.2s ease;
+}
+
+@keyframes demand-meter-pulse {
+  0% {
+    filter: brightness(1);
+    box-shadow: none;
+  }
+  25% {
+    filter: brightness(1.35);
+    box-shadow: 0 0 14px rgba(100, 230, 160, 0.55);
+  }
+  100% {
+    filter: brightness(1);
+    box-shadow: none;
+  }
+}
+
+@keyframes limit-meter-pulse {
+  0% {
+    filter: brightness(1);
+    box-shadow: none;
+  }
+  25% {
+    filter: brightness(1.4);
+    box-shadow: 0 0 16px rgba(239, 90, 69, 0.65);
+  }
+  100% {
+    filter: brightness(1);
+    box-shadow: none;
+  }
+}
+
+.tension-meter.danger .tension-value {
+  color: #ef5a45;
+}
+
+.board-cell.has-waypoint {
+  border-color: rgba(240, 168, 48, 0.55);
+}
+
+.waypoint-badge {
+  position: absolute;
+  left: 5px;
+  top: 22px;
+  z-index: 5;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
   font-size: 0.68rem;
   font-weight: 700;
-  padding: 2px 6px;
-  z-index: 4;
-}
-
-.vp-badge.active {
-  background: var(--amber);
   color: #1a1205;
+  background: var(--amber);
+  box-shadow: 0 2px 8px rgba(240, 168, 48, 0.35);
+  pointer-events: none;
 }
 
 .path-cost {

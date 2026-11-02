@@ -1,4 +1,6 @@
 import { Board } from './components/Board'
+import { DemandRollFlash } from './components/DemandRollFlash'
+import { PlanetLimitFlash } from './components/PlanetLimitFlash'
 import { ScenarioPicker } from './components/ScenarioPicker'
 import { SidePanel } from './components/SidePanel'
 import { useGameStore } from './state/gameStore'
@@ -14,25 +16,10 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="top-bar">
-        <div className="brand">
-          <span className="brand-mark" aria-hidden />
-          <div>
-            <strong>Versorgungs-Architekten</strong>
-            <span>
-              Szenario {game.scenarioId} · {game.mode}
-            </span>
-          </div>
-        </div>
-        <div className="top-meta">
-          <span className="pill">Zug {game.turn}</span>
-          <span className="pill money">{game.bank}¤ Bank</span>
-          <span className="pill">{game.demandDeck.length} Bedarf</span>
-        </div>
-      </header>
-
       <div className="play-layout">
         <main className="board-area">
+          <DemandRollFlash game={game} />
+          <PlanetLimitFlash game={game} />
           <Board game={game} />
         </main>
         <SidePanel game={game} />

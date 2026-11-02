@@ -66,14 +66,16 @@ export interface CellState {
   label?: string
   /** Base owner, or defense owner */
   owner?: PlayerId | 'neutral'
-  /** Open stacks on this cell (bottom → top). */
+  /** Open stacks on this cell (bottom → top). Energy on planets/storages. */
   stack: Card[]
-  /** Covered draw pile under the top face-up card (suns / bases). */
+  /** Covered draw pile under the top face-up card (suns). */
   drawPile: Card[]
+  /** Face-down reshuffle pile beside a sun; recycled when drawPile is empty. */
+  discardPile: Card[]
   /** Toll for defensive units on this cell. */
   toll: number
-  /** Neutral VP markers waiting on planets. */
-  vpMarkers: number
+  /** Planet tension meter (−6…+6). Meaningful only for planets. */
+  tension: number
 }
 
 export interface PlayerState {
@@ -81,6 +83,7 @@ export interface PlayerState {
   name: string
   money: number
   bankClaims: number
+  /** Siegpunkte, z. B. aus Bedarf würfeln beim Ass-Aufdecken. */
   securedVp: number
   color: string
 }
@@ -95,12 +98,11 @@ export interface MissionProgress {
 export interface GameLogEntry {
   id: number
   text: string
-  tone?: 'info' | 'money' | 'combat' | 'vp' | 'end'
+  tone?: 'info' | 'money' | 'combat' | 'tension' | 'end'
 }
 
 export type Selection =
   | { type: 'stack'; x: number; y: number; count: number }
-  | { type: 'vp'; x: number; y: number }
   | null
 
 export interface GameState {
@@ -110,14 +112,24 @@ export interface GameState {
   players: PlayerState[]
   currentPlayerIndex: number
   bank: number
-  demandDeck: Card[]
   energyReserve: Card[]
   energyDiscard: Card[]
-  demandDiscard: Card[]
   missions: MissionProgress | null
   selection: Selection
+  /** Intermediate route points to avoid costly cells. */
+  waypoints: Coord[]
   pathPreview: Coord[] | null
   pathCost: number | null
+  /** Shown when a click could not complete a move. */
+  actionError: string | null
+  /** Increments when Bedarf is rolled — UI flash trigger. */
+  demandRollSeq: number
+  /** Short lines for the last demand roll flash. */
+  demandRollFlash: string[] | null
+  /** Increments when a planet hits ±6 — UI flash trigger. */
+  planetLimitSeq: number
+  /** Short text for the last ±6 clear flash. */
+  planetLimitFlash: string | null
   log: GameLogEntry[]
   logSeq: number
   turn: number
@@ -137,13 +149,13 @@ export function rankLabel(rank: Rank): string {
 export function suitSymbol(suit: Suit): string {
   switch (suit) {
     case 'hearts':
-      return '♥'
+      return '✦' // Energie
     case 'clubs':
-      return '♣'
+      return '◎' // Bedarf
     case 'spades':
-      return '♠'
+      return '⬡' // Verteidigung
     case 'diamonds':
-      return '♦'
+      return '▲' // Angriff
   }
 }
 

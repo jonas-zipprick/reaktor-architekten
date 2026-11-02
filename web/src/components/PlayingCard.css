@@ -1,36 +1,53 @@
 .pcard {
+  --pcard-ink: #fff8e8;
+  --pcard-fill: #334;
   width: 42px;
   height: 58px;
-  border-radius: 8px;
-  background: linear-gradient(160deg, #f7f3ea 0%, #e8e0d0 100%);
-  border: 1px solid rgba(20, 24, 36, 0.2);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background-color: var(--pcard-fill);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.55) inset,
-    0 6px 14px rgba(0, 0, 0, 0.28);
-  display: flex;
-  flex-direction: column;
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 8px 16px rgba(0, 0, 0, 0.35);
+  display: grid;
+  grid-template-rows: auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  padding: 5px 4px 6px;
+  justify-items: center;
+  padding: 4px 3px 6px;
   font-family: var(--display);
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1;
+  color: var(--pcard-ink);
   user-select: none;
   position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  z-index: 0;
   transition:
     transform 160ms ease,
     box-shadow 160ms ease;
 }
 
+.pcard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.18), transparent 45%),
+    radial-gradient(circle at 80% 90%, rgba(0, 0, 0, 0.16), transparent 50%);
+  pointer-events: none;
+}
+
 .pcard.compact {
   width: 34px;
   height: 46px;
-  padding: 4px 3px 5px;
-  border-radius: 6px;
+  padding: 3px 2px 4px;
+  border-radius: 8px;
 }
 
 .pcard.stacked {
-  margin-top: -28px;
+  margin-top: -30px;
 }
 
 .pcard.stacked:first-child {
@@ -38,59 +55,142 @@
 }
 
 .pcard.compact.stacked {
-  margin-top: -22px;
+  margin-top: -24px;
 }
 
 .pcard.highlight {
   outline: 2px solid var(--amber);
   outline-offset: 2px;
-  transform: translateY(-3px) scale(1.04);
+  transform: translateY(-3px) scale(1.05);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.55) inset,
-    0 10px 22px rgba(240, 168, 48, 0.35);
+    0 1px 0 rgba(255, 255, 255, 0.28) inset,
+    0 12px 24px rgba(240, 168, 48, 0.4);
+}
+
+.pcard-edge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+  width: 100%;
+  padding: 0 2px;
+  position: relative;
+  z-index: 1;
+  line-height: 1;
+}
+
+.pcard-edge-rank {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.pcard-edge-icon {
+  font-size: 0.55rem;
+  opacity: 0.85;
+}
+
+.pcard.compact .pcard-edge-rank {
+  font-size: 0.58rem;
+}
+
+.pcard.compact .pcard-edge-icon {
+  font-size: 0.48rem;
 }
 
 .pcard-rank {
-  font-size: 0.95rem;
-  align-self: flex-start;
+  font-size: 1.15rem;
+  letter-spacing: -0.03em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  position: relative;
+  z-index: 1;
 }
 
 .pcard.compact .pcard-rank {
-  font-size: 0.78rem;
-}
-
-.pcard-suit {
-  font-size: 1.15rem;
-}
-
-.pcard.compact .pcard-suit {
   font-size: 0.95rem;
 }
 
-.suit-hearts,
-.suit-diamonds {
-  color: #c62840;
+/* Energie — Gold / Plasma */
+.pcard.role-energy {
+  --pcard-ink: #2a1805;
+  --pcard-fill: #f0a830;
+  background-image: linear-gradient(155deg, #ffe9ad 0%, #f0a830 45%, #c97a12 100%);
+  border-color: rgba(255, 220, 140, 0.55);
 }
 
-.suit-clubs,
-.suit-spades {
-  color: #1a2233;
+/* Bedarf — Grün / Orbit */
+.pcard.role-demand {
+  --pcard-ink: #f2fff8;
+  --pcard-fill: #1f9a62;
+  background-image: linear-gradient(155deg, #4fe0a0 0%, #1f9a62 48%, #0d5c3a 100%);
+  border-color: rgba(140, 255, 200, 0.4);
+}
+
+/* Verteidigung — eigene (Blau / Schild) */
+.pcard.role-defense,
+.pcard.role-defense.defense-own {
+  --pcard-ink: #f0f6ff;
+  --pcard-fill: #4a7ae8;
+  background-image: linear-gradient(155deg, #8eb8ff 0%, #4a7ae8 48%, #2446a0 100%);
+  border-color: rgba(170, 210, 255, 0.45);
+}
+
+/* Verteidigung — gegnerisch (Violett / Signal) */
+.pcard.role-defense.defense-enemy {
+  --pcard-ink: #faf0ff;
+  --pcard-fill: #9b4ad4;
+  background-image: linear-gradient(155deg, #d4a0ff 0%, #9b4ad4 48%, #5a2088 100%);
+  border-color: rgba(220, 170, 255, 0.5);
+}
+
+/* Verteidigung — neutral (Eisen / Stein) */
+.pcard.role-defense.defense-neutral {
+  --pcard-ink: #f2efe8;
+  --pcard-fill: #6a6560;
+  background-image:
+    repeating-linear-gradient(
+      -18deg,
+      rgba(255, 255, 255, 0.06) 0 2px,
+      transparent 2px 6px
+    ),
+    linear-gradient(155deg, #9a948c 0%, #6a6560 48%, #3a3732 100%);
+  border-color: rgba(200, 190, 160, 0.45);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Angriff — Koralle / Signal */
+.pcard.role-offense {
+  --pcard-ink: #fff5f0;
+  --pcard-fill: #ef5a45;
+  background-image: linear-gradient(155deg, #ff9a6b 0%, #ef5a45 48%, #b02830 100%);
+  border-color: rgba(255, 180, 150, 0.45);
 }
 
 .pcard.back {
   background:
+    linear-gradient(145deg, #1a2744, #0d1528 60%),
     repeating-linear-gradient(
       135deg,
-      #1e3a6e 0 6px,
-      #152a52 6px 12px
+      rgba(240, 168, 48, 0.12) 0 4px,
+      transparent 4px 8px
     );
-  border: 1px solid rgba(140, 180, 255, 0.25);
+  border: 1px solid rgba(140, 180, 255, 0.28);
+  display: block;
+}
+
+.pcard.back::before {
+  background:
+    radial-gradient(circle at 50% 40%, rgba(240, 168, 48, 0.2), transparent 55%);
 }
 
 .pcard.back::after {
-  content: '';
+  content: '◈';
   position: absolute;
-  inset: 5px;
-  border: 1px solid rgba(240, 168, 48, 0.45);
-  border-radius: 4px;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(240, 168, 48, 0.55);
+  font-size: 0.95rem;
 }

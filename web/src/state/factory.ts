@@ -4,7 +4,6 @@ import type {
   CellState,
   GameMode,
   GameState,
-  PlayerId,
   PlayerState,
   Rank,
   ScenarioId,
@@ -22,35 +21,33 @@ function makeCard(
   return { id: `c${cardSeq}`, suit, rank, faceUp }
 }
 
-function energyDeck(rng: () => number): Card[] {
-  const ranks: Rank[] = [5, 4, 3, 2, 1]
-  const cards: Card[] = []
-  // Several copies so suns feel unerschöpflich
-  for (let copy = 0; copy < 4; copy++) {
-    for (const r of ranks) cards.push(makeCard('hearts', r, false))
-  }
-  return shuffle(cards, rng)
-}
-
-function demandDeck(planetCount: number, rng: () => number): Card[] {
-  // ~10 Kreuzkarten pro Planet (Playtestempfehlung)
-  const ranks: Rank[] = [6, 5, 4, 3]
-  const cards: Card[] = []
-  const total = Math.max(10, planetCount * 10)
-  for (let i = 0; i < total; i++) {
-    cards.push(makeCard('clubs', ranks[i % ranks.length], false))
-  }
-  return shuffle(cards, rng)
-}
-
-function unitDeck(rng: () => number): Card[] {
-  const cards = [
-    makeCard('diamonds', 1, false),
-    makeCard('diamonds', 3, false),
-    makeCard('spades', 2, false),
-    makeCard('spades', 4, false),
+/** Energiekarten pro Sonne: 2×5, 4×4, 6×3, 8×2, 10×Ass. */
+function sunEnergyDeck(rng: () => number): Card[] {
+  const counts: [Rank, number][] = [
+    [5, 2],
+    [4, 4],
+    [3, 6],
+    [2, 8],
+    [1, 10],
   ]
+  const cards: Card[] = []
+  for (const [rank, n] of counts) {
+    for (let i = 0; i < n; i++) cards.push(makeCard('hearts', rank, false))
+  }
   return shuffle(cards, rng)
+}
+
+function emptyCell(x: number, y: number): CellState {
+  return {
+    x,
+    y,
+    kind: 'empty',
+    stack: [],
+    drawPile: [],
+    discardPile: [],
+    toll: 0,
+    tension: 0,
+  }
 }
 
 function moneySetup(playerCount: number): { start: number; bank: number } {
@@ -76,25 +73,15 @@ export function createGame(
 
   const cells: Record<string, CellState> = {}
 
-  // Fill rectangular bounds with empty cells if defined
   if (scenario.bounds) {
     const { minX, maxX, minY, maxY } = scenario.bounds
     for (let y = minY; y <= maxY; y++) {
       for (let x = minX; x <= maxX; x++) {
-        cells[keyOf(x, y)] = {
-          x,
-          y,
-          kind: 'empty',
-          stack: [],
-          drawPile: [],
-          toll: 0,
-          vpMarkers: 0,
-        }
+        cells[keyOf(x, y)] = emptyCell(x, y)
       }
     }
   }
 
-  // Place scenario cells (overwrite empties / create U-shape cells)
   for (const f of scenario.cells) {
     const existing = cells[keyOf(f.x, f.y)]
     cells[keyOf(f.x, f.y)] = {
@@ -105,25 +92,28 @@ export function createGame(
       owner: f.owner,
       stack: existing?.stack ?? [],
       drawPile: existing?.drawPile ?? [],
+      discardPile: existing?.discardPile ?? [],
       toll: 0,
-      vpMarkers: 0,
+      tension: 0,
     }
   }
 
-  // Remove bases not used in this mode
-  for (const key of Object.keys(cells)) {
-    const c = cells[key]
-    if (c.kind === 'base' && c.owner && !playerIds.includes(c.owner as PlayerId)) {
+  // Basen und Speicher entfallen — als leere Felder behandeln.
+  for (const c of Object.values(cells)) {
+    if (c.kind === 'base' || c.kind === 'storage') {
       c.kind = 'empty'
       c.owner = undefined
       c.label = undefined
+      c.stack = []
+      c.drawPile = []
+      c.discardPile = []
+      c.toll = 0
     }
   }
 
-  // Suns: energy draw piles
   for (const c of Object.values(cells)) {
     if (c.kind === 'sun') {
-      const deck = energyDeck(rng)
+      const deck = sunEnergyDeck(rng)
       const top = deck.pop()!
       top.faceUp = true
       c.stack = [top]
@@ -131,28 +121,12 @@ export function createGame(
     }
   }
 
-  // Bases: unit decks
-  for (const c of Object.values(cells)) {
-    if (c.kind === 'base' && c.owner) {
-      const deck = unitDeck(rng)
-      const top = deck.pop()!
-      top.faceUp = true
-      c.stack = [top]
-      c.drawPile = deck
-    }
+  for (const p of Object.values(cells)) {
+    if (p.kind !== 'planet') continue
+    p.stack = []
+    p.tension = -2
   }
 
-  const planets = Object.values(cells).filter((c) => c.kind === 'planet')
-  let demands = demandDeck(planets.length, rng)
-  for (const p of planets) {
-    const d = demands.pop()
-    if (d) {
-      d.faceUp = true
-      p.stack = [d]
-    }
-  }
-
-  // Neutral defenses
   const defs =
     mode === 'solo'
       ? scenario.defenses.solo
@@ -186,8 +160,6 @@ export function createGame(
         ? scenario.missions.coop
         : null
 
-  const energyReserve = energyDeck(rng)
-
   return {
     scenarioId,
     mode,
@@ -195,10 +167,8 @@ export function createGame(
     players,
     currentPlayerIndex: 0,
     bank: money.bank,
-    demandDeck: demands,
-    energyReserve,
+    energyReserve: [],
     energyDiscard: [],
-    demandDiscard: [],
     missions: missionSpec
       ? {
           suppliedPlanets: [],
@@ -208,8 +178,14 @@ export function createGame(
         }
       : null,
     selection: null,
+    waypoints: [],
     pathPreview: null,
     pathCost: null,
+    actionError: null,
+    demandRollSeq: 0,
+    demandRollFlash: null,
+    planetLimitSeq: 0,
+    planetLimitFlash: null,
     log: [
       {
         id: 1,
@@ -236,21 +212,29 @@ function modeLabel(mode: GameMode): string {
   }
 }
 
+/**
+ * Oberkarte der Sonne nachziehen. Ist der Nachziehstapel leer, wird die
+ * gemeinsame Ablage gemischt und als neuer Nachziehstapel verwendet.
+ */
 export function refillSun(cell: CellState, state: GameState, rng: () => number): void {
-  if (cell.drawPile.length === 0) {
-    // Unerschöpflich: neuen Stapel aus Reserve/Discard
-    let pool = [...state.energyReserve, ...state.energyDiscard]
+  if (cell.stack.length > 0) return
+
+  if (cell.drawPile.length === 0 && state.energyDiscard.length > 0) {
+    const n = state.energyDiscard.length
+    cell.drawPile = shuffle(
+      state.energyDiscard.map((c) => ({ ...c, faceUp: false })),
+      rng,
+    )
     state.energyDiscard = []
-    if (pool.length < 5) {
-      const ranks: Rank[] = [5, 4, 3, 2, 1]
-      for (const r of ranks) {
-        for (let i = 0; i < 2; i++) pool.push(makeCard('hearts', r, false))
-      }
-    }
-    pool = shuffle(pool, rng)
-    cell.drawPile = pool
-    state.energyReserve = []
+    state.logSeq += 1
+    state.log.unshift({
+      id: state.logSeq,
+      text: `Sonne (${cell.x},${cell.y}): Ablage (${n}) neu gemischt.`,
+      tone: 'info',
+    })
+    if (state.log.length > 80) state.log.length = 80
   }
+
   const next = cell.drawPile.pop()
   if (next) {
     next.faceUp = true
@@ -261,12 +245,14 @@ export function refillSun(cell: CellState, state: GameState, rng: () => number):
 }
 
 export function revealTopIfNeeded(cell: CellState): void {
-  if (cell.stack.length === 0 && cell.drawPile.length > 0) {
+  if (cell.stack.length > 0) {
+    const top = cell.stack[cell.stack.length - 1]
+    if (!top.faceUp) top.faceUp = true
+    return
+  }
+  if (cell.drawPile.length > 0) {
     const next = cell.drawPile.pop()!
     next.faceUp = true
     cell.stack = [next]
-  } else if (cell.stack.length > 0) {
-    const top = cell.stack[cell.stack.length - 1]
-    if (!top.faceUp) top.faceUp = true
   }
 }

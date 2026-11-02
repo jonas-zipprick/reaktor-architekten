@@ -67,19 +67,19 @@ export function ScenarioPicker() {
               {mode === 'solo' && (
                 <p>
                   Versorge den Missionsplaneten und besiege eine neutrale
-                  Verteidigung, bevor Bank oder Bedarf enden.
+                  Verteidigung, bevor die Bank leer ist.
                 </p>
               )}
               {mode === 'coop' && (
                 <p>
                   Zwei Spieler, getrennte Kassen. Beide Planeten versorgen und
-                  zwei Verteidigungen besiegen.
+                  zwei Verteidigungen besiegen, bevor die Bank leer ist.
                 </p>
               )}
               {mode === 'versus' && (
                 <p>
-                  Höchstes Gesamtvermögen gewinnt: Geld + Bankforderungen + 5×
-                  gesicherte Siegpunkte.
+                  Höchstes Gesamtvermögen gewinnt: Geld + Bankforderungen +
+                  5× Siegpunkte (Ass aufdecken → Bedarf würfeln).
                 </p>
               )}
             </div>
@@ -95,7 +95,7 @@ export function ScenarioPicker() {
             <ul className="how-to">
               <li>Eine Kartenaktion pro Zug</li>
               <li>Absteigende Stapel gemeinsam transportieren</li>
-              <li>Energie vom Planeten → Siegpunktmarker → eigene Basis</li>
+              <li>Energie auf leere Felder legen — Gebührenmarker setzen</li>
             </ul>
           </section>
         </div>

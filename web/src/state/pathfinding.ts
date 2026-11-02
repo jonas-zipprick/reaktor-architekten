@@ -16,31 +16,50 @@ export function exists(state: GameState, x: number, y: number): boolean {
   return keyOf(x, y) in state.cells
 }
 
-/** Cost paid for traversing an intermediate cell (not start/goal). */
+export interface TraverseOptions {
+  /**
+   * True when entering this cell as the final landing destination
+   * (Karte wird dort abgelegt), not merely passing through.
+   */
+  asDestination?: boolean
+}
+
+function hasFeeMarker(cell: CellState): boolean {
+  return (
+    cell.kind === 'empty' &&
+    Boolean(cell.owner) &&
+    cell.stack.length > 0
+  )
+}
+
+/**
+ * Cost for entering a cell.
+ * - Leeres Gebührenfeld: darüber = volle Gebühr an Inhaber; darauf ablegen = 1¤ Bank
+ * - Planeten haben keine Gebührenmarker; Betreten kostet immer 1¤ an die Bank
+ */
 export function traverseCost(
   cell: CellState,
   mover: PlayerId,
+  opts: TraverseOptions = {},
 ): { cost: number; payTo: PlayerId | 'bank' } | null {
-  // Asteroids can be traversed
+  const land = Boolean(opts.asDestination)
+
   if (cell.kind === 'asteroid') return { cost: 3, payTo: 'bank' }
-  if (cell.kind === 'sun' || cell.kind === 'storage' || cell.kind === 'planet') {
-    return { cost: 0, payTo: 'bank' }
-  }
+  if (cell.kind === 'sun') return { cost: 1, payTo: 'bank' }
+  if (cell.kind === 'planet') return { cost: 1, payTo: 'bank' }
 
-  const top = cell.stack[cell.stack.length - 1]
-  if (top?.suit === 'diamonds' && top.faceUp) {
-    return { cost: 1, payTo: 'bank' }
-  }
-  if (top?.suit === 'spades' && top.faceUp) {
-    const owner = cell.owner
+  if (hasFeeMarker(cell)) {
+    const owner = cell.owner!
     if (owner === mover) return { cost: 0, payTo: 'bank' }
-    if (owner === 'neutral' || owner == null) {
-      return { cost: cell.toll, payTo: 'bank' }
-    }
-    return { cost: cell.toll, payTo: owner }
+
+    const payTo: PlayerId | 'bank' =
+      owner === 'neutral' ? 'bank' : owner
+
+    // Darüber: Gebühr; darauf ablegen: nur 1 an die Bank
+    if (land) return { cost: 1, payTo: 'bank' }
+    return { cost: cell.toll, payTo }
   }
 
-  if (cell.kind === 'base') return { cost: 1, payTo: 'bank' }
   if (cell.kind === 'empty') return { cost: 1, payTo: 'bank' }
 
   return { cost: 1, payTo: 'bank' }
@@ -52,16 +71,33 @@ export interface PathResult {
   payments: { to: PlayerId | 'bank'; amount: number }[]
 }
 
+function mergePayments(
+  payments: { to: PlayerId | 'bank'; amount: number }[],
+): { to: PlayerId | 'bank'; amount: number }[] {
+  const agg = new Map<string, number>()
+  for (const p of payments) {
+    agg.set(p.to, (agg.get(p.to) ?? 0) + p.amount)
+  }
+  return [...agg.entries()].map(([to, amount]) => ({
+    to: to as PlayerId | 'bank',
+    amount,
+  }))
+}
+
 /**
- * Cheapest orthogonal path from start to goal (exclusive of start cost).
- * Start and goal themselves are free; only intermediate cells cost.
+ * Cheapest orthogonal path from start to goal.
+ * Start is free; every entered cell costs.
+ * When `landOnGoal` is true, the goal uses landing fees; otherwise pass fees.
  */
 export function findCheapestPath(
   state: GameState,
   start: Coord,
   goal: Coord,
   mover: PlayerId,
+  opts: { landOnGoal?: boolean } = {},
 ): PathResult | null {
+  const landOnGoal = Boolean(opts.landOnGoal)
+
   if (start.x === goal.x && start.y === goal.y) {
     return { path: [start], totalCost: 0, payments: [] }
   }
@@ -87,16 +123,13 @@ export function findCheapestPath(
     for (const n of neighbors(cur)) {
       if (!exists(state, n.x, n.y)) continue
       const nk = keyOf(n.x, n.y)
-      let stepCost = 0
-      let payment: { to: PlayerId | 'bank'; amount: number } | null = null
-
-      if (nk !== goalKey) {
-        const cell = state.cells[nk]
-        const tc = traverseCost(cell, mover)
-        if (!tc) continue
-        stepCost = tc.cost
-        if (tc.cost > 0) payment = { to: tc.payTo, amount: tc.cost }
-      }
+      const cell = state.cells[nk]
+      const asDestination = landOnGoal && nk === goalKey
+      const tc = traverseCost(cell, mover, { asDestination })
+      if (!tc) continue
+      const stepCost = tc.cost
+      const payment =
+        tc.cost > 0 ? { to: tc.payTo, amount: tc.cost } : null
 
       const nextCost = cur.cost + stepCost
       if (nextCost < (dist.get(nk) ?? Infinity)) {
@@ -121,21 +154,59 @@ export function findCheapestPath(
   path.reverse()
 
   const payments: { to: PlayerId | 'bank'; amount: number }[] = []
-  for (let i = 1; i < path.length - 1; i++) {
+  for (let i = 1; i < path.length; i++) {
     const pk = keyOf(path[i].x, path[i].y)
     const p = payEdge.get(pk)
     if (p) payments.push(p)
   }
 
-  // Aggregate payments
-  const agg = new Map<string, number>()
-  for (const p of payments) {
-    agg.set(p.to, (agg.get(p.to) ?? 0) + p.amount)
+  return {
+    path,
+    totalCost: dist.get(goalKey)!,
+    payments: mergePayments(payments),
   }
-  const merged = [...agg.entries()].map(([to, amount]) => ({
-    to: to as PlayerId | 'bank',
-    amount,
-  }))
+}
 
-  return { path, totalCost: dist.get(goalKey)!, payments: merged }
+/** Cheapest path that must visit waypoints in order before the goal. */
+export function findPathVia(
+  state: GameState,
+  start: Coord,
+  waypoints: Coord[],
+  goal: Coord,
+  mover: PlayerId,
+): PathResult | null {
+  const points: Coord[] = [start]
+  for (const wp of waypoints) {
+    const last = points[points.length - 1]
+    if (last.x === wp.x && last.y === wp.y) continue
+    points.push(wp)
+  }
+  const last = points[points.length - 1]
+  if (last.x !== goal.x || last.y !== goal.y) points.push(goal)
+
+  if (points.length === 1) {
+    return { path: [start], totalCost: 0, payments: [] }
+  }
+
+  const path: Coord[] = []
+  let totalCost = 0
+  const payments: { to: PlayerId | 'bank'; amount: number }[] = []
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const isFinalSegment = i === points.length - 2
+    const seg = findCheapestPath(
+      state,
+      points[i],
+      points[i + 1],
+      mover,
+      { landOnGoal: isFinalSegment },
+    )
+    if (!seg) return null
+    if (i === 0) path.push(...seg.path)
+    else path.push(...seg.path.slice(1))
+    totalCost += seg.totalCost
+    payments.push(...seg.payments)
+  }
+
+  return { path, totalCost, payments: mergePayments(payments) }
 }

@@ -1,5 +1,10 @@
 .board-shell {
-  --cell-size: clamp(64px, 7.2vw, 88px);
+  --cell-size: clamp(78px, 8.6vw, 108px);
+  --cell-height: calc(var(--cell-size) * 1.62);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 14px;
   overflow: auto;
   padding: 8px 4px 24px;
   max-width: 100%;
@@ -9,7 +14,7 @@
   display: grid;
   gap: 6px;
   width: max-content;
-  margin: 0 auto;
+  margin: 0;
   padding: 12px;
   border-radius: 20px;
   background:
@@ -19,6 +24,57 @@
   box-shadow: var(--shadow);
 }
 
+.board-discard {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 52px;
+  min-height: var(--cell-height);
+  padding: 10px 8px;
+  border-radius: 14px;
+  background: linear-gradient(160deg, #1a2438, #101826);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.board-discard-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.board-discard-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 46px;
+  min-width: 34px;
+}
+
+.board-discard-stack:empty {
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  width: 34px;
+  height: 46px;
+}
+
+.board-discard-stack .pcard.compact.stacked {
+  margin-top: -42px;
+}
+
+.board-discard-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #ffe29a;
+}
+
 .board-cell.missing {
   visibility: hidden;
   pointer-events: none;
@@ -26,6 +82,6 @@
 
 @media (max-width: 900px) {
   .board-shell {
-    --cell-size: 58px;
+    --cell-size: 72px;
   }
 }
