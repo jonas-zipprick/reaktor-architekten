@@ -18,11 +18,29 @@ export function PlanetLimitFlash({ game }: { game: GameState }) {
 
   if (!visible || !text) return null
 
+  const isSource = /\d+ Karten/.test(text)
+  const isSpawn = text.includes('→') && !/\d+ Karten/.test(text)
+  const withFactory = isSpawn && /fabrik/i.test(text)
+
   return (
     <div className="planet-limit-flash" role="status" aria-live="polite">
-      <p className="planet-limit-flash-title">Spannungsgrenze</p>
+      <p className="planet-limit-flash-title">
+        {isSpawn
+          ? withFactory
+            ? 'Markt & Fabrik'
+            : 'Neuer Markt'
+          : isSource
+            ? 'Quelle kollabiert'
+            : 'Markt kollabiert'}
+      </p>
       <p className="planet-limit-flash-body">{text}</p>
-      <p className="planet-limit-flash-note">Stapel abgeräumt</p>
+      <p className="planet-limit-flash-note">
+        {isSpawn
+          ? 'Exp-Zähler voll · Gemeinschaftsfläche'
+          : isSource
+            ? 'Stapel weg'
+            : 'Messer 0 · Exp-Zähler zurück'}
+      </p>
     </div>
   )
 }

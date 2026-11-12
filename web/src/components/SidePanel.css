@@ -1,12 +1,14 @@
 .side-panel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px 16px 24px;
+  gap: 10px;
+  padding: 12px 12px 14px;
   background: linear-gradient(180deg, rgba(16, 24, 40, 0.95), rgba(10, 14, 24, 0.98));
   border-left: 1px solid var(--line);
-  min-height: 100%;
-  overflow: auto;
+  min-height: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .side-header {
@@ -14,6 +16,13 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
 }
 
 .side-header h2 {
@@ -39,6 +48,74 @@
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.35);
   display: inline-block;
+}
+
+.balances {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.balance-card {
+  flex: 1 1 0;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 8px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.balances.many {
+  flex-wrap: wrap;
+}
+
+.balances.many .balance-card {
+  flex: 1 1 40%;
+}
+
+.balance-card.active {
+  border-color: rgba(240, 168, 48, 0.65);
+  background: rgba(240, 168, 48, 0.12);
+  box-shadow: 0 0 0 1px rgba(240, 168, 48, 0.25);
+}
+
+.balance-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.balance-money {
+  font-size: 1.05rem;
+  font-family: var(--display);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.balance-card.active .balance-money {
+  color: var(--amber);
+  font-size: 1.2rem;
+}
+
+.balance-card em {
+  font-style: normal;
+  font-size: 0.65rem;
+  color: var(--text-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stat-grid {
@@ -75,24 +152,8 @@
   color: var(--text-mute);
 }
 
-.player-stat {
-  grid-column: span 2;
-}
-
-.own-money strong {
-  font-size: 1.45rem;
-  color: var(--amber);
-}
-
-.vp-stat {
-  grid-column: span 2;
-  border-color: rgba(155, 184, 255, 0.4);
-  background: rgba(107, 159, 255, 0.1);
-}
-
-.vp-stat strong {
-  color: #c5d8ff;
-  font-size: 1.35rem;
+.bank-stat {
+  grid-column: 1 / -1;
 }
 
 .tension-box {
@@ -153,8 +214,8 @@
   background: var(--amber-soft);
 }
 
-.mission-box,
 .action-box,
+.market-box,
 .toll-box,
 .log-box,
 .end-box {
@@ -164,8 +225,8 @@
   background: rgba(255, 255, 255, 0.02);
 }
 
-.mission-box h3,
 .action-box h3,
+.market-box h3,
 .toll-box h3,
 .log-box h3,
 .end-box h3 {
@@ -174,20 +235,53 @@
   font-size: 0.95rem;
 }
 
-.mission-box ul,
-.log-box ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.action-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.mission-box li {
-  color: var(--text-dim);
-  margin-bottom: 4px;
+.action-box h3 {
+  margin-bottom: 0;
 }
 
-.mission-box li.done {
-  color: var(--ok);
+.market-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.market-box h3 {
+  margin-bottom: 2px;
+}
+
+.market-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.market-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+.market-row select,
+.market-row input {
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  color: var(--text);
+  padding: 5px 6px;
+}
+
+.market-row input {
+  width: 46px;
+  flex-shrink: 0;
+}
+
+.market-row .ghost-btn {
+  padding: 5px 9px;
 }
 
 .hint {
@@ -211,13 +305,17 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 10px;
 }
 
 .sel-cards-row {
   display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.sel-cards-row p {
+  margin: 0;
+  font-size: 0.88rem;
 }
 
 .cost-line {
@@ -248,8 +346,22 @@
   font-weight: 650;
 }
 
-.primary-btn:hover {
+.primary-btn:hover:not(:disabled) {
   filter: brightness(1.05);
+}
+
+.primary-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.primary-btn .btn-sub {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.75;
+  margin-top: 2px;
 }
 
 .ghost-btn:hover:not(:disabled) {
@@ -284,12 +396,24 @@
   background: var(--amber-soft);
 }
 
-.log-box ul {
-  max-height: 220px;
-  overflow: auto;
+.log-box {
+  flex: 1 0 auto;
+  min-height: 140px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  overflow: hidden;
+}
+
+.log-box ul {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .log-box li {
@@ -303,7 +427,11 @@
   color: #ffd27a;
 }
 
-.log-box li.tone-combat {
+.log-box li.tone-production {
+  color: #8af0c0;
+}
+
+.log-box li.tone-market {
   color: #9bb8ff;
 }
 

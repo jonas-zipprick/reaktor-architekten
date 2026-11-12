@@ -21,13 +21,12 @@ export function DemandRollFlash({ game }: { game: GameState }) {
 
   return (
     <div className="demand-flash" role="status" aria-live="polite">
-      <p className="demand-flash-title">Bedarf gewürfelt</p>
+      <p className="demand-flash-title">Bedarf</p>
       <ul>
         {text.map((line) => (
           <li key={line}>{line}</li>
         ))}
       </ul>
-      <p className="demand-flash-vp">+1◆</p>
     </div>
   )
 }

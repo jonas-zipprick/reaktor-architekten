@@ -23,66 +23,139 @@
   z-index: 2;
 }
 
-.board-cell.selected {
-  border-color: var(--amber);
-  box-shadow: 0 0 0 1px rgba(240, 168, 48, 0.45), 0 10px 24px rgba(240, 168, 48, 0.15);
-  z-index: 3;
+.board-cell.is-target {
+  border-color: rgba(107, 159, 255, 0.85);
+  box-shadow:
+    0 0 0 1px rgba(107, 159, 255, 0.45),
+    0 0 18px rgba(107, 159, 255, 0.25);
+  z-index: 2;
 }
 
-.board-cell.on-path {
-  border-color: rgba(107, 159, 255, 0.7);
-  box-shadow: 0 0 18px rgba(107, 159, 255, 0.18);
+.board-cell.just-produced {
+  animation: produced-pulse 1.4s ease;
+}
+
+@keyframes produced-pulse {
+  0% {
+    filter: brightness(1);
+  }
+  30% {
+    filter: brightness(1.45);
+  }
+  100% {
+    filter: brightness(1);
+  }
 }
 
 .cell-glow {
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   pointer-events: none;
   opacity: 1;
 }
 
-/* Sonne — goldenes Plasma */
-.kind-sun {
-  background: linear-gradient(160deg, #5a3a12 0%, #2a1a08 100%);
-  border-color: rgba(240, 168, 48, 0.45);
+/* Rohstoffquellen */
+.kind-source.suit-hearts {
+  background: linear-gradient(160deg, #4a1826 0%, #241018 100%);
+  border-color: rgba(255, 93, 122, 0.4);
 }
 
-.kind-sun .cell-glow {
+.kind-source.suit-hearts .cell-glow {
   background:
-    radial-gradient(circle at 50% 28%, rgba(255, 236, 170, 0.85), transparent 42%),
-    radial-gradient(circle at 50% 55%, rgba(240, 168, 48, 0.45), transparent 58%),
-    repeating-conic-gradient(
-      from 0deg at 50% 40%,
-      rgba(255, 210, 110, 0.12) 0deg 12deg,
-      transparent 12deg 24deg
+    radial-gradient(circle at 50% 22%, rgba(255, 120, 150, 0.4), transparent 46%),
+    radial-gradient(circle at 50% 70%, rgba(180, 40, 80, 0.22), transparent 58%);
+}
+
+.kind-source.suit-spades {
+  background: linear-gradient(160deg, #1a2c58 0%, #0e1830 100%);
+  border-color: rgba(107, 159, 255, 0.4);
+}
+
+.kind-source.suit-spades .cell-glow {
+  background:
+    radial-gradient(circle at 50% 22%, rgba(130, 175, 255, 0.4), transparent 46%),
+    radial-gradient(circle at 50% 70%, rgba(50, 90, 200, 0.22), transparent 58%);
+}
+
+.kind-source.suit-energy {
+  background: linear-gradient(160deg, #3a3210 0%, #1c1808 100%);
+  border-color: rgba(240, 200, 40, 0.45);
+}
+
+.kind-source.suit-energy .cell-glow {
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 230, 100, 0.42), transparent 46%),
+    radial-gradient(circle at 50% 70%, rgba(200, 150, 20, 0.22), transparent 58%);
+}
+
+/* Fabriken — industrielles Raster, getönt nach Produktfarbe */
+.kind-factory {
+  background: linear-gradient(160deg, #2a2a38 0%, #15161f 100%);
+}
+
+.kind-factory .cell-glow {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 40%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 9px,
+      rgba(255, 255, 255, 0.045) 9px 10px
     );
-  animation: sun-pulse 3.6s ease-in-out infinite;
 }
 
-@keyframes sun-pulse {
-  0%,
-  100% {
-    opacity: 0.75;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
+.kind-factory.suit-diamonds {
+  background: linear-gradient(160deg, #3d2e14 0%, #1c160c 100%);
+  border-color: rgba(240, 168, 48, 0.4);
 }
 
-/* Planet — Orbit / Teal */
-.kind-planet {
+.kind-factory.suit-clubs {
+  background: linear-gradient(160deg, #163a2a 0%, #0c1c15 100%);
+  border-color: rgba(61, 207, 142, 0.4);
+}
+
+/* Lager — neutrales Umsortierfeld */
+.kind-storage {
+  background: linear-gradient(165deg, #2a2f3a 0%, #151820 100%);
+  border-color: rgba(180, 190, 210, 0.35);
+  border-style: dashed;
+}
+
+.kind-storage .cell-glow {
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgba(180, 190, 210, 0.16),
+    transparent 55%
+  );
+}
+
+.kind-storage .cell-kind {
+  color: #c5ccd8;
+}
+
+/* Markt — Orbit / Teal */
+.kind-market {
   background: linear-gradient(165deg, #0d3d36 0%, #082428 55%, #0a1a28 100%);
   border-color: rgba(61, 207, 142, 0.4);
 }
 
-.kind-planet .cell-glow {
+.kind-market .cell-glow {
   background:
-    radial-gradient(circle at 68% 38%, rgba(90, 220, 170, 0.55), transparent 38%),
-    radial-gradient(circle at 30% 72%, rgba(70, 140, 220, 0.28), transparent 48%),
-    radial-gradient(circle at 50% 50%, transparent 42%, rgba(61, 207, 142, 0.12) 43%, transparent 46%);
+    radial-gradient(circle at 68% 38%, rgba(90, 220, 170, 0.4), transparent 38%),
+    radial-gradient(circle at 30% 72%, rgba(70, 140, 220, 0.24), transparent 48%);
   animation: planet-drift 8s ease-in-out infinite;
+}
+
+/* Baustelle — Sand / Amber */
+.kind-site {
+  background: linear-gradient(165deg, #3a3020 0%, #1e1810 55%, #14100c 100%);
+  border-color: rgba(220, 170, 70, 0.45);
+}
+
+.kind-site .cell-glow {
+  background:
+    radial-gradient(circle at 40% 30%, rgba(240, 180, 60, 0.28), transparent 42%),
+    radial-gradient(circle at 70% 70%, rgba(180, 120, 40, 0.18), transparent 50%);
 }
 
 @keyframes planet-drift {
@@ -95,83 +168,33 @@
   }
 }
 
-/* Speicher — industrielles Violettgrau */
-.kind-storage {
-  background: linear-gradient(160deg, #2a2540 0%, #161828 100%);
-  border-color: rgba(170, 150, 255, 0.35);
+/* Eigentum = Spielerfarbe (wie PLAYER_META); Staat bleibt neutral */
+.board-cell.owner-white {
+  border-color: rgba(244, 240, 232, 0.8);
+  box-shadow: inset 0 0 0 2px rgba(244, 240, 232, 0.6);
 }
 
-.kind-storage .cell-glow {
-  background:
-    linear-gradient(180deg, rgba(160, 140, 255, 0.14), transparent 40%),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 7px,
-      rgba(180, 170, 255, 0.08) 7px 8px
-    ),
-    radial-gradient(circle at 50% 80%, rgba(120, 100, 220, 0.22), transparent 55%);
+.board-cell.owner-black {
+  border-color: rgba(90, 100, 120, 0.9);
+  box-shadow: inset 0 0 0 2px rgba(42, 49, 66, 0.95);
 }
 
-/* Basis — warmes Station-Deck */
-.kind-base {
-  background: linear-gradient(165deg, #3a342c 0%, #1c1a16 100%);
-  border-color: rgba(230, 210, 170, 0.35);
-}
-
-.kind-base .cell-glow {
-  background:
-    linear-gradient(180deg, rgba(255, 240, 210, 0.12), transparent 35%),
-    radial-gradient(circle at 50% 100%, rgba(240, 200, 120, 0.2), transparent 55%),
-    repeating-linear-gradient(
-      0deg,
-      transparent 0 9px,
-      rgba(255, 255, 255, 0.04) 9px 10px
-    );
-}
-
-.kind-asteroid {
-  background: linear-gradient(145deg, #2a221c, #17130f);
-  border-color: rgba(160, 120, 80, 0.3);
-}
-
-.kind-asteroid .cell-glow {
-  background:
-    radial-gradient(circle at 40% 35%, rgba(180, 140, 100, 0.3), transparent 45%),
-    radial-gradient(circle at 70% 70%, rgba(90, 70, 50, 0.4), transparent 50%);
-}
-
-.owner-white.has-defense,
-.owner-white.kind-base {
-  box-shadow: inset 0 0 0 2px rgba(244, 240, 232, 0.55);
-}
-
-.owner-black.has-defense,
-.owner-black.kind-base {
-  box-shadow: inset 0 0 0 2px rgba(90, 100, 120, 0.8);
-}
-
-.owner-red.has-defense,
-.owner-red.kind-base {
+.board-cell.owner-red {
+  border-color: rgba(232, 93, 76, 0.8);
   box-shadow: inset 0 0 0 2px rgba(232, 93, 76, 0.7);
 }
 
-.owner-green.has-defense,
-.owner-green.kind-base {
+.board-cell.owner-green {
+  border-color: rgba(60, 184, 138, 0.8);
   box-shadow: inset 0 0 0 2px rgba(60, 184, 138, 0.7);
 }
 
-.board-cell.has-defense.defense-neutral {
-  border-color: rgba(180, 170, 150, 0.55);
-  box-shadow: inset 0 0 0 2px rgba(160, 150, 130, 0.45);
-  background: linear-gradient(160deg, #2a2824, #161410);
-}
-
-.board-cell.has-defense.defense-enemy {
-  border-color: rgba(180, 120, 220, 0.45);
-}
-
-.board-cell.has-defense.defense-own {
-  border-color: rgba(120, 170, 255, 0.45);
+.board-cell.selected {
+  border-color: var(--amber);
+  box-shadow:
+    0 0 0 1px rgba(240, 168, 48, 0.45),
+    0 10px 24px rgba(240, 168, 48, 0.15);
+  z-index: 3;
 }
 
 .cell-frame {
@@ -193,8 +216,8 @@
 }
 
 .cell-kind {
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
+  font-size: 0.6rem;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--text-dim);
   white-space: nowrap;
@@ -203,20 +226,26 @@
   max-width: 100%;
 }
 
-.kind-sun .cell-kind {
+.kind-source.suit-hearts .cell-kind {
+  color: #ffb3c2;
+}
+
+.kind-source.suit-spades .cell-kind {
+  color: #b3ccff;
+}
+
+.kind-source.suit-energy .cell-kind {
+  color: #ffe98a;
+}
+
+.kind-factory.suit-diamonds .cell-kind {
   color: #ffe29a;
 }
 
-.kind-planet .cell-kind {
+.kind-factory.suit-clubs .cell-kind,
+.kind-market .cell-kind,
+.kind-site .cell-kind {
   color: #8af0c0;
-}
-
-.kind-storage .cell-kind {
-  color: #c8b8ff;
-}
-
-.kind-base .cell-kind {
-  color: #f0e2c0;
 }
 
 .cell-toll {
@@ -227,22 +256,115 @@
   padding: 1px 5px;
 }
 
-.cell-toll.toll-neutral {
+.cell-toll.toll-state {
   color: #d8dee9;
   background: rgba(160, 170, 190, 0.2);
   border: 1px solid rgba(180, 190, 210, 0.45);
 }
 
-.cell-toll.toll-own {
-  color: #0d2a1c;
-  background: #3dcf8e;
-  border: 1px solid #7af0b8;
+.cell-toll.toll-white {
+  color: #1a1814;
+  background: #f4f0e8;
+  border: 1px solid #fff8ee;
 }
 
-.cell-toll.toll-enemy {
-  color: #fff0f0;
-  background: #c62840;
-  border: 1px solid #ff7a8a;
+.cell-toll.toll-black {
+  color: #e8eefc;
+  background: #2a3142;
+  border: 1px solid #5a6578;
+}
+
+.cell-toll.toll-red {
+  color: #fff5f2;
+  background: #e85d4c;
+  border: 1px solid #ff8a7a;
+}
+
+.cell-toll.toll-green {
+  color: #0a1f18;
+  background: #3cb88a;
+  border: 1px solid #6ee0b0;
+}
+
+.cell-toll.toll-none {
+  color: var(--text-mute);
+  border: 1px dashed rgba(180, 190, 210, 0.3);
+  font-weight: 500;
+}
+
+/* Rezept: benötigte Farben, gefüllt sobald die Karte liegt */
+.recipe {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 1rem;
+  padding: 1px 4px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid transparent;
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.recipe.recipe-ready {
+  border-color: rgba(61, 207, 142, 0.75);
+  background: rgba(61, 207, 142, 0.16);
+}
+
+.recipe.recipe-blocked {
+  border-color: rgba(239, 90, 69, 0.75);
+  background: rgba(239, 90, 69, 0.14);
+}
+
+.recipe-pip {
+  opacity: 0.38;
+}
+
+.recipe-pip.filled {
+  opacity: 1;
+}
+
+.recipe-pip.pip-hearts {
+  color: var(--heart);
+}
+
+.recipe-pip.pip-spades {
+  color: var(--spade);
+}
+
+.recipe-pip.pip-energy {
+  color: var(--energy);
+}
+
+.recipe-pip.pip-diamonds {
+  color: var(--amber);
+}
+
+.recipe-pip.pip-clubs {
+  color: var(--club);
+}
+
+.recipe-batches {
+  margin-left: 2px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--amber);
+}
+
+.recipe-arrow {
+  margin: 0 1px;
+  font-size: 0.62rem;
+  color: var(--text-dim);
+}
+
+.source-caption {
+  margin-left: 2px;
+  font-size: 0.56rem;
+  letter-spacing: 0.03em;
+  color: var(--text-dim);
+  white-space: nowrap;
 }
 
 .cell-stack {
@@ -256,30 +378,45 @@
   isolation: isolate;
 }
 
-/* Dicht gestapelt, damit der Sonnenstapel sichtbar schrumpft. */
-.sun-deck {
+.cell-stack {
   position: relative;
 }
 
-.sun-deck .pcard.compact.stacked {
-  margin-top: -42px;
+/* Rang und Farbe jeder Karte bleiben am oberen Rand lesbar. */
+.cell-stack .pcard.compact.stacked {
+  margin-top: -28px;
 }
 
-.sun-pile-count {
+/* Quelle: Vorrat eng gefächert, nur die oberste Karte ist zugänglich. */
+.source-stack .pcard.compact.stacked {
+  margin-top: -33px;
+}
+
+.stack-count {
   position: absolute;
-  top: 0;
-  right: calc(50% - 23px);
+  bottom: 2px;
+  right: 2px;
   z-index: 20;
   min-width: 1.1rem;
   padding: 0 3px;
   border-radius: 999px;
   font-size: 0.58rem;
   font-weight: 700;
-  line-height: 1.2;
-  color: #2a1805;
-  background: #ffe29a;
-  border: 1px solid rgba(240, 168, 48, 0.7);
+  line-height: 1.3;
+  text-align: center;
+  color: #dce8ff;
+  background: rgba(20, 30, 54, 0.9);
+  border: 1px solid var(--line-strong);
   pointer-events: none;
+}
+
+.planet-meters {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 2px 0 4px;
 }
 
 .tension-meter {
@@ -288,14 +425,52 @@
   position: relative;
   z-index: 2;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.tension-suit {
+  flex-shrink: 0;
+  width: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
+.tension-meter.suit-diamonds .tension-suit,
+.tension-meter.suit-diamonds .tension-value {
+  color: #ffe29a;
+}
+
+.tension-meter.suit-clubs .tension-suit,
+.tension-meter.suit-clubs .tension-value {
+  color: #8af0c0;
+}
+
+.tension-meter.suit-hearts .tension-suit,
+.tension-meter.suit-hearts .tension-value {
+  color: #ff8a9a;
+}
+
+.tension-meter.suit-spades .tension-suit,
+.tension-meter.suit-spades .tension-value {
+  color: #c5d0e8;
+}
+
+.tension-meter.suit-energy .tension-suit,
+.tension-meter.suit-energy .tension-value {
+  color: #ffe98a;
 }
 
 .tension-scale {
   position: relative;
+  flex: 1;
+  min-width: 0;
   display: grid;
-  grid-template-columns: repeat(13, 1fr);
+  /* Spaltenzahl kommt inline aus TENSION_MIN…MAX (aktuell 9). */
+  grid-template-columns: repeat(9, 1fr);
   align-items: stretch;
   height: 18px;
   border-radius: 3px;
@@ -444,60 +619,23 @@
   color: #ef5a45;
 }
 
-.board-cell.has-waypoint {
-  border-color: rgba(240, 168, 48, 0.55);
-}
-
-.waypoint-badge {
-  position: absolute;
-  left: 5px;
-  top: 22px;
-  z-index: 5;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #1a1205;
-  background: var(--amber);
-  box-shadow: 0 2px 8px rgba(240, 168, 48, 0.35);
-  pointer-events: none;
-}
-
-.path-cost {
+.target-badge {
   position: absolute;
   left: 50%;
   bottom: 4px;
   transform: translateX(-50%);
+  white-space: nowrap;
   font-size: 0.68rem;
   font-weight: 700;
   color: #dce8ff;
-  background: rgba(20, 40, 80, 0.85);
-  border: 1px solid rgba(107, 159, 255, 0.45);
+  background: rgba(20, 40, 80, 0.92);
+  border: 1px solid rgba(107, 159, 255, 0.55);
   border-radius: 999px;
   padding: 1px 7px;
-  z-index: 5;
+  z-index: 25;
   pointer-events: none;
 }
 
-.harvest-btn {
-  position: absolute;
-  left: 5px;
-  bottom: 5px;
-  z-index: 5;
-  border: 1px solid rgba(240, 168, 48, 0.5);
-  background: rgba(240, 168, 48, 0.2);
-  color: var(--amber);
-  border-radius: 8px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 3px 6px;
-}
-
-.harvest-btn:hover {
-  background: var(--amber);
-  color: #1a1205;
+.target-badge strong {
+  color: #ffd27a;
 }

@@ -1,195 +1,132 @@
 import { getScenario, PLAYER_META, playersFor } from '../data/scenarios'
 import type {
   Card,
-  CellState,
-  GameMode,
+  DeckState,
+  FieldState,
   GameState,
   PlayerState,
   Rank,
   ScenarioId,
+  Suit,
 } from '../types'
-import { keyOf } from '../types'
+import { hasOwnership, SUITS } from '../types'
 import { createRng, shuffle } from './rng'
 
-let cardSeq = 0
-function makeCard(
-  suit: Card['suit'],
-  rank: Rank,
-  faceUp = false,
-): Card {
-  cardSeq += 1
-  return { id: `c${cardSeq}`, suit, rank, faceUp }
-}
+const RANKS: Rank[] = [7, 6, 5, 4, 3, 2, 1]
+const CARDS_PER_RANK = 6
 
-/** Energiekarten pro Sonne: 2×5, 4×4, 6×3, 8×2, 10×Ass. */
-function sunEnergyDeck(rng: () => number): Card[] {
-  const counts: [Rank, number][] = [
-    [5, 2],
-    [4, 4],
-    [3, 6],
-    [2, 8],
-    [1, 10],
-  ]
+const STATE_START_FEE = 1
+const START_CARDS_PER_SOURCE = 2
+const START_MONEY = 10
+const START_MONEY_SOLO = 20
+const BANK_PER_PLAYER = 40
+
+function buildDeck(suit: Suit, rng: () => number): Card[] {
   const cards: Card[] = []
-  for (const [rank, n] of counts) {
-    for (let i = 0; i < n; i++) cards.push(makeCard('hearts', rank, false))
+  let n = 0
+  for (const rank of RANKS) {
+    for (let i = 0; i < CARDS_PER_RANK; i++) {
+      n += 1
+      cards.push({
+        id: `${suit[0]}${n}`,
+        suit,
+        rank,
+      })
+    }
   }
   return shuffle(cards, rng)
 }
 
-function emptyCell(x: number, y: number): CellState {
-  return {
-    x,
-    y,
-    kind: 'empty',
-    stack: [],
-    drawPile: [],
-    discardPile: [],
-    toll: 0,
-    tension: 0,
-  }
-}
-
-function moneySetup(playerCount: number): { start: number; bank: number } {
-  const total = playerCount * 60
-  const startEach = 12
-  return { start: startEach, bank: total - startEach * playerCount }
-}
-
 export function createGame(
   scenarioId: ScenarioId,
-  mode: GameMode,
   seed = Date.now(),
 ): GameState {
-  cardSeq = 0
   const rng = createRng(seed)
   const scenario = getScenario(scenarioId)
-  if (!scenario.modes.includes(mode)) {
-    throw new Error(`Mode ${mode} not supported by scenario ${scenarioId}`)
+  const playerIds = playersFor(scenarioId)
+
+  const decks = {} as Record<Suit, DeckState>
+  for (const suit of SUITS) {
+    decks[suit] = { draw: buildDeck(suit, rng), discard: [] }
   }
 
-  const playerIds = playersFor(scenarioId, mode)
-  const money = moneySetup(playerIds.length)
-
-  const cells: Record<string, CellState> = {}
-
-  if (scenario.bounds) {
-    const { minX, maxX, minY, maxY } = scenario.bounds
-    for (let y = minY; y <= maxY; y++) {
-      for (let x = minX; x <= maxX; x++) {
-        cells[keyOf(x, y)] = emptyCell(x, y)
-      }
-    }
-  }
-
-  for (const f of scenario.cells) {
-    const existing = cells[keyOf(f.x, f.y)]
-    cells[keyOf(f.x, f.y)] = {
-      x: f.x,
-      y: f.y,
+  const fields: Record<string, FieldState> = {}
+  for (const f of scenario.fields) {
+    const owned = hasOwnership(f.kind)
+    const field: FieldState = {
+      id: f.id,
       kind: f.kind,
       label: f.label,
-      owner: f.owner,
-      stack: existing?.stack ?? [],
-      drawPile: existing?.drawPile ?? [],
-      discardPile: existing?.discardPile ?? [],
-      toll: 0,
-      tension: 0,
+      suit: f.suit,
+      recipe: f.recipe,
+      row: f.row,
+      owner: owned ? 'state' : undefined,
+      fee: owned ? (f.fee ?? STATE_START_FEE) : 0,
+      stack: [],
     }
-  }
-
-  // Basen und Speicher entfallen — als leere Felder behandeln.
-  for (const c of Object.values(cells)) {
-    if (c.kind === 'base' || c.kind === 'storage') {
-      c.kind = 'empty'
-      c.owner = undefined
-      c.label = undefined
-      c.stack = []
-      c.drawPile = []
-      c.discardPile = []
-      c.toll = 0
+    if (f.kind === 'market') {
+      field.demand = 0
     }
-  }
-
-  for (const c of Object.values(cells)) {
-    if (c.kind === 'sun') {
-      const deck = sunEnergyDeck(rng)
-      const top = deck.pop()!
-      top.faceUp = true
-      c.stack = [top]
-      c.drawPile = deck
+    if (f.kind === 'source' && f.suit) {
+      for (let n = 0; n < START_CARDS_PER_SOURCE; n++) {
+        const card = decks[f.suit]!.draw.pop()
+        if (card) field.stack.push(card)
+      }
     }
+    fields[f.id] = field
   }
 
-  for (const p of Object.values(cells)) {
-    if (p.kind !== 'planet') continue
-    p.stack = []
-    p.tension = -2
-  }
-
-  const defs =
-    mode === 'solo'
-      ? scenario.defenses.solo
-      : mode === 'coop'
-        ? scenario.defenses.coop
-        : scenario.defenses.versus
-
-  for (const d of defs) {
-    const cell = cells[keyOf(d.x, d.y)]
-    if (!cell) continue
-    const card = makeCard('spades', d.rank, true)
-    cell.stack = [card]
-    cell.owner = 'neutral'
-    cell.toll = d.toll
-    cell.kind = 'empty'
-  }
-
+  const startMoney =
+    playerIds.length === 1 ? START_MONEY_SOLO : START_MONEY
   const players: PlayerState[] = playerIds.map((id) => ({
     id,
     name: PLAYER_META[id].name,
-    money: money.start,
+    money: startMoney,
     bankClaims: 0,
-    securedVp: 0,
     color: PLAYER_META[id].color,
   }))
 
-  const missionSpec =
-    mode === 'solo'
-      ? scenario.missions.solo
-      : mode === 'coop'
-        ? scenario.missions.coop
-        : null
+  const startPlayerIndex = Math.floor(rng() * players.length)
+  const single =
+    players.length === 1
+      ? 'Einspieler — Startguthaben 20¤, Lager staatlich, keine Auktionen.'
+      : `${players.length} Spieler · nur Lager sind auktionierbar.`
 
   return {
     scenarioId,
-    mode,
-    cells,
+    fields,
+    decks,
     players,
-    currentPlayerIndex: 0,
-    bank: money.bank,
-    energyReserve: [],
-    energyDiscard: [],
-    missions: missionSpec
-      ? {
-          suppliedPlanets: [],
-          defensesDefeated: 0,
-          requiredPlanets: missionSpec.planets,
-          requiredDefenses: missionSpec.defenses,
-        }
-      : null,
+    currentPlayerIndex: startPlayerIndex,
+    startPlayerIndex,
+    bank: players.length * BANK_PER_PLAYER,
+    auctionUsed: false,
     selection: null,
-    waypoints: [],
-    pathPreview: null,
-    pathCost: null,
     actionError: null,
     demandRollSeq: 0,
     demandRollFlash: null,
+    demandRollIds: [],
     planetLimitSeq: 0,
     planetLimitFlash: null,
+    planetLimitId: null,
+    producedIds: [],
+    stats: {
+      productions: 0,
+      productsDelivered: 0,
+      marketCollapses: 0,
+      sourceCollapses: 0,
+      marketsSpawned: 0,
+      stacksClearedByAce: 0,
+      marketIncome: 0,
+      feesPaidToPlayers: 0,
+      feesPaidToBank: 0,
+      auctionsSold: 0,
+      auctionVolume: 0,
+    },
     log: [
       {
         id: 1,
-        text: `${scenario.name} · ${modeLabel(mode)} gestartet. ${players[0].name} beginnt.`,
+        text: `Szenario ${scenario.id} – ${scenario.name} gestartet (${single}). ${players[startPlayerIndex]!.name} beginnt.`,
         tone: 'info',
       },
     ],
@@ -198,61 +135,7 @@ export function createGame(
     ended: false,
     winnerText: null,
     rngSeed: seed,
-  }
-}
-
-function modeLabel(mode: GameMode): string {
-  switch (mode) {
-    case 'solo':
-      return 'Solo'
-    case 'coop':
-      return 'Koop'
-    case 'versus':
-      return 'Versus'
-  }
-}
-
-/**
- * Oberkarte der Sonne nachziehen. Ist der Nachziehstapel leer, wird die
- * gemeinsame Ablage gemischt und als neuer Nachziehstapel verwendet.
- */
-export function refillSun(cell: CellState, state: GameState, rng: () => number): void {
-  if (cell.stack.length > 0) return
-
-  if (cell.drawPile.length === 0 && state.energyDiscard.length > 0) {
-    const n = state.energyDiscard.length
-    cell.drawPile = shuffle(
-      state.energyDiscard.map((c) => ({ ...c, faceUp: false })),
-      rng,
-    )
-    state.energyDiscard = []
-    state.logSeq += 1
-    state.log.unshift({
-      id: state.logSeq,
-      text: `Sonne (${cell.x},${cell.y}): Ablage (${n}) neu gemischt.`,
-      tone: 'info',
-    })
-    if (state.log.length > 80) state.log.length = 80
-  }
-
-  const next = cell.drawPile.pop()
-  if (next) {
-    next.faceUp = true
-    cell.stack = [next]
-  } else {
-    cell.stack = []
-  }
-}
-
-export function revealTopIfNeeded(cell: CellState): void {
-  if (cell.stack.length > 0) {
-    const top = cell.stack[cell.stack.length - 1]
-    if (!top.faceUp) top.faceUp = true
-    return
-  }
-  if (cell.drawPile.length > 0) {
-    const next = cell.drawPile.pop()!
-    next.faceUp = true
-    cell.stack = [next]
+    marketSpawnSeq: 0,
+    marketExp: 0,
   }
 }

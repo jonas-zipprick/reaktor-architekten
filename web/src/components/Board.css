@@ -1,27 +1,198 @@
+.board-viewport {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .board-shell {
-  --cell-size: clamp(78px, 8.6vw, 108px);
-  --cell-height: calc(var(--cell-size) * 1.62);
+  --cell-size: 124px;
+  --cell-height: 212px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 14px;
-  overflow: auto;
-  padding: 8px 4px 24px;
-  max-width: 100%;
+  gap: 10px;
+  padding: 0;
+  transform-origin: center center;
+  will-change: transform;
 }
 
 .board-grid {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
   width: max-content;
   margin: 0;
-  padding: 12px;
-  border-radius: 20px;
+  padding: 6px;
+  border-radius: 14px;
   background:
     linear-gradient(180deg, rgba(18, 28, 48, 0.85), rgba(10, 16, 28, 0.92)),
     radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.04), transparent 40%);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
+}
+
+/* Eine Zeile je Feldart; die Lage hat keine Regelwirkung. */
+.board-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Fabriken | Lager nebeneinander. */
+.board-row-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.board-row-col {
+  min-width: 0;
+}
+
+.board-row-col .board-row {
+  justify-content: flex-start;
+}
+
+.board-row-label {
+  margin: 2px 2px -2px;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+/* Globaler Exp-Schieber über den Märkten. */
+.exp-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 2px 6px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(30, 48, 72, 0.95), rgba(14, 22, 36, 0.98));
+  border: 1px solid rgba(140, 190, 255, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.exp-track-label {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9ec8ff;
+}
+
+.exp-track-rail {
+  flex: 1;
+  min-width: 160px;
+  height: 22px;
+  padding: 0 6px 2px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.exp-track-scale {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.exp-track-tick {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+  color: rgba(180, 200, 230, 0.45);
+  font-size: 0.48rem;
+  font-style: normal;
+}
+
+.exp-track-tick::before {
+  content: '';
+  width: 1px;
+  height: 7px;
+  margin-bottom: 1px;
+  background: rgba(180, 200, 230, 0.35);
+}
+
+.exp-track-tick.major::before {
+  height: 11px;
+  background: rgba(200, 220, 255, 0.65);
+}
+
+.exp-track-tick.filled::before {
+  background: rgba(120, 190, 255, 0.85);
+}
+
+.exp-track-tick.active {
+  color: #e8f3ff;
+  font-weight: 700;
+}
+
+.exp-track-tick.active::before {
+  background: #8ec7ff;
+}
+
+.exp-track-tick em {
+  font-style: normal;
+  line-height: 1;
+}
+
+.exp-track-stone {
+  position: absolute;
+  top: 3px;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #6eb0ff 55%, #2a6fc4);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 8px rgba(110, 180, 255, 0.65);
+  transition: left 180ms ease;
+  pointer-events: none;
+}
+
+.exp-track-value {
+  flex-shrink: 0;
+  min-width: 2.4rem;
+  text-align: right;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #d7ebff;
+}
+
+.board-discards {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.board-deck-piles {
+  display: flex;
+  gap: 6px;
+}
+
+.board-pile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
 }
 
 .board-discard {
@@ -32,10 +203,9 @@
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
-  min-width: 52px;
-  min-height: var(--cell-height);
-  padding: 10px 8px;
-  border-radius: 14px;
+  min-width: 48px;
+  padding: 8px 6px;
+  border-radius: 12px;
   background: linear-gradient(160deg, #1a2438, #101826);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
@@ -65,23 +235,8 @@
   height: 46px;
 }
 
-.board-discard-stack .pcard.compact.stacked {
-  margin-top: -42px;
-}
-
 .board-discard-count {
   font-size: 0.7rem;
   font-weight: 700;
   color: #ffe29a;
-}
-
-.board-cell.missing {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-@media (max-width: 900px) {
-  .board-shell {
-    --cell-size: 72px;
-  }
 }

@@ -1,0 +1,23 @@
+.move-flight {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.move-flight-trail {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.move-flight-card {
+  position: absolute;
+  transform: translate(-50%, -50%) scale(1.08);
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

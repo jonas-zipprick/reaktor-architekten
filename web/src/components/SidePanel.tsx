@@ -1,42 +1,77 @@
-import type { GameState } from '../types'
-import { keyOf, rankLabel, suitSymbol } from '../types'
+import { useState } from 'react'
+import type { GameState, PlayerId } from '../types'
 import { useGameStore } from '../state/gameStore'
-import { describeCard, totalWealth } from '../state/rules'
+import {
+  auctionInfo,
+  checkMove,
+  describeCard,
+  totalWealth,
+} from '../state/rules'
 import { PlayingCard } from './PlayingCard'
 import './SidePanel.css'
 
 export function SidePanel({ game }: { game: GameState }) {
   const undo = useGameStore((s) => s.undo)
-  const canUndo = useGameStore((s) => s.canUndo)
+  const viewIndex = useGameStore((s) => s.viewIndex)
   const clearSelection = useGameStore((s) => s.clearSelection)
-  const setToll = useGameStore((s) => s.setToll)
+  const setFee = useGameStore((s) => s.setFee)
+  const endTurn = useGameStore((s) => s.endTurn)
+  const gift = useGameStore((s) => s.gift)
+  const openAuction = useGameStore((s) => s.openAuction)
   const backToMenu = useGameStore((s) => s.backToMenu)
+  const goMonteCarlo = useGameStore((s) => s.goMonteCarlo)
+  const moveAnim = useGameStore((s) => s.moveAnim)
+  const auction = useGameStore((s) => s.auction)
 
-  const current = game.players[game.currentPlayerIndex]
-  const sel = game.selection
+  const [auctionField, setAuctionField] = useState('')
+  const [giftTo, setGiftTo] = useState<PlayerId | ''>('')
+  const [giftAmount, setGiftAmount] = useState(1)
 
-  const selectedCell =
-    sel?.type === 'stack' ? game.cells[keyOf(sel.x, sel.y)] : null
+  const current = game.players[game.currentPlayerIndex]!
+  const busy = game.ended || Boolean(moveAnim) || Boolean(auction)
 
+  const selectedField = game.selection
+    ? game.fields[game.selection.fieldId]
+    : null
+  const selectedCount = game.selection?.count ?? 0
   const selectedCards =
-    sel?.type === 'stack' && selectedCell
-      ? selectedCell.stack.slice(selectedCell.stack.length - sel.count)
+    selectedField && selectedCount > 0
+      ? selectedField.stack.slice(selectedField.stack.length - selectedCount)
       : []
+  const selectedCard = selectedCards[selectedCards.length - 1] ?? null
+  const targetCount = game.selection
+    ? Object.keys(game.fields).filter(
+        (id) =>
+          checkMove(
+            game,
+            game.selection!.fieldId,
+            id,
+            game.selection!.count,
+          ).ok,
+      ).length
+    : 0
 
-  const ownFeeFields = Object.values(game.cells).filter(
-    (c) =>
-      c.kind === 'empty' &&
-      c.owner === current.id &&
-      c.stack.length > 0,
+  const ownFields = Object.values(game.fields).filter(
+    (f) => f.owner === current.id,
   )
 
-  const planets = Object.values(game.cells).filter((c) => c.kind === 'planet')
+  const auctionable = Object.values(game.fields).filter(
+    (f) => auctionInfo(game, f.id).ok,
+  )
+  const auctionChoice = auctionable.some((f) => f.id === auctionField)
+    ? auctionField
+    : (auctionable[0]?.id ?? '')
+
+  const others = game.players.filter((p) => p.id !== current.id)
+  const giftTarget = others.some((p) => p.id === giftTo)
+    ? (giftTo as PlayerId)
+    : others[0]?.id
 
   return (
     <aside className="side-panel">
       <header className="side-header">
         <div>
-          <p className="eyebrow">Zug {game.turn}</p>
+          <p className="eyebrow">Runde {game.turn}</p>
           <h2>
             <span
               className="player-dot"
@@ -45,105 +80,54 @@ export function SidePanel({ game }: { game: GameState }) {
             {current.name}
           </h2>
         </div>
-        <button type="button" className="ghost-btn" onClick={backToMenu}>
-          Menü
-        </button>
+        <div className="header-actions">
+          <button type="button" className="ghost-btn" onClick={goMonteCarlo}>
+            Monte Carlo
+          </button>
+          <button type="button" className="ghost-btn" onClick={backToMenu}>
+            Menü
+          </button>
+        </div>
       </header>
 
-      <section className="stat-grid">
-        <div className="stat player-stat active own-money">
-          <span>
-            <i style={{ background: current.color }} />
-            {current.name}
-          </span>
-          <strong>{current.money}¤</strong>
-          <em>{totalWealth(current)} Gesamt</em>
-        </div>
-        <div className="stat vp-stat">
-          <span>Siegpunkte</span>
-          <strong>{current.securedVp}◆</strong>
-        </div>
-        <div className="stat">
-          <span>Bank</span>
-          <strong>{game.bank}¤</strong>
-        </div>
-        {game.players
-          .filter((p) => p.id !== current.id)
-          .map((p) => (
-            <div key={p.id} className="stat player-stat">
-              <span>
+      <section className={`balances ${game.players.length > 3 ? 'many' : ''}`}>
+        {game.players.map((p) => {
+          const active = p.id === current.id
+          return (
+            <div
+              key={p.id}
+              className={`balance-card ${active ? 'active' : ''}`}
+              title={
+                p.bankClaims > 0
+                  ? `${p.money}¤ Bargeld + ${p.bankClaims} Bankforderungen`
+                  : `${p.money}¤ Bargeld`
+              }
+            >
+              <span className="balance-name">
                 <i style={{ background: p.color }} />
                 {p.name}
               </span>
-              <strong>
-                {p.money}¤ · {p.securedVp}◆
-              </strong>
-              <em>{totalWealth(p)} Gesamt</em>
+              <strong className="balance-money">{p.money}¤</strong>
+              <em>{totalWealth(p)} Ges.</em>
             </div>
-          ))}
+          )
+        })}
       </section>
 
-      {planets.length > 0 && (
-        <section className="tension-box">
-          <h3>Spannung</h3>
-          <ul>
-            {planets.map((p) => (
-              <li
-                key={keyOf(p.x, p.y)}
-                className={Math.abs(p.tension) >= 5 ? 'danger' : ''}
-              >
-                <span>{p.label ?? 'Planet'}</span>
-                <strong>
-                  {p.tension > 0 ? '+' : ''}
-                  {p.tension}
-                </strong>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {game.missions && (
-        <section className="mission-box">
-          <h3>Mission</h3>
-          <ul>
-            {game.missions.requiredPlanets.map((pl) => (
-              <li
-                key={pl}
-                className={
-                  game.missions!.suppliedPlanets.includes(pl) ? 'done' : ''
-                }
-              >
-                {game.missions!.suppliedPlanets.includes(pl) ? '✓' : '○'}{' '}
-                {pl} versorgen
-              </li>
-            ))}
-            <li
-              className={
-                game.missions.defensesDefeated >=
-                game.missions.requiredDefenses
-                  ? 'done'
-                  : ''
-              }
-            >
-              {game.missions.defensesDefeated >=
-              game.missions.requiredDefenses
-                ? '✓'
-                : '○'}{' '}
-              Verteidigungen {game.missions.defensesDefeated}/
-              {game.missions.requiredDefenses}
-            </li>
-          </ul>
-        </section>
-      )}
+      <section className="stat-grid">
+        <div className="stat bank-stat">
+          <span>Bank</span>
+          <strong>{game.bank}¤</strong>
+        </div>
+      </section>
 
       <section className="action-box">
         <h3>Aktion</h3>
-        {!sel && (
+        {!selectedField && (
           <p className="hint">
-            Eine Kartenaktion beendet den Zug. Ass auf der Sonne aufdecken
-            → Bedarf würfeln. Shift+Klick setzt Wegpunkte. Esc oder Rechtsklick
-            bricht ab.
+            Stapel anklicken, ggf. mehrfach für größere absteigende Auswahl, dann
+            das Ziel. Bewegungen kosten keine Aktion — nur Abheben von fremden
+            oder staatlichen Lagern kostet.
           </p>
         )}
 
@@ -151,21 +135,25 @@ export function SidePanel({ game }: { game: GameState }) {
           <p className="action-error">{game.actionError}</p>
         )}
 
-        {sel?.type === 'stack' && selectedCell && (
+        {selectedField && selectedCard && (
           <div className="sel-card">
             <div className="sel-cards-row">
               {selectedCards.map((c) => (
                 <PlayingCard key={c.id} card={c} compact />
               ))}
+              <p>
+                {selectedCount > 1
+                  ? `${selectedCount} Karten von ${selectedField.label}`
+                  : `${describeCard(selectedCard)} von ${selectedField.label}`}
+              </p>
             </div>
-            <p>
-              {selectedCards.map((c) => describeCard(c)).join(' · ')}
-            </p>
-            {game.pathCost != null && (
-              <p className="cost-line">Route: {game.pathCost}¤</p>
-            )}
             <p className="hint">
-              Ziel anklicken. Shift+Klick auf leere Felder = Wegpunkt.
+              {selectedCount > 1
+                ? 'Erneut auf den Stapel klicken ändert die Anzahl. '
+                : 'Erneut auf den Stapel klicken wählt mehr Karten. '}
+              {targetCount > 0
+                ? `${targetCount} mögliche${targetCount === 1 ? 's Ziel' : ' Ziele'} markiert.`
+                : 'Kein Feld nimmt diese Auswahl gerade an.'}
             </p>
             <button type="button" className="ghost-btn" onClick={clearSelection}>
               Abbrechen
@@ -173,41 +161,114 @@ export function SidePanel({ game }: { game: GameState }) {
           </div>
         )}
 
+        <button
+          type="button"
+          className="primary-btn"
+          disabled={busy}
+          onClick={() => endTurn()}
+        >
+          Karten ziehen und Produzieren
+          <span className="btn-sub">(Leertaste · beendet den Zug)</span>
+        </button>
+
         <div className="action-row">
           <button
             type="button"
             className="ghost-btn"
             onClick={undo}
-            disabled={!canUndo}
-            title="Letzten Spielzug rückgängig machen"
+            disabled={viewIndex <= 0 || Boolean(moveAnim) || Boolean(auction)}
+            title="Einen aufgezeichneten Schritt zurück"
           >
             Rückgängig
           </button>
         </div>
       </section>
 
-      {ownFeeFields.length > 0 && (
+      {game.players.length > 1 && !game.ended && (
+        <section className="market-box">
+          <h3>Markt</h3>
+          <div className="market-row">
+            <select
+              aria-label="Lager zur Auktion"
+              value={auctionChoice}
+              disabled={busy || auctionable.length === 0}
+              onChange={(e) => setAuctionField(e.target.value)}
+            >
+              {auctionable.length === 0 && (
+                <option value="">
+                  {game.auctionUsed ? 'Auktion bereits genutzt' : 'Kein Lager'}
+                </option>
+              )}
+              {auctionable.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.label} ({f.owner === 'state' ? 'Staat' : 'eigen'})
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="ghost-btn"
+              disabled={busy || !auctionChoice}
+              onClick={() => openAuction(auctionChoice)}
+              title="Höchstens eine Auktion pro Zug"
+            >
+              Auktion
+            </button>
+          </div>
+
+          {others.length > 0 && giftTarget && (
+            <div className="market-row">
+              <select
+                aria-label="Empfänger"
+                value={giftTarget}
+                disabled={busy}
+                onChange={(e) => setGiftTo(e.target.value as PlayerId)}
+              >
+                {others.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                aria-label="Betrag"
+                min={1}
+                max={Math.max(1, current.money)}
+                value={giftAmount}
+                disabled={busy}
+                onChange={(e) =>
+                  setGiftAmount(Math.max(1, Math.floor(Number(e.target.value)) || 1))
+                }
+              />
+              <button
+                type="button"
+                className="ghost-btn"
+                disabled={busy || current.money < giftAmount}
+                onClick={() => gift(giftTarget, giftAmount)}
+              >
+                Geld schenken
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+
+      {game.players.length > 1 && ownFields.length > 0 && !game.ended && (
         <section className="toll-box">
-          <h3>Gebühren</h3>
-          {ownFeeFields.map((d) => {
-            const top = d.stack[d.stack.length - 1]
-            return (
-              <label key={keyOf(d.x, d.y)} className="toll-row">
-                <span>
-                  ({d.x},{d.y}) {suitSymbol(top.suit)}
-                  {rankLabel(top.rank)}
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  value={d.toll}
-                  onChange={(e) =>
-                    setToll(d.x, d.y, Number(e.target.value) || 0)
-                  }
-                />
-              </label>
-            )
-          })}
+          <h3>Eigene Gebühren</h3>
+          {ownFields.map((f) => (
+            <label key={f.id} className="toll-row">
+              <span>{f.label}</span>
+              <input
+                type="number"
+                min={0}
+                value={f.fee}
+                disabled={busy}
+                onChange={(e) => setFee(f.id, Number(e.target.value) || 0)}
+              />
+            </label>
+          ))}
         </section>
       )}
 

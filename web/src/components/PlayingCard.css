@@ -85,17 +85,8 @@
   letter-spacing: -0.02em;
 }
 
-.pcard-edge-icon {
-  font-size: 0.55rem;
-  opacity: 0.85;
-}
-
 .pcard.compact .pcard-edge-rank {
   font-size: 0.58rem;
-}
-
-.pcard.compact .pcard-edge-icon {
-  font-size: 0.48rem;
 }
 
 .pcard-rank {
@@ -110,79 +101,78 @@
   font-size: 0.95rem;
 }
 
-/* Energie — Gold / Plasma */
-.pcard.role-energy {
-  --pcard-ink: #2a1805;
-  --pcard-fill: #f0a830;
-  background-image: linear-gradient(155deg, #ffe9ad 0%, #f0a830 45%, #c97a12 100%);
-  border-color: rgba(255, 220, 140, 0.55);
+.pcard.dimmed {
+  filter: brightness(0.72) saturate(0.8);
 }
 
-/* Bedarf — Grün / Orbit */
-.pcard.role-demand {
-  --pcard-ink: #f2fff8;
-  --pcard-fill: #1f9a62;
-  background-image: linear-gradient(155deg, #4fe0a0 0%, #1f9a62 48%, #0d5c3a 100%);
-  border-color: rgba(140, 255, 200, 0.4);
+.pcard-edge-icon {
+  font-size: 0.7rem;
+  opacity: 0.95;
 }
 
-/* Verteidigung — eigene (Blau / Schild) */
-.pcard.role-defense,
-.pcard.role-defense.defense-own {
+.pcard.compact .pcard-edge-icon {
+  font-size: 0.62rem;
+}
+
+/* ♥ Herz — Rohstoff */
+.pcard.suit-hearts {
+  --pcard-ink: #fff3f5;
+  --pcard-fill: #d93a5c;
+  background-image: linear-gradient(155deg, #ff8fa6 0%, #d93a5c 48%, #8e1c38 100%);
+  border-color: rgba(255, 170, 190, 0.5);
+}
+
+/* ♠ Pik — Rohstoff */
+.pcard.suit-spades {
   --pcard-ink: #f0f6ff;
   --pcard-fill: #4a7ae8;
   background-image: linear-gradient(155deg, #8eb8ff 0%, #4a7ae8 48%, #2446a0 100%);
   border-color: rgba(170, 210, 255, 0.45);
 }
 
-/* Verteidigung — gegnerisch (Violett / Signal) */
-.pcard.role-defense.defense-enemy {
-  --pcard-ink: #faf0ff;
-  --pcard-fill: #9b4ad4;
-  background-image: linear-gradient(155deg, #d4a0ff 0%, #9b4ad4 48%, #5a2088 100%);
-  border-color: rgba(220, 170, 255, 0.5);
+/* ⚡ Energie — Rohstoff */
+.pcard.suit-energy {
+  --pcard-ink: #1a1400;
+  --pcard-fill: #f5d547;
+  background-image: linear-gradient(155deg, #fff3a8 0%, #f0c020 48%, #c48a00 100%);
+  border-color: rgba(255, 230, 120, 0.55);
 }
 
-/* Verteidigung — neutral (Eisen / Stein) */
-.pcard.role-defense.defense-neutral {
-  --pcard-ink: #f2efe8;
-  --pcard-fill: #6a6560;
-  background-image:
-    repeating-linear-gradient(
-      -18deg,
-      rgba(255, 255, 255, 0.06) 0 2px,
-      transparent 2px 6px
-    ),
-    linear-gradient(155deg, #9a948c 0%, #6a6560 48%, #3a3732 100%);
-  border-color: rgba(200, 190, 160, 0.45);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.12) inset,
-    0 8px 16px rgba(0, 0, 0, 0.4);
+/* ♦ Karo — Fertigprodukt */
+.pcard.suit-diamonds {
+  --pcard-ink: #2a1805;
+  --pcard-fill: #f0a830;
+  background-image: linear-gradient(155deg, #ffe9ad 0%, #f0a830 45%, #c97a12 100%);
+  border-color: rgba(255, 220, 140, 0.55);
 }
 
-/* Angriff — Koralle / Signal */
-.pcard.role-offense {
-  --pcard-ink: #fff5f0;
-  --pcard-fill: #ef5a45;
-  background-image: linear-gradient(155deg, #ff9a6b 0%, #ef5a45 48%, #b02830 100%);
-  border-color: rgba(255, 180, 150, 0.45);
+/* ♣ Kreuz — Fertigprodukt */
+.pcard.suit-clubs {
+  --pcard-ink: #f2fff8;
+  --pcard-fill: #1f9a62;
+  background-image: linear-gradient(155deg, #4fe0a0 0%, #1f9a62 48%, #0d5c3a 100%);
+  border-color: rgba(140, 255, 200, 0.4);
 }
 
 .pcard.back {
+  --back-tint: 240, 168, 48;
   background:
     linear-gradient(145deg, #1a2744, #0d1528 60%),
     repeating-linear-gradient(
       135deg,
-      rgba(240, 168, 48, 0.12) 0 4px,
+      rgba(var(--back-tint), 0.12) 0 4px,
       transparent 4px 8px
     );
-  border: 1px solid rgba(140, 180, 255, 0.28);
+  border: 1px solid rgba(var(--back-tint), 0.45);
   display: block;
 }
 
 .pcard.back::before {
-  background:
-    radial-gradient(circle at 50% 40%, rgba(240, 168, 48, 0.2), transparent 55%);
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgba(var(--back-tint), 0.26),
+    transparent 55%
+  );
 }
 
 .pcard.back::after {
@@ -191,6 +181,38 @@
   inset: 0;
   display: grid;
   place-items: center;
-  color: rgba(240, 168, 48, 0.55);
+  color: rgba(var(--back-tint), 0.75);
   font-size: 0.95rem;
+}
+
+/* Rücken in der Farbe des jeweiligen Decks */
+.pcard.back.back-hearts {
+  --back-tint: 255, 93, 122;
+}
+.pcard.back.back-hearts::after {
+  content: '♥';
+}
+.pcard.back.back-spades {
+  --back-tint: 107, 159, 255;
+}
+.pcard.back.back-spades::after {
+  content: '♠';
+}
+.pcard.back.back-energy {
+  --back-tint: 240, 200, 40;
+}
+.pcard.back.back-energy::after {
+  content: '⚡';
+}
+.pcard.back.back-diamonds {
+  --back-tint: 240, 168, 48;
+}
+.pcard.back.back-diamonds::after {
+  content: '♦';
+}
+.pcard.back.back-clubs {
+  --back-tint: 61, 207, 142;
+}
+.pcard.back.back-clubs::after {
+  content: '♣';
 }

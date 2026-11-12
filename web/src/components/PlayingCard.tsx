@@ -1,17 +1,13 @@
 import type { Card, Suit } from '../types'
-import { rankLabel } from '../types'
+import { rankLabel, suitName, suitSymbol } from '../types'
 import './PlayingCard.css'
 
-export type DefenseAllegiance = 'own' | 'enemy' | 'neutral'
-
-const suitMeta: Record<
-  Suit,
-  { className: string; icon: string; label: string }
-> = {
-  hearts: { className: 'role-energy', icon: '✦', label: 'Energie' },
-  clubs: { className: 'role-demand', icon: '◎', label: 'Bedarf' },
-  spades: { className: 'role-defense', icon: '⬡', label: 'Verteidigung' },
-  diamonds: { className: 'role-offense', icon: '▲', label: 'Angriff' },
+const suitRole: Record<Suit, string> = {
+  hearts: 'Rohstoff',
+  spades: 'Rohstoff',
+  energy: 'Rohstoff',
+  diamonds: 'Fertigprodukt',
+  clubs: 'Fertigprodukt',
 }
 
 export function PlayingCard({
@@ -20,7 +16,8 @@ export function PlayingCard({
   stacked = false,
   highlight = false,
   stackIndex = 0,
-  defenseAllegiance,
+  faceDown = false,
+  dimmed = false,
 }: {
   card: Card
   compact?: boolean
@@ -28,45 +25,36 @@ export function PlayingCard({
   highlight?: boolean
   /** Higher index paints above lower cards in a stack. */
   stackIndex?: number
-  /** Only for spades on the board: own / enemy / neutral look. */
-  defenseAllegiance?: DefenseAllegiance
+  /** Verdeckt (Nachziehstapel): Rücken in der Farbe des Decks. */
+  faceDown?: boolean
+  /** Nicht zugängliche Karte unter der obersten (Quellen). */
+  dimmed?: boolean
 }) {
-  if (!card.faceUp) {
+  const sizeClass = `${compact ? 'compact' : ''} ${stacked ? 'stacked' : ''}`
+
+  if (faceDown) {
     return (
       <div
-        className={`pcard back ${compact ? 'compact' : ''} ${stacked ? 'stacked' : ''}`}
+        className={`pcard back back-${card.suit} ${sizeClass}`}
         style={{ zIndex: stackIndex }}
-        aria-label="Verdeckte Karte"
+        aria-label={`Verdeckte ${suitName(card.suit)}-Karte`}
       />
     )
   }
 
-  const meta = suitMeta[card.suit]
-  const defenseClass =
-    card.suit === 'spades' && defenseAllegiance
-      ? `defense-${defenseAllegiance}`
-      : ''
-
-  const label =
-    card.suit === 'spades' && defenseAllegiance === 'neutral'
-      ? 'Neutrale Verteidigung'
-      : card.suit === 'spades' && defenseAllegiance === 'enemy'
-        ? 'Fremde Verteidigung'
-        : card.suit === 'spades' && defenseAllegiance === 'own'
-          ? 'Eigene Verteidigung'
-          : meta.label
+  const name = `${suitName(card.suit)} ${rankLabel(card.rank)}`
 
   return (
     <div
-      className={`pcard ${meta.className} ${defenseClass} ${compact ? 'compact' : ''} ${stacked ? 'stacked' : ''} ${highlight ? 'highlight' : ''}`}
+      className={`pcard suit-${card.suit} ${sizeClass} ${highlight ? 'highlight' : ''} ${dimmed ? 'dimmed' : ''}`}
       style={{ zIndex: stackIndex }}
-      aria-label={`${label} ${rankLabel(card.rank)}`}
-      title={`${label} ${rankLabel(card.rank)}`}
+      aria-label={name}
+      title={[name, suitRole[card.suit]].join(' · ')}
     >
       <span className="pcard-edge">
         <span className="pcard-edge-rank">{rankLabel(card.rank)}</span>
         <span className="pcard-edge-icon" aria-hidden>
-          {meta.icon}
+          {suitSymbol(card.suit)}
         </span>
       </span>
       <span className="pcard-rank">{rankLabel(card.rank)}</span>

@@ -1,7 +1,7 @@
 .menu-screen {
   position: relative;
-  min-height: 100vh;
-  overflow: hidden;
+  height: 100%;
+  overflow: auto;
 }
 
 .menu-atmosphere {
@@ -92,7 +92,38 @@
   }
 }
 
-.scenario-list h2,
+.scenario-list h2 {
+  margin: 0 0 12px;
+  font-family: var(--display);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+}
+
+.mode-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+.mode-tabs button {
+  appearance: none;
+  flex: 1;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-dim);
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mode-tabs button.active {
+  border-color: rgba(240, 168, 48, 0.65);
+  background: rgba(240, 168, 48, 0.14);
+  color: var(--amber);
+}
+
 .mode-panel h2 {
   margin: 0 0 12px;
   font-family: var(--display);
@@ -207,6 +238,28 @@
   filter: brightness(1.04);
 }
 
+.import-btn {
+  width: 100%;
+  margin-top: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+}
+
+.import-btn:hover {
+  color: var(--text);
+  border-color: rgba(240, 168, 48, 0.45);
+}
+
+.import-error {
+  margin: 8px 0 0;
+  color: var(--danger);
+  font-size: 0.82rem;
+}
+
 .how-to {
   margin: 18px 0 0;
   padding: 0 0 0 18px;
@@ -216,4 +269,23 @@
 
 .how-to li {
   margin-bottom: 4px;
+}
+
+.scenario-facts {
+  list-style: none;
+  margin: 10px 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.scenario-facts strong {
+  display: block;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
 }

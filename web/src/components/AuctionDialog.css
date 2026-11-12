@@ -1,0 +1,123 @@
+.auction-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(4, 7, 14, 0.66);
+  backdrop-filter: blur(2px);
+}
+
+.auction-dialog {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(240, 168, 48, 0.45);
+  background: linear-gradient(180deg, #162036, #0d1422);
+  box-shadow: var(--shadow);
+}
+
+.auction-kicker {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.auction-dialog h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.4rem;
+}
+
+.auction-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.auction-high {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--amber-soft);
+  border: 1px solid rgba(240, 168, 48, 0.35);
+}
+
+.auction-bidders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auction-bidders li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.auction-bidders li.leading {
+  border-color: rgba(240, 168, 48, 0.65);
+}
+
+.auction-name {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.auction-name i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+
+.auction-name em {
+  font-style: normal;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.auction-status {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.auction-bidders li.leading .auction-status {
+  color: var(--amber);
+  font-weight: 650;
+}
+
+.auction-bidders input,
+.auction-fee input {
+  width: 64px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  color: var(--text);
+  padding: 4px 6px;
+}
+
+.auction-fee {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+}

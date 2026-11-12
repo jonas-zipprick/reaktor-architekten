@@ -1,15 +1,12 @@
-import type { GameMode, PlayerId, ScenarioDef, ScenarioId } from '../types'
-
-const playersForMode = (mode: GameMode, scenario: ScenarioId): PlayerId[] => {
-  if (mode === 'solo') return ['white']
-  if (scenario === 'C') return ['white', 'black', 'red']
-  if (scenario === 'D') return ['white', 'black', 'red', 'green']
-  return ['white', 'black']
-}
-
-export function playersFor(scenarioId: ScenarioId, mode: GameMode): PlayerId[] {
-  return playersForMode(mode, scenarioId)
-}
+import type {
+  FieldKind,
+  PlayerId,
+  Recipe,
+  ScenarioDef,
+  ScenarioField,
+  ScenarioId,
+  Suit,
+} from '../types'
 
 export const PLAYER_META: Record<
   PlayerId,
@@ -21,144 +18,186 @@ export const PLAYER_META: Record<
   green: { name: 'Grün', color: '#3cb88a', short: 'G' },
 }
 
-// 8×5 — keine Basen/Speicher; Energie liegt auf leeren Feldern.
-const polarityCells = (): ScenarioDef['cells'] => [
-  { x: -4, y: -2, kind: 'planet', label: 'Planet A' },
-  { x: 3, y: 2, kind: 'planet', label: 'Planet B' },
-  { x: -4, y: 0, kind: 'sun', label: 'Sonne' },
-  { x: 3, y: 0, kind: 'sun', label: 'Sonne' },
-  { x: -1, y: -2, kind: 'asteroid' },
-  { x: 0, y: 2, kind: 'asteroid' },
-]
+/**
+ * Brettzeilen: Quellen → Fabriken|Infrastruktur (eine Zeile, zwei Spalten) → Märkte.
+ * Fabrik und Infrastruktur teilen sich `row` 1; das Board rendert sie nebeneinander.
+ */
+export const ROW = {
+  source: 0,
+  factory: 1,
+  storage: 1,
+  market: 2,
+} as const
 
-const polarityDefenses = {
-  solo: [
-    { x: -3, y: -2, rank: 4 as const, toll: 2 },
-    { x: -4, y: -1, rank: 5 as const, toll: 2 },
-    { x: 0, y: 0, rank: 3 as const, toll: 3 },
-  ],
-  coop: [
-    { x: -3, y: -2, rank: 4 as const, toll: 2 },
-    { x: -4, y: -1, rank: 5 as const, toll: 2 },
-    { x: 0, y: 0, rank: 3 as const, toll: 3 },
-    { x: 2, y: 2, rank: 6 as const, toll: 3 },
-    { x: 3, y: 1, rank: 4 as const, toll: 2 },
-  ],
-  versus: [] as { x: number; y: number; rank: 4 | 5 | 6 | 3; toll: number }[],
+export function rowForKind(kind: FieldKind): number {
+  return ROW[kind]
 }
+
+const LETTERS = ['A', 'B', 'C', 'D']
+
+/** Karofabrik: 1 Energie + 1 Pik → 1 ♦ */
+export const RECIPE_KARO: Recipe = { energy: 1, spades: 1 }
+/** Kreuzfabrik: 1 Energie + 1 Herz → 1 ♣ */
+export const RECIPE_KREUZ: Recipe = { energy: 1, hearts: 1 }
+
+export function recipeForFactory(suit: Suit): Recipe | undefined {
+  if (suit === 'diamonds') return RECIPE_KARO
+  if (suit === 'clubs') return RECIPE_KREUZ
+  return undefined
+}
+
+function sources(perSuit: number): ScenarioField[] {
+  const out: ScenarioField[] = []
+  for (let i = 1; i <= perSuit; i++) {
+    out.push({
+      id: `herz-${i}`,
+      kind: 'source',
+      suit: 'hearts',
+      label: `Herzquelle ${i}`,
+      row: ROW.source,
+    })
+  }
+  for (let i = 1; i <= perSuit; i++) {
+    out.push({
+      id: `pik-${i}`,
+      kind: 'source',
+      suit: 'spades',
+      label: `Pikquelle ${i}`,
+      row: ROW.source,
+    })
+  }
+  for (let i = 1; i <= perSuit; i++) {
+    out.push({
+      id: `energie-${i}`,
+      kind: 'source',
+      suit: 'energy',
+      label: `Energiequelle ${i}`,
+      row: ROW.source,
+    })
+  }
+  return out
+}
+
+function factories(karoCount: number, kreuzCount: number): ScenarioField[] {
+  const out: ScenarioField[] = []
+  for (let i = 0; i < karoCount; i++) {
+    out.push({
+      id: `karo-${LETTERS[i]!.toLowerCase()}`,
+      kind: 'factory',
+      suit: 'diamonds',
+      label: `Karofabrik ${LETTERS[i]}`,
+      recipe: RECIPE_KARO,
+      row: ROW.factory,
+    })
+  }
+  for (let i = 0; i < kreuzCount; i++) {
+    out.push({
+      id: `kreuz-${LETTERS[i]!.toLowerCase()}`,
+      kind: 'factory',
+      suit: 'clubs',
+      label: `Kreuzfabrik ${LETTERS[i]}`,
+      recipe: RECIPE_KREUZ,
+      row: ROW.factory,
+    })
+  }
+  return out
+}
+
+function storages(count: number): ScenarioField[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `lager-${i + 1}`,
+    kind: 'storage' as const,
+    label: `Lager ${i + 1}`,
+    row: ROW.storage,
+  }))
+}
+
+function market(suit: Suit, label: string): ScenarioField {
+  return {
+    id: `markt-${suit}`,
+    kind: 'market',
+    suit,
+    label,
+    row: ROW.market,
+  }
+}
+
+const MARKT_HERZ = () => market('hearts', 'Herzmarkt')
+const MARKT_PIK = () => market('spades', 'Pikmarkt')
+const MARKT_KARO = () => market('diamonds', 'Karomarkt')
+const MARKT_KREUZ = () => market('clubs', 'Kreuzmarkt')
 
 export const SCENARIOS: ScenarioDef[] = [
   {
     id: 'A',
-    name: 'Polarität',
-    modes: ['solo', 'coop', 'versus'],
+    name: 'Allein am Tisch',
+    players: ['white'],
     description:
-      '8×5-Raster mit gegenüberliegenden Planeten. Klassisches Einstiegsszenario.',
-    bounds: { minX: -4, maxX: 3, minY: -2, maxY: 2 },
-    cells: polarityCells(),
-    defenses: polarityDefenses,
-    missions: {
-      solo: { planets: ['Planet A'], defenses: 1 },
-      coop: { planets: ['Planet A', 'Planet B'], defenses: 2 },
-    },
+      '1 Spieler · Herz-/Energiequelle, 1 Lager, Kreuzfabrik + Kreuzmarkt. Ausbau 1: Energiemarkt · Ausbau 2: Pikquelle + Karofabrik + Karomarkt.',
+    fields: [
+      {
+        id: 'herz-1',
+        kind: 'source',
+        suit: 'hearts',
+        label: 'Herzquelle 1',
+        row: ROW.source,
+      },
+      {
+        id: 'energie-1',
+        kind: 'source',
+        suit: 'energy',
+        label: 'Energiequelle 1',
+        row: ROW.source,
+      },
+      ...storages(1),
+      MARKT_KREUZ(),
+      ...factories(0, 1),
+    ],
   },
   {
     id: 'B',
-    name: 'Kanalwelt',
-    modes: ['solo', 'coop', 'versus'],
+    name: 'Privatisierung',
+    players: ['white', 'black'],
     description:
-      'U-förmiges Raster — enge Korridore und teure Mittelverteidigung.',
-    cells: [
-      // Left arm
-      ...[-3, -2, -1, 0, 1, 2, 3].flatMap((y) => [
-        { x: -5, y, kind: 'empty' as const },
-        { x: -4, y, kind: 'empty' as const },
-      ]),
-      // Right arm
-      ...[-3, -2, -1, 0, 1, 2, 3].flatMap((y) => [
-        { x: 4, y, kind: 'empty' as const },
-        { x: 5, y, kind: 'empty' as const },
-      ]),
-      // Top corridor
-      ...[-3, -2, -1, 0, 1, 2, 3].flatMap((x) => [
-        { x, y: -3, kind: 'empty' as const },
-        { x, y: -2, kind: 'empty' as const },
-      ]),
-      { x: -5, y: 3, kind: 'planet', label: 'Planet A' },
-      { x: 5, y: 3, kind: 'planet', label: 'Planet B' },
-      { x: -5, y: 0, kind: 'sun', label: 'Sonne' },
-      { x: 5, y: 0, kind: 'sun', label: 'Sonne' },
+      '2 Spieler · 2/2 Quellen, je 2 Fabriken, 2 Lager, Karo-/Kreuzmarkt.',
+    fields: [
+      ...sources(2),
+      ...storages(2),
+      MARKT_KARO(),
+      MARKT_KREUZ(),
+      ...factories(2, 2),
     ],
-    defenses: {
-      solo: [
-        { x: -5, y: 2, rank: 4, toll: 2 },
-        { x: -4, y: 3, rank: 3, toll: 2 },
-        { x: 0, y: -3, rank: 5, toll: 4 },
-      ],
-      coop: [
-        { x: -5, y: 2, rank: 4, toll: 2 },
-        { x: -4, y: 3, rank: 3, toll: 2 },
-        { x: 0, y: -3, rank: 5, toll: 4 },
-        { x: 5, y: 2, rank: 6, toll: 3 },
-        { x: 4, y: 3, rank: 4, toll: 2 },
-      ],
-      versus: [],
-    },
-    missions: {
-      solo: { planets: ['Planet A'], defenses: 1 },
-      coop: { planets: ['Planet A', 'Planet B'], defenses: 2 },
-    },
   },
   {
     id: 'C',
-    name: 'Triade',
-    modes: ['versus'],
-    description: 'Drei Spieler, drei Planeten, drei Sonnen — offener Wettbewerb.',
-    bounds: { minX: -4, maxX: 4, minY: -4, maxY: 4 },
-    cells: [
-      { x: -4, y: -4, kind: 'planet', label: 'Planet Nordwest' },
-      { x: 4, y: -4, kind: 'planet', label: 'Planet Nordost' },
-      { x: 4, y: 4, kind: 'planet', label: 'Planet Südost' },
-      { x: -4, y: 0, kind: 'sun', label: 'Sonne' },
-      { x: 0, y: -4, kind: 'sun', label: 'Sonne' },
-      { x: 4, y: 0, kind: 'sun', label: 'Sonne' },
-      { x: -1, y: -1, kind: 'asteroid' },
-      { x: 1, y: -1, kind: 'asteroid' },
-      { x: -1, y: 2, kind: 'asteroid' },
-      { x: 1, y: 2, kind: 'asteroid' },
+    name: 'Industrieller Wettbewerb',
+    players: ['white', 'black', 'red'],
+    description:
+      '3 Spieler · 3/3 Quellen, je 3 Fabriken, 3 Lager, Herz-/Karo-/Kreuzmarkt.',
+    fields: [
+      ...sources(3),
+      ...storages(3),
+      MARKT_HERZ(),
+      MARKT_KARO(),
+      MARKT_KREUZ(),
+      ...factories(3, 3),
     ],
-    defenses: { solo: [], coop: [], versus: [] },
-    missions: {
-      solo: { planets: [], defenses: 0 },
-      coop: { planets: [], defenses: 0 },
-    },
   },
   {
     id: 'D',
-    name: 'King of the Hill',
-    modes: ['versus'],
-    description: 'Vier Spieler um die zentrale Sonne — enge Wege, viele Asteroiden.',
-    bounds: { minX: -4, maxX: 4, minY: -4, maxY: 4 },
-    cells: [
-      { x: -4, y: -4, kind: 'planet', label: 'Planet Nordwest' },
-      { x: 4, y: -4, kind: 'planet', label: 'Planet Nordost' },
-      { x: -4, y: 4, kind: 'planet', label: 'Planet Südwest' },
-      { x: -4, y: 0, kind: 'sun', label: 'Sonne' },
-      { x: 0, y: -4, kind: 'sun', label: 'Sonne' },
-      { x: 4, y: 0, kind: 'sun', label: 'Sonne' },
-      { x: 0, y: 0, kind: 'sun', label: 'Sonne' },
-      { x: -2, y: -1, kind: 'asteroid' },
-      { x: 2, y: -1, kind: 'asteroid' },
-      { x: -2, y: 1, kind: 'asteroid' },
-      { x: 2, y: 1, kind: 'asteroid' },
-      { x: 0, y: -2, kind: 'asteroid' },
-      { x: 0, y: 3, kind: 'asteroid' },
+    name: 'Oligarchen',
+    players: ['white', 'black', 'red', 'green'],
+    description:
+      '4 Spieler · 4/4 Quellen, je 3 Fabriken, 4 Lager, alle 4 Märkte.',
+    fields: [
+      ...sources(4),
+      ...storages(4),
+      MARKT_HERZ(),
+      MARKT_PIK(),
+      MARKT_KARO(),
+      MARKT_KREUZ(),
+      ...factories(3, 3),
     ],
-    defenses: { solo: [], coop: [], versus: [] },
-    missions: {
-      solo: { planets: [], defenses: 0 },
-      coop: { planets: [], defenses: 0 },
-    },
   },
 ]
 
@@ -166,4 +205,13 @@ export function getScenario(id: ScenarioId): ScenarioDef {
   const s = SCENARIOS.find((x) => x.id === id)
   if (!s) throw new Error(`Unknown scenario ${id}`)
   return s
+}
+
+export function playersFor(scenarioId: ScenarioId): PlayerId[] {
+  return getScenario(scenarioId).players
+}
+
+export function fieldLabel(scenarioId: ScenarioId, fieldId: string): string {
+  const field = getScenario(scenarioId).fields.find((f) => f.id === fieldId)
+  return field?.label ?? fieldId
 }

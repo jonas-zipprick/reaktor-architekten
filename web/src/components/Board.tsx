@@ -1,96 +1,126 @@
-import { useEffect, useMemo, type MouseEvent } from 'react'
-import type { CellState, GameState } from '../types'
-import { keyOf } from '../types'
-import { useGameStore } from '../state/gameStore'
 import {
-  isMoveTarget,
-  isVacantEmpty,
-  selectableCounts,
-} from '../state/rules'
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from 'react'
+import type { FieldState, GameState, Suit } from '../types'
+import { MARKET_EXP_TO_SPAWN, SUITS, suitName, suitSymbol } from '../types'
+import { useGameStore } from '../state/gameStore'
+import { checkMove, movableCard, type MoveCheck } from '../state/rules'
 import { BoardCell } from './BoardCell'
 import { PlayingCard } from './PlayingCard'
 import './Board.css'
 
-function boardBounds(cells: Record<string, CellState>) {
-  const xs = Object.values(cells).map((c) => c.x)
-  const ys = Object.values(cells).map((c) => c.y)
-  return {
-    minX: Math.min(...xs),
-    maxX: Math.max(...xs),
-    minY: Math.min(...ys),
-    maxY: Math.max(...ys),
-  }
+const ROW_LABELS = ['Rohstoffquellen', 'Fabriken & Infrastruktur', 'Märkte']
+
+function isFactoryColumn(field: FieldState): boolean {
+  return field.kind === 'factory'
+}
+
+function isStorageColumn(field: FieldState): boolean {
+  return field.kind === 'storage'
+}
+
+/** Nachzieh- und Ablagestapel einer Kartenfarbe. */
+function DeckPanel({ game, suit }: { game: GameState; suit: Suit }) {
+  const deck = game.decks[suit]
+  const top = deck.draw[deck.draw.length - 1]
+  const discardTop = deck.discard[deck.discard.length - 1]
+  return (
+    <aside
+      className="board-discard"
+      title={`${suitName(suit)}: ${deck.draw.length} im Nachziehstapel, ${deck.discard.length} in der Ablage`}
+    >
+      <span className="board-discard-label">
+        {suitSymbol(suit)} {suitName(suit)}
+      </span>
+      <div className="board-deck-piles">
+        <div className="board-pile">
+          <div className="board-discard-stack">
+            {top ? <PlayingCard card={top} compact faceDown /> : null}
+          </div>
+          <span className="board-discard-count">{deck.draw.length}</span>
+        </div>
+        <div className="board-pile">
+          <div className="board-discard-stack">
+            {discardTop ? <PlayingCard card={discardTop} compact /> : null}
+          </div>
+          <span className="board-discard-count">{deck.discard.length}</span>
+        </div>
+      </div>
+    </aside>
+  )
 }
 
 export function Board({ game }: { game: GameState }) {
-  const selectStack = useGameStore((s) => s.selectStack)
+  const select = useGameStore((s) => s.select)
   const moveTo = useGameStore((s) => s.moveTo)
-  const setWaypoint = useGameStore((s) => s.setWaypoint)
-  const hover = useGameStore((s) => s.hover)
   const clearSelection = useGameStore((s) => s.clearSelection)
+  const endTurn = useGameStore((s) => s.endTurn)
+  const moveAnim = useGameStore((s) => s.moveAnim)
+  const auction = useGameStore((s) => s.auction)
 
-  const { minX, maxX, minY, maxY } = useMemo(
-    () => boardBounds(game.cells),
-    [game.cells],
+  const rows = useMemo(() => {
+    const byRow = new Map<number, FieldState[]>()
+    for (const field of Object.values(game.fields)) {
+      const list = byRow.get(field.row) ?? []
+      list.push(field)
+      byRow.set(field.row, list)
+    }
+    return [...byRow.entries()].sort((a, b) => a[0] - b[0])
+  }, [game.fields])
+
+  /** Legale Ziele der aktuellen Auswahl inkl. Gebühren und Einkommen. */
+  const targets = useMemo(() => {
+    const map = new Map<string, MoveCheck>()
+    if (!game.selection) return map
+    for (const id of Object.keys(game.fields)) {
+      const check = checkMove(
+        game,
+        game.selection.fieldId,
+        id,
+        game.selection.count,
+      )
+      if (check.ok) map.set(id, check)
+    }
+    return map
+  }, [game])
+
+  const demandFlashIds = useMemo(
+    () => new Set(game.demandRollIds),
+    [game.demandRollIds],
+  )
+  const producedIds = useMemo(
+    () => new Set(game.producedIds),
+    [game.producedIds],
   )
 
-  const pathSet = useMemo(() => {
-    const set = new Set<string>()
-    for (const p of game.pathPreview ?? []) set.add(keyOf(p.x, p.y))
-    return set
-  }, [game.pathPreview])
-
-  const waypointIndex = useMemo(() => {
-    const map = new Map<string, number>()
-    game.waypoints.forEach((w, i) => map.set(keyOf(w.x, w.y), i + 1))
-    return map
-  }, [game.waypoints])
-
-  const cols = maxX - minX + 1
-  const rows = maxY - minY + 1
-
-  const onCellClick = (cell: CellState, e: MouseEvent) => {
-    if (game.ended) return
+  const onFieldClick = (field: FieldState, _e: MouseEvent) => {
+    if (game.ended || moveAnim || auction) return
 
     if (game.selection) {
-      if (
-        game.selection.type === 'stack' &&
-        game.selection.x === cell.x &&
-        game.selection.y === cell.y
-      ) {
-        const counts = selectableCounts(game, cell.x, cell.y)
-        const idx = counts.indexOf(game.selection.count)
-        if (idx >= 0 && idx < counts.length - 1) {
-          selectStack(cell.x, cell.y, counts[idx + 1])
-        } else if (counts.length > 1) {
-          selectStack(cell.x, cell.y, counts[0])
-        }
+      // Erneuter Klick auf denselben Stapel: Teilstapelhöhe erhöhen.
+      if (game.selection.fieldId === field.id) {
+        select(field.id)
         return
       }
-
-      // Shift+click: Wegpunkt auf freiem leerem Feld (auch für Verteidigung).
-      if (e.shiftKey) {
-        if (isVacantEmpty(cell)) {
-          setWaypoint({ x: cell.x, y: cell.y })
-        }
+      if (targets.has(field.id)) {
+        moveTo(field.id)
         return
       }
-
-      const asMove = isMoveTarget(game, { x: cell.x, y: cell.y })
-      // Ohne Shift: leere Felder, die kein Ziel sind, als Wegpunkt nutzen (z. B. Energie).
-      if (isVacantEmpty(cell) && !asMove) {
-        setWaypoint({ x: cell.x, y: cell.y })
-        return
+      // Kein legales Ziel: stattdessen diese Karte auswählen, sonst Grund zeigen.
+      if (movableCard(game, field.id)) {
+        select(field.id)
+      } else {
+        moveTo(field.id)
       }
-
-      moveTo({ x: cell.x, y: cell.y })
       return
     }
 
-    const counts = selectableCounts(game, cell.x, cell.y)
-    if (counts.length) {
-      selectStack(cell.x, cell.y, counts[0])
-    }
+    if (movableCard(game, field.id)) select(field.id)
   }
 
   const onContextMenu = (e: MouseEvent) => {
@@ -100,95 +130,191 @@ export function Board({ game }: { game: GameState }) {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      if (!useGameStore.getState().game?.selection) return
-      e.preventDefault()
-      clearSelection()
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return
+      }
+
+      if (e.key === 'Escape') {
+        if (!useGameStore.getState().game?.selection) return
+        e.preventDefault()
+        clearSelection()
+        return
+      }
+
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault()
+        endTurn()
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [clearSelection])
+  }, [clearSelection, endTurn])
+
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const shellRef = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(1)
+  const fieldCount = Object.keys(game.fields).length
+
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current
+    const shell = shellRef.current
+    if (!viewport || !shell) return
+
+    const measure = () => {
+      // Natürliche Größe ohne Transform messen (Layout bleibt unverändert).
+      const sw = shell.offsetWidth
+      const sh = shell.offsetHeight
+      const vw = viewport.clientWidth
+      const vh = viewport.clientHeight
+      if (sw <= 0 || sh <= 0 || vw <= 0 || vh <= 0) return
+      const next = Math.min(vw / sw, vh / sh) * 0.99
+      setScale(next)
+    }
+
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(viewport)
+    window.addEventListener('resize', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [fieldCount])
 
   return (
-    <div className="board-shell" onContextMenu={onContextMenu}>
+    <div className="board-viewport" ref={viewportRef}>
       <div
-        className="board-grid"
-        style={{
-          gridTemplateColumns: `repeat(${cols}, var(--cell-size))`,
-          gridTemplateRows: `repeat(${rows}, var(--cell-height))`,
-        }}
-        onMouseLeave={() => hover(null)}
+        className="board-shell"
+        ref={shellRef}
+        onContextMenu={onContextMenu}
+        style={{ transform: `translate(-50%, -50%) scale(${scale})` }}
       >
-        {Array.from({ length: rows }, (_, row) => {
-          const y = minY + row
-          return Array.from({ length: cols }, (_, col) => {
-            const x = minX + col
-            const cell = game.cells[keyOf(x, y)]
-            if (!cell) {
+        <div className="board-grid">
+          {rows.map(([row, fields]) => {
+            const factories = fields.filter(isFactoryColumn)
+            const storages = fields.filter(isStorageColumn)
+            const split =
+              factories.length > 0 && storages.length > 0
+            const rest = split
+              ? fields.filter(
+                  (f) => !isFactoryColumn(f) && !isStorageColumn(f),
+                )
+              : fields
+
+            const renderCell = (field: FieldState) => (
+              <BoardCell
+                key={field.id}
+                field={field}
+                selected={game.selection?.fieldId === field.id}
+                selectedCount={
+                  game.selection?.fieldId === field.id
+                    ? game.selection.count
+                    : 0
+                }
+                target={targets.get(field.id) ?? null}
+                demandFlash={demandFlashIds.has(field.id)}
+                demandFlashKey={game.demandRollSeq}
+                limitFlash={game.planetLimitId === field.id}
+                limitFlashKey={game.planetLimitSeq}
+                produced={producedIds.has(field.id)}
+                onClick={(e) => onFieldClick(field, e)}
+              />
+            )
+
+            if (split) {
               return (
-                <div
-                  key={`${x},${y}`}
-                  className="board-cell missing"
-                  aria-hidden
-                />
+                <div key={row} className="board-row-split">
+                  <div className="board-row-col">
+                    <p className="board-row-label">Fabriken</p>
+                    <div className="board-row">{factories.map(renderCell)}</div>
+                  </div>
+                  <div className="board-row-col">
+                    <p className="board-row-label">Infrastruktur</p>
+                    <div className="board-row">{storages.map(renderCell)}</div>
+                  </div>
+                  {rest.length > 0 && (
+                    <div className="board-row">{rest.map(renderCell)}</div>
+                  )}
+                </div>
               )
             }
 
-            const selected =
-              game.selection?.type === 'stack' &&
-              game.selection.x === x &&
-              game.selection.y === y
-                ? game.selection.count
-                : 0
-
-            return (
-              <BoardCell
-                key={`${x},${y}`}
-                cell={cell}
-                selectedCount={selected}
-                currentPlayerId={game.players[game.currentPlayerIndex].id}
-                demandFlash={game.demandRollSeq > 0}
-                demandFlashKey={game.demandRollSeq}
-                limitFlash={game.planetLimitSeq > 0}
-                limitFlashKey={game.planetLimitSeq}
-                onPath={pathSet.has(keyOf(x, y))}
-                waypoint={waypointIndex.get(keyOf(x, y)) ?? null}
-                pathCost={
-                  game.pathPreview?.length &&
-                  game.pathPreview[game.pathPreview.length - 1]?.x === x &&
-                  game.pathPreview[game.pathPreview.length - 1]?.y === y
-                    ? game.pathCost
-                    : null
-                }
-                onClick={(e) => onCellClick(cell, e)}
-                onMouseEnter={() => {
-                  if (game.selection) hover({ x, y })
-                }}
-              />
+            const isMarketRow = fields.some((f) => f.kind === 'market')
+            const exp = Math.max(
+              0,
+              Math.min(MARKET_EXP_TO_SPAWN, game.marketExp),
             )
-          })
-        })}
-      </div>
+            return (
+              <div key={row}>
+                <p className="board-row-label">{ROW_LABELS[row] ?? ''}</p>
+                {isMarketRow && (
+                  <div
+                    className="exp-track"
+                    title={`Expansion ${exp}/${MARKET_EXP_TO_SPAWN}: jedes Zugende +1, jeder Marktkollaps setzt auf 0.`}
+                    role="meter"
+                    aria-label={`Expansion ${exp} von ${MARKET_EXP_TO_SPAWN}`}
+                    aria-valuemin={0}
+                    aria-valuemax={MARKET_EXP_TO_SPAWN}
+                    aria-valuenow={exp}
+                  >
+                    <span className="exp-track-label">Exp</span>
+                    <div className="exp-track-rail">
+                      <div className="exp-track-scale">
+                        {Array.from(
+                          { length: MARKET_EXP_TO_SPAWN + 1 },
+                          (_, i) => (
+                            <span
+                              key={i}
+                              className={[
+                                'exp-track-tick',
+                                i === 0 || i === MARKET_EXP_TO_SPAWN
+                                  ? 'major'
+                                  : '',
+                                i === exp ? 'active' : '',
+                                i < exp ? 'filled' : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' ')}
+                              style={{
+                                left: `${(i / MARKET_EXP_TO_SPAWN) * 100}%`,
+                              }}
+                            >
+                              <em>{i}</em>
+                            </span>
+                          ),
+                        )}
+                        <span
+                          className="exp-track-stone"
+                          style={{
+                            left: `${(exp / MARKET_EXP_TO_SPAWN) * 100}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <span className="exp-track-value">
+                      {exp}/{MARKET_EXP_TO_SPAWN}
+                    </span>
+                  </div>
+                )}
+                <div className="board-row">{fields.map(renderCell)}</div>
+              </div>
+            )
+          })}
+        </div>
 
-      <aside
-        className="board-discard"
-        title={`Energie-Ablage (${game.energyDiscard.length})`}
-        aria-label={`Energie-Ablage mit ${game.energyDiscard.length} Karten`}
-      >
-        <span className="board-discard-label">Ablage</span>
-        <div className="board-discard-stack sun-deck">
-          {game.energyDiscard.map((card, i) => (
-            <PlayingCard
-              key={card.id}
-              card={{ ...card, faceUp: true }}
-              compact
-              stacked={i > 0}
-              stackIndex={i}
-            />
+        <div className="board-discards" aria-label="Nachzieh- und Ablagestapel">
+          {SUITS.map((suit) => (
+            <DeckPanel key={suit} game={game} suit={suit} />
           ))}
         </div>
-        <span className="board-discard-count">{game.energyDiscard.length}</span>
-      </aside>
+      </div>
     </div>
   )
 }

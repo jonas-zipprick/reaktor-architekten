@@ -1,148 +1,403 @@
 import { create } from 'zustand'
-import type { Coord, GameMode, GameState, ScenarioId } from '../types'
+import type {
+  Card,
+  FieldId,
+  GameState,
+  Owner,
+  PlayerId,
+  ScenarioId,
+} from '../types'
 import { createGame } from './factory'
 import {
+  actionLabel,
+  emptyRecord,
+  parseRecord,
+  replayTo,
+  serializeRecord,
+  type GameAction,
+  type GameRecord,
+} from './recordFormat'
+import {
+  auctionInfo,
+  executeAuction,
+  executeEndTurn,
+  executeGift,
   executeMove,
-  hoverTarget,
-  selectStack,
-  setToll,
-  toggleWaypoint,
+  selectField,
+  setFee,
 } from './rules'
 
-const MAX_HISTORY = 80
+export type MoveAnim = {
+  cards: Card[]
+  /** Start- und Zielfeld der Teleportation. */
+  path: FieldId[]
+  nextGame: GameState
+  /** Live play: append action to record after anim. */
+  liveAction?: GameAction
+  /** Timeline seek: land on this index after anim. */
+  seekIndex?: number
+}
 
-function snapshotForHistory(game: GameState): GameState {
-  const snap = structuredClone(game)
-  snap.selection = null
-  snap.waypoints = []
-  snap.pathPreview = null
-  snap.pathCost = null
-  snap.actionError = null
-  return snap
+/** Laufende offene Auktion (reiner UI-Zustand bis zum Zuschlag). */
+export type AuctionDraft = {
+  fieldId: FieldId
+  seller: Owner
+  bidders: PlayerId[]
+  highBid: number
+  highBidder: PlayerId | null
+}
+
+function cleanUi(game: GameState): GameState {
+  return { ...game, selection: null, actionError: null }
+}
+
+function topCards(state: GameState, fieldId: FieldId, count = 1): Card[] {
+  const stack = state.fields[fieldId]?.stack ?? []
+  const n = Math.max(1, Math.min(count, stack.length))
+  return stack.slice(stack.length - n)
 }
 
 interface GameStore {
-  phase: 'menu' | 'play'
+  phase: 'menu' | 'play' | 'montecarlo'
   game: GameState | null
-  history: GameState[]
-  canUndo: boolean
-  start: (scenarioId: ScenarioId, mode: GameMode, seed?: number) => void
+  /** Full recorded game (setup + actions). */
+  record: GameRecord | null
+  /** 0 = setup, k = after first k actions. */
+  viewIndex: number
+  /** True when viewIndex < actions.length (scrubbing past). */
+  isHistoric: boolean
+  /** Flying card animation for the last move. */
+  moveAnim: MoveAnim | null
+  auction: AuctionDraft | null
+  start: (scenarioId: ScenarioId, seed?: number) => void
+  importRecord: (raw: string) => void
+  exportRecord: () => string | null
+  goMonteCarlo: () => void
   backToMenu: () => void
-  selectStack: (x: number, y: number, count: number) => void
+  select: (fieldId: FieldId) => void
   clearSelection: () => void
-  hover: (to: Coord | null) => void
-  moveTo: (to: Coord) => void
-  setWaypoint: (to: Coord) => void
-  setToll: (x: number, y: number, toll: number) => void
+  moveTo: (to: FieldId) => void
+  finishMoveAnimation: () => void
+  setFee: (fieldId: FieldId, fee: number) => void
+  gift: (to: PlayerId, amount: number) => void
+  /** „Karten ziehen und Produzieren“ — beendet den Zug. */
+  endTurn: () => void
+  openAuction: (fieldId: FieldId) => void
+  /** Gebot abgeben; muss das Höchstgebot um mindestens 1 übertreffen. */
+  placeBid: (player: PlayerId, amount: number) => void
+  /** Zuschlag an den Höchstbietenden (oder Ende ohne Gebot). */
+  closeAuction: (fee?: number) => void
+  /** Jump to position after `index` actions (0…actions.length). */
+  seek: (index: number) => void
   undo: () => void
 }
 
-function withTurnHistory(
+function appendAction(
   get: () => GameStore,
   set: (partial: Partial<GameStore>) => void,
-  apply: (game: GameState) => GameState,
+  action: GameAction,
+  nextGame: GameState,
 ): void {
-  const game = get().game
-  if (!game || game.ended) return
-  const next = apply(game)
-  if (next === game) return
-  const turned =
-    next.turn !== game.turn ||
-    next.currentPlayerIndex !== game.currentPlayerIndex ||
-    next.ended !== game.ended ||
-    next.logSeq !== game.logSeq
-  if (!turned) {
-    set({ game: next })
-    return
+  const record = get().record
+  if (!record) return
+  const viewIndex = get().viewIndex
+  const truncated: GameRecord = {
+    ...record,
+    actions: [...record.actions.slice(0, viewIndex), action],
   }
-  const history = [...get().history, snapshotForHistory(game)].slice(
-    -MAX_HISTORY,
-  )
-  set({ game: next, history, canUndo: history.length > 0 })
+  const nextIndex = truncated.actions.length
+  set({
+    record: truncated,
+    viewIndex: nextIndex,
+    isHistoric: false,
+    game: cleanUi(nextGame),
+  })
 }
 
-export const useGameStore = create<GameStore>((set, get) => ({
-  phase: 'menu',
+const RESET = {
   game: null,
-  history: [],
-  canUndo: false,
+  record: null,
+  viewIndex: 0,
+  isHistoric: false,
+  moveAnim: null,
+  auction: null,
+} as const
 
-  start: (scenarioId, mode, seed) => {
-    const autoSeed =
-      seed ??
-      (typeof crypto !== 'undefined' && 'getRandomValues' in crypto
-        ? crypto.getRandomValues(new Uint32Array(1))[0]!
-        : Date.now() ^ (Math.random() * 0x100000000))
-    set({
-      phase: 'play',
-      game: createGame(scenarioId, mode, autoSeed),
-      history: [],
-      canUndo: false,
-    })
-  },
+export const useGameStore = create<GameStore>((set, get) => {
+  /** Kein Eingriff, solange Animation oder Auktion laufen. */
+  const idleGame = (): GameState | null => {
+    const { game, moveAnim, auction } = get()
+    if (!game || game.ended || moveAnim || auction) return null
+    return game
+  }
 
-  backToMenu: () =>
-    set({ phase: 'menu', game: null, history: [], canUndo: false }),
+  return {
+    phase: 'menu',
+    ...RESET,
 
-  selectStack: (x, y, count) => {
-    const game = get().game
-    if (!game) return
-    set({ game: selectStack(game, x, y, count) })
-  },
+    start: (scenarioId, seed) => {
+      const autoSeed =
+        seed ??
+        (typeof crypto !== 'undefined' && 'getRandomValues' in crypto
+          ? crypto.getRandomValues(new Uint32Array(1))[0]!
+          : Date.now() ^ (Math.random() * 0x100000000))
+      const game = createGame(scenarioId, autoSeed)
+      const record = emptyRecord({ scenarioId, seed: autoSeed })
+      set({ ...RESET, phase: 'play', game, record })
+    },
 
-  clearSelection: () => {
-    const game = get().game
-    if (!game) return
-    set({
-      game: {
-        ...game,
-        selection: null,
-        waypoints: [],
-        pathPreview: null,
-        pathCost: null,
-        actionError: null,
-      },
-    })
-  },
-
-  hover: (to) => {
-    const game = get().game
-    if (!game || !game.selection) return
-    if (!to) {
+    importRecord: (raw) => {
+      const record = parseRecord(raw)
+      const game = replayTo(record, record.actions.length)
       set({
-        game: { ...game, pathPreview: null, pathCost: null },
+        ...RESET,
+        phase: 'play',
+        game: cleanUi(game),
+        record,
+        viewIndex: record.actions.length,
       })
-      return
-    }
-    set({ game: hoverTarget(game, to) })
-  },
+    },
 
-  moveTo: (to) => {
-    withTurnHistory(get, set, (game) => executeMove(game, to))
-  },
+    exportRecord: () => {
+      const record = get().record
+      if (!record) return null
+      return serializeRecord(record)
+    },
 
-  setWaypoint: (to) => {
-    const game = get().game
-    if (!game) return
-    set({ game: toggleWaypoint(game, to) })
-  },
+    goMonteCarlo: () => set({ ...RESET, phase: 'montecarlo' }),
 
-  setToll: (x, y, toll) => {
-    const game = get().game
-    if (!game) return
-    set({ game: setToll(game, x, y, toll) })
-  },
+    backToMenu: () => set({ ...RESET, phase: 'menu' }),
 
-  undo: () => {
-    const { history, game } = get()
-    if (!history.length || !game) return
-    const prev = history[history.length - 1]
-    const nextHistory = history.slice(0, -1)
-    set({
-      game: structuredClone(prev),
-      history: nextHistory,
-      canUndo: nextHistory.length > 0,
-    })
-  },
+    select: (fieldId) => {
+      const game = idleGame()
+      if (!game) return
+      set({ game: selectField(game, fieldId) })
+    },
 
-}))
+    clearSelection: () => {
+      const game = get().game
+      if (!game || get().moveAnim) return
+      set({ game: cleanUi(game) })
+    },
+
+    moveTo: (to) => {
+      const game = idleGame()
+      if (!game || !game.selection) return
+      const from = game.selection.fieldId
+      const count = game.selection.count
+      const player = game.players[game.currentPlayerIndex]!.id
+      const next = executeMove(game, from, to, count)
+      if (next.actionError) {
+        set({ game: next })
+        return
+      }
+      const action: GameAction = {
+        type: 'move',
+        player,
+        from,
+        to,
+        ...(count > 1 ? { count } : {}),
+      }
+
+      // Brett bleibt im Vor-Zug-Zustand; nach der Fluganimation committen.
+      set({
+        moveAnim: {
+          cards: topCards(game, from, count),
+          path: [from, to],
+          nextGame: next,
+          liveAction: action,
+        },
+        game: cleanUi(game),
+      })
+    },
+
+    finishMoveAnimation: () => {
+      const anim = get().moveAnim
+      if (!anim) return
+      set({ moveAnim: null })
+      if (anim.liveAction) {
+        appendAction(get, set, anim.liveAction, anim.nextGame)
+        return
+      }
+      const record = get().record
+      const seekIndex = anim.seekIndex ?? get().viewIndex
+      set({
+        game: cleanUi(anim.nextGame),
+        viewIndex: seekIndex,
+        isHistoric: record ? seekIndex < record.actions.length : false,
+      })
+    },
+
+    setFee: (fieldId, fee) => {
+      const game = idleGame()
+      if (!game) return
+      const field = game.fields[fieldId]
+      const nextFee = Math.max(0, Math.floor(fee))
+      if (!field || field.fee === nextFee) return
+      const player = game.players[game.currentPlayerIndex]!.id
+      if (field.owner !== player) return
+      const next = setFee(game, fieldId, nextFee)
+      appendAction(
+        get,
+        set,
+        { type: 'setFee', player, at: fieldId, fee: nextFee },
+        next,
+      )
+    },
+
+    gift: (to, amount) => {
+      const game = idleGame()
+      if (!game) return
+      const player = game.players[game.currentPlayerIndex]!.id
+      const next = executeGift(game, to, amount)
+      if (next.actionError) {
+        set({ game: next })
+        return
+      }
+      appendAction(get, set, { type: 'gift', player, to, amount }, next)
+    },
+
+    endTurn: () => {
+      const game = idleGame()
+      if (!game) return
+      const player = game.players[game.currentPlayerIndex]!.id
+      const next = executeEndTurn(game)
+      appendAction(get, set, { type: 'endTurn', player }, next)
+    },
+
+    openAuction: (fieldId) => {
+      const game = idleGame()
+      if (!game) return
+      const info = auctionInfo(game, fieldId)
+      if (!info.ok || !info.seller) {
+        set({
+          game: {
+            ...game,
+            actionError: info.reason ?? 'Auktion nicht möglich',
+          },
+        })
+        return
+      }
+      set({
+        game: cleanUi(game),
+        auction: {
+          fieldId,
+          seller: info.seller,
+          bidders: info.bidders,
+          highBid: 0,
+          highBidder: null,
+        },
+      })
+    },
+
+    placeBid: (player, amount) => {
+      const { game, auction } = get()
+      if (!game || !auction) return
+      const bidder = game.players.find((p) => p.id === player)
+      if (!bidder || !auction.bidders.includes(player)) return
+      const bid = Math.floor(amount)
+      // Startgebot 1¤, jedes weitere Gebot mindestens 1¤ höher, nur Bargeld.
+      if (bid < auction.highBid + 1 || bid > bidder.money) return
+      set({ auction: { ...auction, highBid: bid, highBidder: player } })
+    },
+
+    closeAuction: (fee) => {
+      const { game, auction } = get()
+      if (!game || !auction) return
+      const player = game.players[game.currentPlayerIndex]!.id
+      const next = executeAuction(
+        game,
+        auction.fieldId,
+        auction.highBidder,
+        auction.highBid,
+        auction.highBidder ? fee : undefined,
+      )
+      set({ auction: null })
+      if (next.actionError) {
+        set({ game: next })
+        return
+      }
+      appendAction(
+        get,
+        set,
+        {
+          type: 'auction',
+          player,
+          at: auction.fieldId,
+          winner: auction.highBidder,
+          price: auction.highBid,
+          ...(auction.highBidder && fee != null
+            ? { fee: Math.max(0, Math.floor(fee)) }
+            : {}),
+        },
+        next,
+      )
+    },
+
+    seek: (index) => {
+      const record = get().record
+      if (!record || get().moveAnim || get().auction) return
+      const clamped = Math.max(0, Math.min(index, record.actions.length))
+      const fromIndex = get().viewIndex
+      if (clamped === fromIndex) return
+
+      // Ein Schritt vor: Kartenbewegung animieren
+      if (clamped === fromIndex + 1) {
+        const action = record.actions[fromIndex]
+        if (action?.type === 'move') {
+          const before = cleanUi(replayTo(record, fromIndex))
+          const count = action.count ?? 1
+          set({
+            moveAnim: {
+              cards: topCards(before, action.from, count),
+              path: [action.from, action.to],
+              nextGame: replayTo(record, clamped),
+              seekIndex: clamped,
+            },
+            game: before,
+            // viewIndex bleibt bis Anim-Ende
+          })
+          return
+        }
+      }
+
+      // Ein Schritt zurück: Kartenbewegung rückwärts animieren
+      if (clamped === fromIndex - 1 && fromIndex > 0) {
+        const action = record.actions[fromIndex - 1]
+        if (action?.type === 'move') {
+          const before = cleanUi(replayTo(record, clamped))
+          const after = cleanUi(replayTo(record, fromIndex))
+          const count = action.count ?? 1
+          set({
+            moveAnim: {
+              cards: topCards(before, action.from, count),
+              path: [action.to, action.from],
+              nextGame: before,
+              seekIndex: clamped,
+            },
+            game: after,
+          })
+          return
+        }
+      }
+
+      // Sprung über mehrere Schritte / andere Aktionen: sofort
+      const game = cleanUi(replayTo(record, clamped))
+      set({
+        game,
+        viewIndex: clamped,
+        isHistoric: clamped < record.actions.length,
+        moveAnim: null,
+      })
+    },
+
+    undo: () => {
+      if (get().moveAnim || get().auction) return
+      const { viewIndex } = get()
+      if (viewIndex <= 0) return
+      get().seek(viewIndex - 1)
+    },
+  }
+})
+
+export { actionLabel }

@@ -1,0 +1,389 @@
+import { create } from 'zustand'
+import {
+  batchKeyOf,
+  clearBatch,
+  getRun,
+  listSummaries,
+  putRuns,
+  summaryOf,
+  type SimRunSummary,
+} from '../sim/mcStorage'
+import { runSimulationPool, type PoolHandle } from '../sim/pool'
+import type {
+  SimConfig,
+  SimOutcome,
+  SimProgress,
+  SimRunResult,
+} from '../sim/types'
+import type { ScenarioId } from '../types'
+import { serializeRecord } from './recordFormat'
+
+export type SortKey = keyof SimRunSummary
+
+export const ALL_OUTCOMES: SimOutcome[] = [
+  'finished',
+  'stalled',
+  'aborted',
+  'stuck',
+]
+
+export interface MonteCarloFilters {
+  /** Included outcomes; empty = none shown. Default: all. */
+  outcomes: SimOutcome[]
+  /** Mindestwert für das höchste Gesamtvermögen. */
+  minWealth: number | null
+  querySeed: string
+}
+
+interface MonteCarloStore {
+  config: SimConfig
+  progress: SimProgress
+  /** Metrics only — full records live in IndexedDB. */
+  results: SimRunSummary[]
+  sortKey: SortKey
+  sortDir: 'asc' | 'desc'
+  filters: MonteCarloFilters
+  error: string | null
+  persistError: string | null
+  setConfig: (partial: Partial<SimConfig>) => void
+  setSort: (key: SortKey) => void
+  setFilters: (partial: Partial<MonteCarloFilters>) => void
+  /** Fresh run from startSeed (clears this batch in IDB). */
+  start: () => void
+  /** Continue after pause from progress.nextSeed. */
+  resume: () => void
+  pause: () => void
+  clearResults: () => void
+  /** Load summaries for current config from IndexedDB (e.g. page open). */
+  hydrateFromDisk: () => Promise<void>
+  /** Full record JSON for timeline import; null if missing. */
+  loadRecordJson: (seed: number) => Promise<string | null>
+}
+
+let handle: PoolHandle | null = null
+/** Buffer writes so IDB isn't hit once per microtask under high throughput. */
+let persistQueue: SimRunResult[] = []
+let persistTimer: ReturnType<typeof setTimeout> | null = null
+let persisting = false
+/** Resolvers waiting until the persist backlog drains below the low watermark. */
+let persistWaiters: Array<() => void> = []
+
+/** Pause new sims when this many full records sit unsynced. */
+const PERSIST_HIGH = 48
+/** Resume once the queue is at or below this. */
+const PERSIST_LOW = 16
+/** Max rows per IndexedDB transaction. */
+const PERSIST_TX_CHUNK = 24
+
+/** Aktionslimit je Lauf (Kartenbewegungen, Gebühren, Auktionen, Zugenden). */
+const MAX_ACTIONS_DEFAULT = 1500
+
+const defaultConfig = (): SimConfig => ({
+  scenarioId: 'B',
+  startSeed: 1,
+  maxActions: MAX_ACTIONS_DEFAULT,
+  workers: 0,
+  heuristic: 0.5,
+})
+
+function currentBatchKey(config: SimConfig): string {
+  return batchKeyOf(config)
+}
+
+function wakePersistWaiters(force = false): void {
+  if (!force && persistQueue.length > PERSIST_LOW) return
+  const waiters = persistWaiters
+  persistWaiters = []
+  for (const wake of waiters) wake()
+}
+
+function waitForPersistDrain(): Promise<void> {
+  if (persistQueue.length <= PERSIST_LOW) return Promise.resolve()
+  return new Promise((resolve) => {
+    persistWaiters.push(resolve)
+  })
+}
+
+async function flushPersist(batchKey: string): Promise<void> {
+  if (persisting) return
+  persisting = true
+  try {
+    while (persistQueue.length) {
+      const batch = persistQueue.splice(0, PERSIST_TX_CHUNK)
+      await putRuns(batchKey, batch)
+      wakePersistWaiters()
+    }
+  } finally {
+    persisting = false
+    wakePersistWaiters()
+    if (persistQueue.length) await flushPersist(batchKey)
+  }
+}
+
+function schedulePersistFlush(
+  batchKey: string,
+  onError: (msg: string) => void,
+  immediate = false,
+): void {
+  const run = () => {
+    persistTimer = null
+    void flushPersist(batchKey).catch((e) => {
+      onError(e instanceof Error ? e.message : String(e))
+      // Avoid deadlocking workers if IDB fails.
+      wakePersistWaiters(true)
+    })
+  }
+  if (immediate) {
+    if (persistTimer) {
+      clearTimeout(persistTimer)
+      persistTimer = null
+    }
+    run()
+    return
+  }
+  if (persistTimer) return
+  persistTimer = setTimeout(run, 80)
+}
+
+/**
+ * Queue a run for IndexedDB. If the backlog is high, resolves only after
+ * enough writes have drained (backpressure for the worker pool).
+ */
+function enqueuePersist(
+  batchKey: string,
+  result: SimRunResult,
+  onError: (msg: string) => void,
+): Promise<void> {
+  persistQueue.push(result)
+  const backlog = persistQueue.length
+  schedulePersistFlush(batchKey, onError, backlog >= PERSIST_HIGH / 2)
+  if (backlog < PERSIST_HIGH) return Promise.resolve()
+  return waitForPersistDrain()
+}
+
+function launchPool(
+  get: () => MonteCarloStore,
+  set: (
+    partial:
+      | Partial<MonteCarloStore>
+      | ((s: MonteCarloStore) => Partial<MonteCarloStore>),
+  ) => void,
+  fromSeed: number,
+  append: boolean,
+): void {
+  handle?.pause()
+  handle = null
+
+  const config = { ...get().config, startSeed: fromSeed }
+  const batchKey = currentBatchKey(config)
+
+  if (!append) {
+    set({
+      results: [],
+      error: null,
+      persistError: null,
+      progress: {
+        done: 0,
+        nextSeed: fromSeed >>> 0,
+        running: true,
+        paused: false,
+      },
+    })
+  } else {
+    set({
+      error: null,
+      progress: {
+        ...get().progress,
+        nextSeed: fromSeed >>> 0,
+        running: true,
+        paused: false,
+      },
+    })
+  }
+
+  const baseDone = append ? get().progress.done : 0
+
+  handle = runSimulationPool(
+    config,
+    async (result, progress) => {
+      set((s) => ({
+        results: [...s.results, summaryOf(result)],
+        progress: {
+          done: baseDone + progress.done,
+          nextSeed: progress.nextSeed,
+          running: true,
+          paused: false,
+        },
+      }))
+      // Backpressure: wait if IDB writes lag behind (avoids OOM).
+      await enqueuePersist(batchKey, result, (msg) =>
+        set({ persistError: msg }),
+      )
+    },
+    (progress) => {
+      handle = null
+      // Flush remaining buffer on pause
+      void flushPersist(batchKey).catch((e) =>
+        set({
+          persistError: e instanceof Error ? e.message : String(e),
+        }),
+      )
+      set({
+        progress: {
+          done: baseDone + progress.done,
+          nextSeed: progress.nextSeed,
+          running: false,
+          paused: true,
+        },
+      })
+    },
+    (message) => set({ error: message }),
+  )
+}
+
+export const useMonteCarloStore = create<MonteCarloStore>((set, get) => ({
+  config: defaultConfig(),
+  progress: { done: 0, nextSeed: 1, running: false, paused: false },
+  results: [],
+  sortKey: 'wealthMax',
+  sortDir: 'desc',
+  filters: {
+    outcomes: [...ALL_OUTCOMES],
+    minWealth: null,
+    querySeed: '',
+  },
+  error: null,
+  persistError: null,
+
+  setConfig: (partial) =>
+    set({ config: { ...get().config, ...partial } }),
+
+  setSort: (key) => {
+    const { sortKey, sortDir } = get()
+    if (sortKey === key) {
+      set({ sortDir: sortDir === 'asc' ? 'desc' : 'asc' })
+    } else {
+      set({ sortKey: key, sortDir: 'desc' })
+    }
+  },
+
+  setFilters: (partial) =>
+    set({ filters: { ...get().filters, ...partial } }),
+
+  start: () => {
+    if (get().progress.running) return
+    const { config } = get()
+    const batchKey = currentBatchKey(config)
+    void clearBatch(batchKey)
+      .catch(() => undefined)
+      .finally(() => {
+        launchPool(get, set, config.startSeed, false)
+      })
+  },
+
+  resume: () => {
+    if (get().progress.running) return
+    const { progress } = get()
+    if (!progress.paused && progress.done === 0) {
+      get().start()
+      return
+    }
+    launchPool(get, set, progress.nextSeed, true)
+  },
+
+  pause: () => {
+    handle?.pause()
+  },
+
+  clearResults: () => {
+    handle?.pause()
+    handle = null
+    persistQueue = []
+    wakePersistWaiters(true)
+    const batchKey = currentBatchKey(get().config)
+    void clearBatch(batchKey).catch((e) =>
+      set({
+        persistError: e instanceof Error ? e.message : String(e),
+      }),
+    )
+    set({
+      results: [],
+      progress: {
+        done: 0,
+        nextSeed: get().config.startSeed >>> 0,
+        running: false,
+        paused: false,
+      },
+      error: null,
+    })
+  },
+
+  hydrateFromDisk: async () => {
+    const batchKey = currentBatchKey(get().config)
+    try {
+      const rows = await listSummaries(batchKey)
+      const maxSeed = rows.reduce((m, r) => Math.max(m, r.seed), -1)
+      set({
+        results: rows,
+        progress: {
+          done: rows.length,
+          nextSeed: maxSeed >= 0 ? (maxSeed + 1) >>> 0 : get().config.startSeed >>> 0,
+          running: false,
+          paused: rows.length > 0,
+        },
+        persistError: null,
+      })
+    } catch (e) {
+      set({
+        persistError: e instanceof Error ? e.message : String(e),
+      })
+    }
+  },
+
+  loadRecordJson: async (seed) => {
+    const batchKey = currentBatchKey(get().config)
+    const row = await getRun(batchKey, seed)
+    if (!row?.record) return null
+    return serializeRecord(row.record)
+  },
+}))
+
+export function filterSortResults(state: {
+  results: SimRunSummary[]
+  filters: MonteCarloFilters
+  sortKey: SortKey
+  sortDir: 'asc' | 'desc'
+}): SimRunSummary[] {
+  let rows = state.results
+  const { filters, sortKey, sortDir } = state
+
+  if (filters.outcomes.length < ALL_OUTCOMES.length) {
+    const allowed = new Set(filters.outcomes)
+    rows = rows.filter((r) => allowed.has(r.outcome))
+  }
+  if (filters.minWealth != null) {
+    rows = rows.filter((r) => r.wealthMax >= filters.minWealth!)
+  }
+  if (filters.querySeed.trim()) {
+    const q = filters.querySeed.trim()
+    rows = rows.filter((r) => String(r.seed).includes(q))
+  }
+
+  const dir = sortDir === 'asc' ? 1 : -1
+  return [...rows].sort((a, b) => {
+    const av = a[sortKey]
+    const bv = b[sortKey]
+    if (typeof av === 'boolean' && typeof bv === 'boolean') {
+      return (Number(av) - Number(bv)) * dir
+    }
+    if (typeof av === 'string' && typeof bv === 'string') {
+      return av.localeCompare(bv) * dir
+    }
+    return ((av as number) - (bv as number)) * dir
+  })
+}
+
+export function parseScenarioId(v: string): ScenarioId {
+  if (v === 'A' || v === 'B' || v === 'C' || v === 'D') return v
+  return 'B'
+}
