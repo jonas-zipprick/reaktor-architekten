@@ -20,26 +20,23 @@ export function PlanetLimitFlash({ game }: { game: GameState }) {
 
   const isSource = /\d+ Karten/.test(text)
   const isSpawn = text.includes('→') && !/\d+ Karten/.test(text)
-  const withFactory = isSpawn && /fabrik/i.test(text)
 
   return (
     <div className="planet-limit-flash" role="status" aria-live="polite">
       <p className="planet-limit-flash-title">
         {isSpawn
-          ? withFactory
-            ? 'Markt & Fabrik'
-            : 'Neuer Markt'
+          ? 'Neue Kopie'
           : isSource
             ? 'Quelle kollabiert'
-            : 'Markt kollabiert'}
+            : 'Feld kollabiert'}
       </p>
       <p className="planet-limit-flash-body">{text}</p>
       <p className="planet-limit-flash-note">
         {isSpawn
-          ? 'Exp-Zähler voll · Gemeinschaftsfläche'
+          ? 'Gegen Bezahlung · Eigentum des Käufers'
           : isSource
             ? 'Stapel weg'
-            : 'Messer 0 · Exp-Zähler zurück'}
+            : 'Bedarf unter −8 oder über +5'}
       </p>
     </div>
   )

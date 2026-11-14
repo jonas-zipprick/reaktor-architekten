@@ -21,6 +21,37 @@ export function Timeline() {
       ?.scrollIntoView({ block: 'nearest' })
   }, [viewIndex])
 
+  // Pfeiltasten: Historie vor/zurück (ohne Timeline-Buttons klicken zu müssen).
+  useEffect(() => {
+    if (!record) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return
+      }
+      if (useGameStore.getState().moveAnim || useGameStore.getState().auction) {
+        return
+      }
+      e.preventDefault()
+      const { viewIndex: idx, record: rec, seek: go } = useGameStore.getState()
+      if (!rec) return
+      if (e.key === 'ArrowLeft') {
+        if (idx > 0) go(idx - 1)
+      } else if (idx < rec.actions.length) {
+        go(idx + 1)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [record])
+
   if (!record) return null
 
   const total = record.actions.length
@@ -100,7 +131,7 @@ export function Timeline() {
           className="ghost-btn"
           disabled={busy || viewIndex <= 0}
           onClick={undo}
-          title="Einen Schritt zurück"
+          title="Einen Schritt zurück (←)"
         >
           ← Zurück
         </button>
@@ -109,7 +140,7 @@ export function Timeline() {
           className="ghost-btn"
           disabled={busy || viewIndex >= total}
           onClick={() => seek(viewIndex + 1)}
-          title="Einen Schritt vor"
+          title="Einen Schritt vor (→)"
         >
           Vor →
         </button>

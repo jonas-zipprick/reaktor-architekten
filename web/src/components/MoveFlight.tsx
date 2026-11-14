@@ -101,7 +101,7 @@ export function MoveFlight() {
         {trail.length > 1 && (
           <polyline
             fill="none"
-            stroke="rgba(240, 168, 48, 0.55)"
+            stroke="rgba(42, 109, 176, 0.55)"
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"

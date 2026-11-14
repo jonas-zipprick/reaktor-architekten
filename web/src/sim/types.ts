@@ -2,12 +2,13 @@ import type { ScenarioId } from '../types'
 import type { GameRecord } from '../state/recordFormat'
 
 /**
- * finished = Bank leer (reguläres Spielende)
+ * finished = genug Märkte mit Versorgung > 0 am Zugende (Sieg)
+ * lost     = alle Marktstände weg (Niederlage)
  * stalled  = Stillstand: mehrere Runden lang nur noch Zugenden
  * aborted  = Aktionslimit erreicht
  * stuck    = Bot konnte keine gültige Aktion ausführen
  */
-export type SimOutcome = 'finished' | 'stalled' | 'aborted' | 'stuck'
+export type SimOutcome = 'finished' | 'lost' | 'stalled' | 'aborted' | 'stuck'
 
 export interface SimConfig {
   scenarioId: ScenarioId
@@ -41,21 +42,21 @@ export interface SimRunMetrics {
   /** Summe aller Bankforderungen. */
   bankClaims: number
   bankLeft: number
-  /** Fertigprodukte, die Fabriken erzeugt haben. */
+  /** Karten, die am Zugende auf Ausgabestapel gelegt wurden. */
   productions: number
-  /** Produktkarten, die auf Planeten geliefert wurden. */
+  /** Produktkarten, die auf Marktstände geliefert wurden. */
   productsDelivered: number
   /** Markt-Kollapse (Bedarfsmesser unter −8). */
   marketCollapses: number
-  /** Quellen-Kollapse (mehr als 8 Karten). */
+  /** Quellen-Kollapse (am Zugende noch mehr als 8 Karten). */
   sourceCollapses: number
-  /** Durch Befriedigung gespawnte Märkte. */
+  /** Gekaufte Feldkopien / gespte Märkte. */
   marketsSpawned: number
   /** Einkommen aus Markt-Lieferungen. */
   marketIncome: number
   /** Summe Gebühren an andere Spieler. */
   feesPaidToPlayers: number
-  /** Summe Gebühren staatlicher Betriebe an die Bank. */
+  /** Summe Gebühren und Kaufpreise an die Bank. */
   feesPaidToBank: number
   /** Auktionen mit Zuschlag. */
   auctionsSold: number
@@ -63,6 +64,8 @@ export interface SimRunMetrics {
   auctionVolume: number
   /** Betriebe in Privatbesitz am Ende. */
   privateBusinesses: number
+  /** Anzahl Käufe (Infrastruktur + Feldkopien) während der Partie. */
+  fieldsBought: number
   durationMs: number
 }
 

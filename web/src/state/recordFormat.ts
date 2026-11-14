@@ -34,6 +34,8 @@
  * - `setFee` sets the fee of the player's own business or planet.
  * - `gift` hands cash to another player.
  * - `endTurn` is the shared „Karten ziehen und Produzieren“ action; it ends the turn.
+ * - `lagerOffer` resolves the Exp-10 warehouse offer spawned by a prior `endTurn`
+ *   (`winner` null = state keeps it at fee 1; otherwise purchase / auction result).
  * - Failed / illegal attempts are NOT recorded.
  * - RNG side effects (start-of-turn Bedarf rolls, reshuffles) are
  *   derived only from the seed + prior actions; do not store dice results separately.
@@ -48,14 +50,19 @@ import type { FieldId, GameState, PlayerId, ScenarioId } from '../types'
 import { createGame } from './factory'
 import {
   executeAuction,
+  executeBuyFieldCopy,
+  executeBuyInfra,
+  buyableInfraLabel,
+  type BuyableInfra,
   executeEndTurn,
   executeGift,
   executeMove,
+  resolveLagerOffer,
   setFee,
 } from './rules'
 
 export const RECORD_FORMAT = 'va-record' as const
-export const RECORD_VERSION = 22 as const
+export const RECORD_VERSION = 42 as const
 
 export interface GameRecordSetup {
   scenarioId: ScenarioId
@@ -69,6 +76,8 @@ export type MoveAction = {
   to: FieldId
   /** Absteigender Teilstapel von oben; Standard 1. */
   count?: number
+  /** Küche/Saatstand: von Eingang statt Ausgabe. */
+  lane?: 'input' | 'output'
 }
 
 export type SetFeeAction = {
@@ -102,12 +111,56 @@ export type EndTurnAction = {
   player: PlayerId
 }
 
+export type BuyBeetAction = {
+  type: 'buyBeet'
+  player: PlayerId
+}
+
+export type BuyInfraAction = {
+  type: 'buyInfra'
+  player: PlayerId
+  item: BuyableInfra
+}
+
+export type BuyFieldCopyAction = {
+  type: 'buyFieldCopy'
+  player: PlayerId
+  at: FieldId
+}
+
+const BUYABLE_INFRA_IDS: BuyableInfra[] = [
+  'schuppen',
+  'getreidefeld',
+  'mehlmuehle',
+  'konfituerenkueche',
+  'mehlstand',
+  'konfituerenstand',
+]
+
+function isBuyableInfra(v: unknown): v is BuyableInfra {
+  return typeof v === 'string' && (BUYABLE_INFRA_IDS as string[]).includes(v)
+}
+
+/** Ergebnis des Exp-10-Angebots (nach endTurn mit pendingLagerOffer). */
+export type LagerOfferAction = {
+  type: 'lagerOffer'
+  player: PlayerId
+  at: FieldId
+  winner: PlayerId | null
+  price: number
+  fee?: number
+}
+
 export type GameAction =
   | MoveAction
   | SetFeeAction
   | AuctionAction
   | GiftAction
   | EndTurnAction
+  | BuyBeetAction
+  | BuyInfraAction
+  | BuyFieldCopyAction
+  | LagerOfferAction
 
 export interface GameRecord {
   format: typeof RECORD_FORMAT
@@ -147,13 +200,29 @@ export function actionLabel(action: GameAction, scenarioId: ScenarioId): string 
       return `${who}: schenkt ${playerName(action.to)} ${action.amount}¤`
     case 'endTurn':
       return `${who}: Karten ziehen und Produzieren`
+    case 'buyBeet':
+      return `${who}: Schuppen gekauft`
+    case 'buyInfra':
+      return `${who}: ${buyableInfraLabel(action.item)} gekauft`
+    case 'buyFieldCopy':
+      return `${who}: Kopie von ${label(action.at)} gebaut`
+    case 'lagerOffer':
+      return action.winner
+        ? `${who}: Exp-Lager ${label(action.at)} → ${playerName(action.winner)} für ${action.price}¤`
+        : `${who}: Exp-Lager ${label(action.at)} bleibt Staat`
   }
 }
 
 export function applyAction(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'move': {
-      const next = executeMove(state, action.from, action.to, action.count ?? 1)
+      const next = executeMove(
+        state,
+        action.from,
+        action.to,
+        action.count ?? 1,
+        action.lane,
+      )
       if (next.actionError) {
         throw new Error(`Replay move failed: ${next.actionError}`)
       }
@@ -183,6 +252,39 @@ export function applyAction(state: GameState, action: GameAction): GameState {
     }
     case 'endTurn':
       return executeEndTurn(state)
+    case 'buyBeet': {
+      const next = executeBuyInfra(state, 'schuppen')
+      if (next.actionError) {
+        throw new Error(`Replay buyBeet failed: ${next.actionError}`)
+      }
+      return next
+    }
+    case 'buyInfra': {
+      const next = executeBuyInfra(state, action.item)
+      if (next.actionError) {
+        throw new Error(`Replay buyInfra failed: ${next.actionError}`)
+      }
+      return next
+    }
+    case 'buyFieldCopy': {
+      const next = executeBuyFieldCopy(state, action.at)
+      if (next.actionError) {
+        throw new Error(`Replay buyFieldCopy failed: ${next.actionError}`)
+      }
+      return next
+    }
+    case 'lagerOffer': {
+      const next = resolveLagerOffer(
+        state,
+        action.winner,
+        action.price,
+        action.fee,
+      )
+      if (next.actionError) {
+        throw new Error(`Replay lagerOffer failed: ${next.actionError}`)
+      }
+      return next
+    }
   }
 }
 
@@ -262,6 +364,9 @@ export function parseRecord(raw: string): GameRecord {
         ...(typeof act.count === 'number' && act.count > 1
           ? { count: Math.floor(act.count) }
           : {}),
+        ...(act.lane === 'input' || act.lane === 'output'
+          ? { lane: act.lane }
+          : {}),
       })
     } else if (act.type === 'setFee') {
       if (typeof act.at !== 'string' || typeof act.fee !== 'number') {
@@ -291,6 +396,34 @@ export function parseRecord(raw: string): GameRecord {
       actions.push({ type: 'gift', player, to: act.to, amount: act.amount })
     } else if (act.type === 'endTurn') {
       actions.push({ type: 'endTurn', player })
+    } else if (act.type === 'buyBeet') {
+      actions.push({ type: 'buyBeet', player })
+    } else if (act.type === 'buyInfra') {
+      if (!isBuyableInfra(act.item)) {
+        throw new Error(`buyInfra ${i} ungültig`)
+      }
+      actions.push({ type: 'buyInfra', player, item: act.item })
+    } else if (act.type === 'buyFieldCopy') {
+      if (typeof act.at !== 'string') {
+        throw new Error(`buyFieldCopy ${i} ungültig`)
+      }
+      actions.push({ type: 'buyFieldCopy', player, at: act.at })
+    } else if (act.type === 'lagerOffer') {
+      if (
+        typeof act.at !== 'string' ||
+        typeof act.price !== 'number' ||
+        !(act.winner === null || isPlayerId(act.winner))
+      ) {
+        throw new Error(`lagerOffer ${i} ungültig`)
+      }
+      actions.push({
+        type: 'lagerOffer',
+        player,
+        at: act.at,
+        winner: act.winner,
+        price: act.price,
+        ...(typeof act.fee === 'number' ? { fee: act.fee } : {}),
+      })
     } else {
       throw new Error(`Aktion ${i}: unbekannter Typ`)
     }

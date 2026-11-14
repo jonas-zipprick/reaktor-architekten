@@ -6,6 +6,7 @@ import './AuctionDialog.css'
 /**
  * Offene Auktion am Tisch: Startgebot 1¤, jedes Gebot mindestens 1¤ höher,
  * geboten wird nur mit Bargeld. Der Zuschlag beendet die Auktion.
+ * Exp-10-Schuppen: ohne Gebot fällt er an den Staat (Gebühr 1).
  */
 export function AuctionDialog({ game }: { game: GameState }) {
   const auction = useGameStore((s) => s.auction)
@@ -36,8 +37,9 @@ export function AuctionDialog({ game }: { game: GameState }) {
         </p>
         <h2>{field.label}</h2>
         <p className="auction-note">
-          Offene Auktion · Startgebot 1¤ · jedes Gebot mindestens 1¤ höher ·
-          nur Bargeld. Erlös geht {isState ? 'an die Bank' : `an ${opener.name}`}.
+          {`Offene Auktion · Startgebot 1¤ · jedes Gebot mindestens 1¤ höher · nur Bargeld. Erlös geht ${
+            isState ? 'an die Bank' : `an ${opener.name}`
+          }.`}
         </p>
 
         <p className="auction-high">

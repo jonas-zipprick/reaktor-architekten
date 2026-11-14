@@ -2,9 +2,9 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 12px 12px 14px;
-  background: linear-gradient(180deg, rgba(16, 24, 40, 0.95), rgba(10, 14, 24, 0.98));
-  border-left: 1px solid var(--line);
+  padding: 14px 12px 14px;
+  background: var(--bg);
+  border-left: 1px solid var(--line-strong);
   min-height: 0;
   height: 100%;
   overflow-x: hidden;
@@ -25,10 +25,16 @@
   justify-content: flex-end;
 }
 
+.header-actions .ghost-btn {
+  padding: 5px 10px;
+  font-size: 0.82rem;
+}
+
 .side-header h2 {
   margin: 0;
   font-family: var(--display);
-  font-size: 1.35rem;
+  font-size: 1.4rem;
+  line-height: 1.15;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -37,17 +43,19 @@
 .eyebrow {
   margin: 0 0 2px;
   font-size: 0.72rem;
-  letter-spacing: 0.12em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-mute);
 }
 
 .player-dot {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1.5px solid rgba(42, 37, 29, 0.55);
   display: inline-block;
+  flex-shrink: 0;
 }
 
 .balances {
@@ -61,13 +69,14 @@
 .balance-card {
   flex: 1 1 0;
   min-width: 0;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elev);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 8px 8px 7px;
+  border-radius: 12px;
+  padding: 8px 9px 7px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
+  box-shadow: var(--shadow-soft);
 }
 
 .balances.many {
@@ -78,10 +87,11 @@
   flex: 1 1 40%;
 }
 
+/* Wer am Zug ist, steht auf Laubgrün. */
 .balance-card.active {
-  border-color: rgba(240, 168, 48, 0.65);
-  background: rgba(240, 168, 48, 0.12);
-  box-shadow: 0 0 0 1px rgba(240, 168, 48, 0.25);
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  box-shadow: 0 0 0 1px var(--brand);
 }
 
 .balance-name {
@@ -89,29 +99,37 @@
   align-items: center;
   gap: 5px;
   color: var(--text-dim);
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.balance-name i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid rgba(42, 37, 29, 0.55);
+  flex-shrink: 0;
+}
+
 .balance-money {
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   font-family: var(--display);
   font-variant-numeric: tabular-nums;
-  line-height: 1.15;
+  line-height: 1.2;
+  color: var(--text);
 }
 
 .balance-card.active .balance-money {
-  color: var(--amber);
-  font-size: 1.2rem;
+  color: var(--brand-strong);
+  font-size: 1.25rem;
 }
 
 .balance-card em {
   font-style: normal;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   color: var(--text-mute);
   white-space: nowrap;
   overflow: hidden;
@@ -125,25 +143,28 @@
 }
 
 .stat {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elev);
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  box-shadow: var(--shadow-soft);
 }
 
 .stat span {
   color: var(--text-dim);
   font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
 
 .stat strong {
   font-size: 1.15rem;
   font-family: var(--display);
+  font-variant-numeric: tabular-nums;
 }
 
 .stat em {
@@ -152,66 +173,19 @@
   color: var(--text-mute);
 }
 
+/* Bank und Marktziel nebeneinander. */
 .bank-stat {
-  grid-column: 1 / -1;
-}
-
-.tension-box {
-  margin: 0 14px 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.tension-box h3 {
-  margin: 0 0 8px;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-mute);
-}
-
-.tension-box ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.tension-box li {
-  display: flex;
+  grid-column: auto;
+  flex-direction: row;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
-  font-size: 0.85rem;
+  background: var(--honey-soft);
+  border-color: var(--honey-line);
 }
 
-.tension-box li.danger strong {
-  color: #ef5a45;
-}
-
-.player-stat span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 0.85rem;
-  color: var(--text);
-}
-
-.player-stat span i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.player-stat.active {
-  border-color: rgba(240, 168, 48, 0.45);
-  background: var(--amber-soft);
+.bank-stat span,
+.bank-stat strong {
+  color: var(--honey);
 }
 
 .action-box,
@@ -222,7 +196,8 @@
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-soft);
 }
 
 .action-box h3,
@@ -232,7 +207,9 @@
 .end-box h3 {
   margin: 0 0 8px;
   font-family: var(--display);
-  font-size: 0.95rem;
+  font-size: 1rem;
+  line-height: 1.2;
+  color: var(--text);
 }
 
 .action-box {
@@ -243,6 +220,10 @@
 
 .action-box h3 {
   margin-bottom: 0;
+}
+
+.action-box .primary-btn {
+  padding: 10px 12px;
 }
 
 .market-box {
@@ -257,20 +238,27 @@
 
 .market-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   align-items: center;
 }
 
+/* Auswahl bleibt lesbar; passt der Knopf nicht mehr, rutscht er in die nächste Zeile. */
 .market-row select {
-  flex: 1;
+  flex: 1 1 96px;
   min-width: 0;
+}
+
+.market-row .ghost-btn {
+  flex: 1 0 auto;
+  white-space: nowrap;
 }
 
 .market-row select,
 .market-row input {
   border-radius: 8px;
-  border: 1px solid var(--line);
-  background: var(--bg-elev);
+  border: 1px solid var(--line-strong);
+  background: #fff;
   color: var(--text);
   padding: 5px 6px;
 }
@@ -282,29 +270,72 @@
 
 .market-row .ghost-btn {
   padding: 5px 9px;
+  font-size: 0.9rem;
+}
+
+.fee-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fee-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+}
+
+.fee-row span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fee-row input {
+  width: 52px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  color: var(--text);
+  padding: 4px 6px;
+}
+
+.fee-unit {
+  color: var(--text-dim);
+  font-weight: 700;
 }
 
 .hint {
   margin: 0;
   color: var(--text-dim);
-  font-size: 0.88rem;
+  font-size: 0.86rem;
 }
 
 .action-error {
   margin: 0;
   padding: 8px 10px;
   border-radius: 10px;
-  border: 1px solid rgba(198, 40, 64, 0.45);
-  background: rgba(198, 40, 64, 0.16);
-  color: #ffb3bd;
-  font-size: 0.88rem;
-  font-weight: 600;
+  border: 1px solid rgba(179, 38, 30, 0.4);
+  background: var(--danger-soft);
+  color: #8a1c16;
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .sel-card {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(42, 109, 176, 0.08);
+  border: 1px solid rgba(42, 109, 176, 0.3);
 }
 
 .sel-cards-row {
@@ -315,62 +346,20 @@
 
 .sel-cards-row p {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
+  font-weight: 600;
 }
 
 .cost-line {
   margin: 0;
-  color: var(--amber);
-  font-weight: 600;
+  color: var(--honey);
+  font-weight: 700;
 }
 
 .action-row {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-}
-
-.primary-btn,
-.ghost-btn {
-  border-radius: 10px;
-  padding: 8px 12px;
-  border: 1px solid var(--line-strong);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text);
-}
-
-.primary-btn {
-  background: linear-gradient(180deg, #f0b44a, #d99220);
-  color: #1a1205;
-  border-color: transparent;
-  font-weight: 650;
-}
-
-.primary-btn:hover:not(:disabled) {
-  filter: brightness(1.05);
-}
-
-.primary-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  filter: none;
-}
-
-.primary-btn .btn-sub {
-  display: block;
-  font-size: 0.72rem;
-  font-weight: 500;
-  opacity: 0.75;
-  margin-top: 2px;
-}
-
-.ghost-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.ghost-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .toll-row {
@@ -385,15 +374,19 @@
 .toll-row input {
   width: 64px;
   border-radius: 8px;
-  border: 1px solid var(--line);
-  background: var(--bg-elev);
+  border: 1px solid var(--line-strong);
+  background: #fff;
   color: var(--text);
   padding: 4px 6px;
 }
 
 .end-box {
-  border-color: rgba(240, 168, 48, 0.4);
-  background: var(--amber-soft);
+  border-color: var(--honey-line);
+  background: var(--honey-soft);
+}
+
+.end-box h3 {
+  color: var(--honey);
 }
 
 .log-box {
@@ -413,33 +406,41 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
+/* Jeder Eintrag trägt links einen Farbstrich für seine Art. */
 .log-box li {
   font-size: 0.8rem;
+  line-height: 1.4;
   color: var(--text-dim);
-  padding-bottom: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 0 0 5px 8px;
+  border-left: 3px solid var(--line-strong);
+  border-bottom: 1px solid var(--line);
 }
 
 .log-box li.tone-money {
-  color: #ffd27a;
+  color: #7d4a06;
+  border-left-color: #d79a2b;
 }
 
 .log-box li.tone-production {
-  color: #8af0c0;
+  color: #23603a;
+  border-left-color: var(--ok);
 }
 
 .log-box li.tone-market {
-  color: #9bb8ff;
+  color: var(--focus-strong);
+  border-left-color: var(--focus);
 }
 
 .log-box li.tone-tension {
-  color: #ef9a6b;
+  color: #9b3415;
+  border-left-color: #d0562c;
 }
 
 .log-box li.tone-end {
-  color: #fff;
-  font-weight: 600;
+  color: var(--text);
+  font-weight: 700;
+  border-left-color: var(--text);
 }

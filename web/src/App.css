@@ -15,18 +15,20 @@
 }
 
 .play-layout.historic-view .board-area {
-  outline: 1px solid rgba(240, 168, 48, 0.25);
-  outline-offset: -1px;
+  outline: 2px solid var(--honey-line);
+  outline-offset: -2px;
 }
 
 .historic-banner {
   flex-shrink: 0;
-  margin: 0 0 6px;
-  padding: 4px 8px;
+  margin: 6px 8px 0;
+  padding: 5px 10px;
   border-radius: 8px;
-  font-size: 0.72rem;
-  color: #1a1205;
-  background: var(--amber);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--honey);
+  background: var(--honey-soft);
+  border: 1px solid var(--honey-line);
 }
 
 .board-area {

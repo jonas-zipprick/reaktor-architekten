@@ -8,32 +8,31 @@
 }
 
 .board-shell {
-  --cell-size: 124px;
-  --cell-height: 212px;
+  --cell-size: 140px;
+  --cell-height: 214px;
   position: absolute;
   left: 50%;
   top: 50%;
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   padding: 0;
   transform-origin: center center;
   will-change: transform;
 }
 
+/* Der Tisch, auf dem alle Felder liegen. */
 .board-grid {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
   width: max-content;
   margin: 0;
-  padding: 6px;
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(18, 28, 48, 0.85), rgba(10, 16, 28, 0.92)),
-    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.04), transparent 40%);
-  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--bg-elev);
+  border: 1px solid var(--line-strong);
   box-shadow: var(--shadow);
 }
 
@@ -41,64 +40,141 @@
 .board-row {
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
-/* Fabriken | Lager nebeneinander. */
+/* Küchen | Infrastruktur nebeneinander, Spalten nur so breit wie nötig. */
 .board-row-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
   align-items: start;
 }
 
 .board-row-col {
+  flex: 0 0 auto;
   min-width: 0;
 }
 
 .board-row-col .board-row {
   justify-content: flex-start;
+  align-items: stretch;
+}
+
+.board-cell-with-buy {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 4px;
+}
+
+/* Plus-Buttons neben einem Feld untereinander. */
+.buy-btn-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+/* Infrastruktur / Felder über Plus-Button kaufen. */
+.buy-beet-btn {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 52px;
+  min-height: 52px;
+  margin: 0;
+  padding: 6px 4px;
+  border-radius: 12px;
+  border: 2px dashed var(--line-strong);
+  background: var(--bg-elev-2);
+  color: var(--brand-strong);
+  cursor: pointer;
+  font: inherit;
+}
+
+.buy-beet-btn:hover:not(:disabled) {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 12%, var(--bg-elev));
+}
+
+.buy-beet-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.buy-beet-plus {
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.buy-beet-name {
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  text-align: center;
+  max-width: 4.2rem;
+  color: var(--text-dim);
+}
+
+.buy-beet-price {
+  font-size: 0.68rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
 }
 
 .board-row-label {
-  margin: 2px 2px -2px;
-  font-size: 0.6rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-mute);
+  margin: 0 2px 5px;
+  font-family: var(--display);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-dim);
 }
 
-/* Globaler Exp-Schieber über den Märkten. */
+/* Globaler Exp-Schieber links neben dem Brett (unten = 0, oben = 20). */
 .exp-track {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  align-self: stretch;
   gap: 8px;
-  margin: 4px 2px 6px;
-  padding: 6px 8px;
-  border-radius: 10px;
-  background: linear-gradient(180deg, rgba(30, 48, 72, 0.95), rgba(14, 22, 36, 0.98));
-  border: 1px solid rgba(140, 190, 255, 0.35);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  width: 52px;
+  margin: 0;
+  padding: 10px 8px 10px 18px;
+  border-radius: 12px;
+  background: var(--bg-elev);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow);
 }
 
 .exp-track-label {
   flex-shrink: 0;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #9ec8ff;
+  color: var(--text-dim);
 }
 
 .exp-track-rail {
   flex: 1;
-  min-width: 160px;
-  height: 22px;
-  padding: 0 6px 2px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: 26px;
+  min-height: 180px;
+  padding: 10px 0;
+  border-radius: 7px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--line);
 }
 
 .exp-track-scale {
@@ -109,75 +185,86 @@
 
 .exp-track-tick {
   position: absolute;
-  bottom: 0;
+  left: 50%;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  transform: translateX(-50%);
-  color: rgba(180, 200, 230, 0.45);
-  font-size: 0.48rem;
+  gap: 3px;
+  transform: translate(-50%, 50%);
+  color: var(--text-mute);
+  font-size: 0.56rem;
+  font-weight: 700;
   font-style: normal;
+  pointer-events: none;
 }
 
 .exp-track-tick::before {
   content: '';
-  width: 1px;
-  height: 7px;
-  margin-bottom: 1px;
-  background: rgba(180, 200, 230, 0.35);
+  width: 10px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: var(--line-strong);
 }
 
+/* 0, 10 (Beet-Angebot) und 20 (Ausbau) sind die Wegmarken. */
 .exp-track-tick.major::before {
-  height: 11px;
-  background: rgba(200, 220, 255, 0.65);
+  width: 14px;
+  background: var(--text-mute);
 }
 
 .exp-track-tick.filled::before {
-  background: rgba(120, 190, 255, 0.85);
+  background: var(--brand);
 }
 
 .exp-track-tick.active {
-  color: #e8f3ff;
-  font-weight: 700;
+  color: var(--brand-strong);
+  font-weight: 800;
 }
 
 .exp-track-tick.active::before {
-  background: #8ec7ff;
+  background: var(--brand);
 }
 
 .exp-track-tick em {
+  position: absolute;
+  right: calc(100% + 3px);
+  left: auto;
   font-style: normal;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .exp-track-stone {
   position: absolute;
-  top: 3px;
+  left: 50%;
   width: 12px;
   height: 12px;
-  transform: translateX(-50%);
+  transform: translate(-50%, 50%);
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff, #6eb0ff 55%, #2a6fc4);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 0 8px rgba(110, 180, 255, 0.65);
-  transition: left 180ms ease;
+  background: var(--brand);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(35, 84, 58, 0.5);
+  transition: bottom 180ms ease;
   pointer-events: none;
+  z-index: 1;
 }
 
 .exp-track-value {
   flex-shrink: 0;
-  min-width: 2.4rem;
-  text-align: right;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: #d7ebff;
+  color: var(--brand-strong);
+  text-align: center;
+  line-height: 1.15;
 }
 
+/* Nachzieh- und Ablagestapel je Sorte. */
 .board-discards {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  align-self: flex-end;
   justify-content: flex-end;
   gap: 8px;
   flex-shrink: 0;
@@ -185,7 +272,7 @@
 
 .board-deck-piles {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
 .board-pile {
@@ -204,18 +291,20 @@
   justify-content: flex-end;
   gap: 6px;
   min-width: 48px;
-  padding: 8px 6px;
+  padding: 7px 9px 6px;
   border-radius: 12px;
-  background: linear-gradient(160deg, #1a2438, #101826);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
+  background: var(--bg-elev);
+  border: 1px solid var(--line-strong);
+  border-top: 4px solid var(--suit, var(--line-strong));
+  box-shadow: var(--shadow-soft);
 }
 
 .board-discard-label {
-  font-size: 0.58rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--suit-ink, var(--text-dim));
+  white-space: nowrap;
 }
 
 .board-discard-stack {
@@ -229,14 +318,16 @@
 }
 
 .board-discard-stack:empty {
-  border: 1px dashed rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  border: 1.5px dashed var(--line-strong);
+  border-radius: 7px;
   width: 34px;
   height: 46px;
 }
 
 .board-discard-count {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #ffe29a;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
 }

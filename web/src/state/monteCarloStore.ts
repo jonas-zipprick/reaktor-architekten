@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import {
   batchKeyOf,
   clearBatch,
+  clearRuns,
+  clearSummaries,
   getRun,
   listSummaries,
   putRuns,
@@ -22,6 +24,7 @@ export type SortKey = keyof SimRunSummary
 
 export const ALL_OUTCOMES: SimOutcome[] = [
   'finished',
+  'lost',
   'stalled',
   'aborted',
   'stuck',
@@ -61,12 +64,34 @@ interface MonteCarloStore {
 }
 
 let handle: PoolHandle | null = null
+/** Invalidates in-flight hydrate / delayed start when a newer start wins. */
+let runEpoch = 0
+/** Full-record clears still in flight; putRuns must wait so new writes aren't deleted. */
+const runsClearPending = new Map<string, Promise<void>>()
 /** Buffer writes so IDB isn't hit once per microtask under high throughput. */
 let persistQueue: SimRunResult[] = []
 let persistTimer: ReturnType<typeof setTimeout> | null = null
 let persisting = false
 /** Resolvers waiting until the persist backlog drains below the low watermark. */
 let persistWaiters: Array<() => void> = []
+
+function waitForRunsClear(batchKey: string): Promise<void> {
+  return runsClearPending.get(batchKey) ?? Promise.resolve()
+}
+
+function startRunsClear(batchKey: string): Promise<void> {
+  const prev = runsClearPending.get(batchKey) ?? Promise.resolve()
+  const next = prev
+    .catch(() => undefined)
+    .then(() => clearRuns(batchKey))
+    .finally(() => {
+      if (runsClearPending.get(batchKey) === next) {
+        runsClearPending.delete(batchKey)
+      }
+    })
+  runsClearPending.set(batchKey, next)
+  return next
+}
 
 /** Pause new sims when this many full records sit unsynced. */
 const PERSIST_HIGH = 48
@@ -108,6 +133,7 @@ async function flushPersist(batchKey: string): Promise<void> {
   if (persisting) return
   persisting = true
   try {
+    await waitForRunsClear(batchKey)
     while (persistQueue.length) {
       const batch = persistQueue.splice(0, PERSIST_TX_CHUNK)
       await putRuns(batchKey, batch)
@@ -206,15 +232,24 @@ function launchPool(
   handle = runSimulationPool(
     config,
     async (result, progress) => {
-      set((s) => ({
-        results: [...s.results, summaryOf(result)],
-        progress: {
-          done: baseDone + progress.done,
-          nextSeed: progress.nextSeed,
-          running: true,
-          paused: false,
-        },
-      }))
+      const summary = summaryOf(result)
+      set((s) => {
+        // Seed-unique: verhindert Doppel-Keys wenn Hydrate und Pool sich überholen.
+        const i = s.results.findIndex((r) => r.seed === summary.seed)
+        const results =
+          i < 0
+            ? [...s.results, summary]
+            : s.results.map((r, idx) => (idx === i ? summary : r))
+        return {
+          results,
+          progress: {
+            done: baseDone + progress.done,
+            nextSeed: progress.nextSeed,
+            running: true,
+            paused: false,
+          },
+        }
+      })
       // Backpressure: wait if IDB writes lag behind (avoids OOM).
       await enqueuePersist(batchKey, result, (msg) =>
         set({ persistError: msg }),
@@ -272,13 +307,49 @@ export const useMonteCarloStore = create<MonteCarloStore>((set, get) => ({
 
   start: () => {
     if (get().progress.running) return
+    handle?.pause()
+    handle = null
+    persistQueue = []
+    wakePersistWaiters(true)
+
     const { config } = get()
+    const fromSeed = config.startSeed
     const batchKey = currentBatchKey(config)
-    void clearBatch(batchKey)
-      .catch(() => undefined)
-      .finally(() => {
-        launchPool(get, set, config.startSeed, false)
-      })
+    const epoch = ++runEpoch
+
+    // Sofort UI-Feedback — nicht auf IndexedDB-Löschen warten.
+    set({
+      results: [],
+      error: null,
+      persistError: null,
+      progress: {
+        done: 0,
+        nextSeed: fromSeed >>> 0,
+        running: true,
+        paused: false,
+      },
+    })
+
+    void (async () => {
+      try {
+        // Summaries sind klein → schnell; Vollrecords parallel im Hintergrund.
+        await clearSummaries(batchKey)
+        void startRunsClear(batchKey).catch((e) => {
+          if (epoch !== runEpoch) return
+          set({
+            persistError: e instanceof Error ? e.message : String(e),
+          })
+        })
+      } catch (e) {
+        if (epoch !== runEpoch) return
+        set({
+          persistError: e instanceof Error ? e.message : String(e),
+        })
+      }
+      if (epoch !== runEpoch) return
+      // append=false setzt results erneut leer; Pool startet sofort.
+      launchPool(get, set, fromSeed, false)
+    })()
   },
 
   resume: () => {
@@ -288,6 +359,7 @@ export const useMonteCarloStore = create<MonteCarloStore>((set, get) => ({
       get().start()
       return
     }
+    runEpoch += 1
     launchPool(get, set, progress.nextSeed, true)
   },
 
@@ -296,6 +368,7 @@ export const useMonteCarloStore = create<MonteCarloStore>((set, get) => ({
   },
 
   clearResults: () => {
+    runEpoch += 1
     handle?.pause()
     handle = null
     persistQueue = []
@@ -319,21 +392,32 @@ export const useMonteCarloStore = create<MonteCarloStore>((set, get) => ({
   },
 
   hydrateFromDisk: async () => {
+    if (get().progress.running) return
+    const epoch = runEpoch
     const batchKey = currentBatchKey(get().config)
     try {
       const rows = await listSummaries(batchKey)
-      const maxSeed = rows.reduce((m, r) => Math.max(m, r.seed), -1)
+      // Start/Resume zwischenzeitlich → Hydrate nicht über Pool-Ergebnisse schreiben.
+      if (epoch !== runEpoch || get().progress.running) return
+      const bySeed = new Map<number, SimRunSummary>()
+      for (const r of rows) bySeed.set(r.seed, r)
+      const unique = [...bySeed.values()]
+      const maxSeed = unique.reduce((m, r) => Math.max(m, r.seed), -1)
       set({
-        results: rows,
+        results: unique,
         progress: {
-          done: rows.length,
-          nextSeed: maxSeed >= 0 ? (maxSeed + 1) >>> 0 : get().config.startSeed >>> 0,
+          done: unique.length,
+          nextSeed:
+            maxSeed >= 0
+              ? (maxSeed + 1) >>> 0
+              : get().config.startSeed >>> 0,
           running: false,
-          paused: rows.length > 0,
+          paused: unique.length > 0,
         },
         persistError: null,
       })
     } catch (e) {
+      if (epoch !== runEpoch || get().progress.running) return
       set({
         persistError: e instanceof Error ? e.message : String(e),
       })

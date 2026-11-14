@@ -2,28 +2,30 @@ import type { MouseEvent } from 'react'
 import type { FieldState, Recipe, Suit } from '../types'
 import {
   hasOwnership,
+  isSeedBed,
+  outputRevealedCount,
   recipeSuits,
   suitCounts,
   suitName,
   suitSymbol,
+  OVERSUPPLY_COLLAPSE,
   TENSION_MAX,
   TENSION_MIN,
 } from '../types'
 import { PLAYER_META } from '../data/scenarios'
 import {
   describeCard,
-  factoryHasOutput,
-  factoryProduct,
+  hasOutputStack,
   isFactoryBlocked,
-  isProductionReady,
-  plannedProductions,
   type MoveCheck,
 } from '../state/rules'
 import { PlayingCard } from './PlayingCard'
 import './BoardCell.css'
 
-/** So viele Karten einer Quelle werden aufgefächert; der Rest steckt im Zähler. */
+/** So viele Karten einer Quelle/Ausgabe werden aufgefächert; der Rest steckt im Zähler. */
 const SOURCE_VISIBLE = 7
+const OUTPUT_VISIBLE = 5
+const INPUT_VISIBLE = 4
 
 function ownerName(owner: FieldState['owner']): string {
   if (!owner) return 'herrenlos'
@@ -47,15 +49,17 @@ function DemandMeter({
   const clamped = Math.max(TENSION_MIN, Math.min(TENSION_MAX, value))
   const steps = TENSION_MAX - TENSION_MIN + 1
   const stoneIndex = clamped - TENSION_MIN
-  const danger = clamped <= TENSION_MIN + 1
-  const valueLabel = String(clamped)
+  const danger = value <= TENSION_MIN + 1
+  const surplus = value > OVERSUPPLY_COLLAPSE
+  const canExpand = value > 0
+  const valueLabel = String(value)
   const name = suitName(suit)
 
   return (
     <div
       key={flash ? `flash-${suit}-${flashKey}` : `meter-${suit}`}
-      className={`tension-meter suit-${suit} ${danger ? 'danger' : ''} ${flash ? 'demand-pulse' : ''} ${limitPulse ? 'limit-pulse' : ''}`}
-      title={`${name}-Bedarf ${valueLabel}`}
+      className={`tension-meter suit-${suit} ${danger ? 'danger' : ''} ${surplus ? 'surplus' : ''} ${flash ? 'demand-pulse' : ''} ${limitPulse ? 'limit-pulse' : ''}`}
+      title={`${name}-Bedarf ${valueLabel}${surplus ? ' (Überversorgung → weg)' : canExpand ? ' (Kopie käuflich)' : danger ? ' (Unterversorgung → weg)' : ''}`}
       aria-label={`${name}-Bedarfsmesser ${valueLabel}`}
     >
       <span className="tension-suit" aria-hidden>
@@ -89,7 +93,6 @@ function DemandMeter({
         <span
           className="tension-stone"
           style={{
-            // Mitte der aktiven Tick-Spalte (nicht Rand-zu-Rand).
             left: `${((stoneIndex + 0.5) / steps) * 100}%`,
           }}
         />
@@ -99,21 +102,17 @@ function DemandMeter({
   )
 }
 
-/** Rezept als Farbsymbole; bereits liegende Karten füllen die Symbole. */
+/** Rezept: welche Zutaten der Eingang annimmt. */
 function RecipePips({
   recipe,
   have,
   result,
   state,
-  batches = 0,
 }: {
   recipe: Recipe
   have: Record<Suit, number>
-  /** Fabrik: Farbe des Fertigprodukts. */
   result?: Suit
-  state: 'open' | 'ready' | 'blocked'
-  /** Geplante Produktionen bei Zugende (≥1 wenn ready). */
-  batches?: number
+  state: 'open' | 'blocked'
 }) {
   const used: Record<Suit, number> = {
     hearts: 0,
@@ -121,6 +120,7 @@ function RecipePips({
     energy: 0,
     diamonds: 0,
     clubs: 0,
+    steel: 0,
   }
   return (
     <div className={`recipe recipe-${state}`}>
@@ -144,11 +144,6 @@ function RecipePips({
           <span className={`recipe-pip pip-${result} filled`}>
             {suitSymbol(result)}
           </span>
-          {batches > 1 && (
-            <span className="recipe-batches" title={`${batches} Produkte`}>
-              ×{batches}
-            </span>
-          )}
         </>
       )}
     </div>
@@ -156,39 +151,40 @@ function RecipePips({
 }
 
 function statusLine(field: FieldState): string {
-  if (field.kind === 'factory') {
-    if (factoryHasOutput(field)) {
-      const n = field.stack.length
-      if (!factoryProduct(field)) {
-        return `${n} Karte${n === 1 ? '' : 'n'} — Ablage auf Fertigware; Produkt darunter`
-      }
-      return n === 1
-        ? 'Produkt bereit — Ablage jeder Farbe erlaubt'
-        : `${n} Produkte bereit — Ablage jeder Farbe erlaubt`
-    }
-    const batches = plannedProductions(field)
-    if (batches > 0) {
-      return batches === 1
-        ? 'Produktionsbereit (1 Produkt am Zugende)'
-        : `Produktionsbereit (${batches} Produkte am Zugende)`
-    }
-    if (isFactoryBlocked(field)) return 'Rezept nicht mehr erfüllbar'
-    return 'Wartet auf Rohstoffe'
+  if (hasOutputStack(field)) {
+    const out = field.output?.length ?? 0
+    const demand = field.demand ?? 0
+    const inN = field.stack.length
+    const inLabel = isSeedBed(field) ? 'Obst-Eingang' : 'Eingang'
+    const blocked = isFactoryBlocked(field) ? ' · Eingang blockiert' : ''
+    const clearNote =
+      'Eingang entnehmbar; Abrechnung + Leerung am Zugende'
+    return `Ausgabe ${out} · Bedarf ${demand} · ${inLabel} ${inN} (${clearNote})${blocked}`
   }
   if (field.kind === 'storage') {
+    if (field.suit) {
+      const name = suitName(field.suit)
+      return field.stack.length
+        ? `Nur ${name} — Umsortieren`
+        : `Leer — nimmt nur ${name}`
+    }
     return field.stack.length
-      ? 'Lager zum Umsortieren'
-      : 'Leeres Lager — jede zulässige Karte darf hier liegen'
+      ? 'Schuppen zum Umsortieren (jede Sorte; nur Eigentümer)'
+      : 'Leerer Schuppen — jede Sorte; nur Eigentümer'
   }
   if (field.kind === 'market' && field.demand != null && field.suit) {
-    return `Markt ${suitSymbol(field.suit)} Bedarf ${field.demand}`
+    return `Stand ${suitSymbol(field.suit)} Bedarf ${field.demand} · Eingang entnehmbar; Abrechnung + Leerung am Zugende`
   }
   if (field.kind === 'source') {
     const n = field.stack.length
-    if (n > 8) return `${n} Karten — Kollaps (Ablage jeder Farbe)`
-    if (n >= 7) return `${n} Karten (Kollaps ab 9; Ablage jeder Farbe)`
-    if (!n) return 'Leer — zieht nach; Ablage jeder Farbe erlaubt'
-    return `${n} Karte${n === 1 ? '' : 'n'} — Ablage jeder Farbe; Kollaps ab 9`
+    const isRegen = field.suit === 'energy'
+    const parkRule = isRegen
+      ? 'Ausgabe: nur Wasser ablegen; Entnahme gratis'
+      : 'Ablage jeder Sorte; Entnahme gratis'
+    if (n > 8)
+      return `${n} Karten — Überernte droht am Zugende · ${parkRule}`
+    if (!n) return `Leer — wächst nach · ${parkRule}`
+    return `${n} Karte${n === 1 ? '' : 'n'} · ${parkRule}; Überernte am Zugende ab 9`
   }
   return 'Nur die oberste Karte ist zugänglich'
 }
@@ -196,6 +192,7 @@ function statusLine(field: FieldState): string {
 export function BoardCell({
   field,
   selected,
+  selectedLane = null,
   selectedCount = 0,
   target,
   demandFlash = false,
@@ -207,50 +204,75 @@ export function BoardCell({
 }: {
   field: FieldState
   selected: boolean
-  /** Bei Auswahl: wie viele Karten von oben markiert sind. */
+  /** Bei Küche/Saatstand: welche Spur ausgewählt ist. */
+  selectedLane?: 'input' | 'output' | null
   selectedCount?: number
-  /** Gebühren/Einkommen, falls dieses Feld ein legales Ziel der Auswahl ist. */
   target: MoveCheck | null
   demandFlash?: boolean
   demandFlashKey?: number
   limitFlash?: boolean
   limitFlashKey?: number
-  /** Fabrik hat bei der letzten Zieh- und Produktionsaktion produziert. */
   produced?: boolean
-  onClick: (e: MouseEvent) => void
+  onClick: (e: MouseEvent, lane?: 'input' | 'output') => void
 }) {
-  const isMeterField = field.kind === 'market'
-  const isSource = field.kind === 'source'
+  const isMeterField =
+    field.kind === 'market' || field.kind === 'factory' || isSeedBed(field)
+  const dualStack = hasOutputStack(field)
+  const isSource = field.kind === 'source' && !dualStack
+  const isFactory = field.kind === 'factory'
   const ownerKey = field.owner ?? 'none'
   const have = suitCounts(field.stack)
 
-  const recipeState: 'open' | 'ready' | 'blocked' =
-    field.kind === 'factory'
-      ? isProductionReady(field)
-        ? 'ready'
-        : isFactoryBlocked(field)
-          ? 'blocked'
-          : 'open'
-      : 'open'
+  const recipeState: 'open' | 'blocked' =
+    isFactory && isFactoryBlocked(field) ? 'blocked' : 'open'
 
-  // Quellen: nur die oberste Karte ist zugänglich, darunter eng gefächert.
-  const hidden = isSource
-    ? Math.max(0, field.stack.length - SOURCE_VISIBLE)
-    : 0
-  const visibleCards = field.stack.slice(hidden)
-
-  const owned = hasOwnership(field.kind)
+  const personalOnly = hasOwnership(field.kind)
+  const hasOwner = Boolean(field.owner && field.owner !== 'state')
+  const output = field.output ?? []
   const title = [
     field.label,
-    owned ? `Eigentümer: ${ownerName(field.owner)}` : 'Gemeinschaftsfläche',
-    owned && field.owner ? `Gebühr ${field.fee}¤` : null,
+    hasOwner || personalOnly
+      ? `Eigentümer: ${ownerName(field.owner)}`
+      : 'Gemeinschaftsfläche',
+    hasOwner && field.kind !== 'storage' ? `Gebühr ${field.fee}¤` : null,
     statusLine(field),
+    dualStack
+      ? `Ausgabe (${output.length}): ${
+          output.length
+            ? describeCard(output[output.length - 1]!)
+            : 'leer'
+        }`
+      : null,
     field.stack.length
-      ? `Stapel (unten → oben): ${field.stack.map(describeCard).join(' ')}`
-      : 'Stapel leer',
+      ? `${
+          dualStack || field.kind === 'market'
+            ? 'Eingang'
+            : field.kind === 'source' && field.suit === 'energy'
+              ? 'Ausgabe'
+              : 'Stapel'
+        } (unten → oben): ${field.stack.map(describeCard).join(' ')}`
+      : dualStack || field.kind === 'market'
+        ? 'Eingang leer'
+        : field.kind === 'source' && field.suit === 'energy'
+          ? 'Ausgabe leer'
+          : 'Stapel leer',
   ]
     .filter(Boolean)
     .join('\n')
+
+  // Quelle: nur oberste Karten sichtbar.
+  const sourceHidden = isSource
+    ? Math.max(0, field.stack.length - SOURCE_VISIBLE)
+    : 0
+  const sourceVisible = isSource ? field.stack.slice(sourceHidden) : []
+
+  // Küche/Saatstand: Ausgabe (nur oben aufgedeckt) + Eingang (nur Ablegen).
+  const outHidden = Math.max(0, output.length - OUTPUT_VISIBLE)
+  const outVisible = output.slice(outHidden)
+  // Einmal aufgedeckte Karten bleiben offen.
+  const outRevealed = outputRevealedCount(field)
+  const inHidden = Math.max(0, field.stack.length - INPUT_VISIBLE)
+  const inVisible = dualStack ? field.stack.slice(inHidden) : []
 
   return (
     <button
@@ -259,37 +281,45 @@ export function BoardCell({
         'board-cell',
         `kind-${field.kind}`,
         field.suit ? `suit-${field.suit}` : '',
-        owned ? `owner-${ownerKey}` : 'owner-none',
+        hasOwner || personalOnly ? `owner-${ownerKey}` : 'owner-none',
         selected ? 'selected' : '',
         target ? 'is-target' : '',
         produced ? 'just-produced' : '',
+        dualStack ? 'has-dual-stack' : '',
       ]
         .filter(Boolean)
         .join(' ')}
       data-field={field.id}
-      onClick={onClick}
+      onClick={(e) => {
+        if (!dualStack) {
+          onClick(e)
+          return
+        }
+        const node = e.target as HTMLElement | null
+        if (node?.closest('.factory-input')) onClick(e, 'input')
+        else if (node?.closest('.factory-output')) onClick(e, 'output')
+        else onClick(e, 'output')
+      }}
       title={title}
       aria-label={
-        owned ? `${field.label}, ${ownerName(field.owner)}` : field.label
+        hasOwner || personalOnly
+          ? `${field.label}, ${ownerName(field.owner)}`
+          : field.label
       }
     >
       <div className="cell-glow" aria-hidden />
       <div className="cell-frame">
         <div className="cell-meta">
           <span className="cell-kind">{field.label}</span>
-          {owned &&
-            (field.owner ? (
-              <span
-                className={`cell-toll toll-${ownerKey}`}
-                title={`${ownerName(field.owner)} · Gebühr ${field.fee}¤`}
-              >
-                {field.fee}¤
-              </span>
-            ) : (
-              <span className="cell-toll toll-none" title="Herrenlos">
-                frei
-              </span>
-            ))}
+          {hasOwner && field.owner && (
+            <span
+              className={`cell-toll toll-${ownerKey}`}
+              title={`Eigentümer: ${ownerName(field.owner)}${field.kind !== 'storage' ? ` · Gebühr ${field.fee}¤` : ''}`}
+            >
+              {PLAYER_META[field.owner]?.short ?? '·'}
+              {field.kind !== 'storage' ? ` ${field.fee}¤` : ''}
+            </span>
+          )}
         </div>
 
         {isMeterField && field.demand != null && field.suit && (
@@ -308,11 +338,8 @@ export function BoardCell({
           <RecipePips
             recipe={field.recipe}
             have={have}
-            result={field.kind === 'factory' ? field.suit : undefined}
+            result={dualStack ? field.suit : undefined}
             state={recipeState}
-            batches={
-              field.kind === 'factory' ? plannedProductions(field) : 0
-            }
           />
         )}
 
@@ -321,42 +348,174 @@ export function BoardCell({
             <span className={`recipe-pip pip-${field.suit} filled`}>
               {suitSymbol(field.suit)}
             </span>
-            <span className="source-caption">{suitName(field.suit)}-Rohstoff</span>
+            <span className="source-caption">{suitName(field.suit)}</span>
           </div>
         )}
 
-        <div className={`cell-stack ${isSource ? 'source-stack' : ''}`}>
-          {visibleCards.map((card, i) => {
-            const fromTop = visibleCards.length - 1 - i
-            const inSelection = selected && fromTop < selectedCount
-            return (
-              <PlayingCard
-                key={card.id}
-                card={card}
-                compact
-                stacked={i > 0}
-                stackIndex={i}
-                highlight={inSelection}
-                dimmed={isSource && !inSelection && fromTop > 0}
-              />
-            )
-          })}
-          {isSource && field.stack.length > 1 && (
-            <span
-              className="stack-count"
-              title={`${field.stack.length} Karten im Vorrat`}
-            >
-              {field.stack.length}
+        {field.kind === 'storage' && field.suit && (
+          <div className="recipe recipe-open">
+            <span className={`recipe-pip pip-${field.suit} filled`}>
+              {suitSymbol(field.suit)}
             </span>
-          )}
-        </div>
+            <span className="source-caption">nur {suitName(field.suit)}</span>
+          </div>
+        )}
+
+        {dualStack ? (
+          <div className="factory-stacks">
+            <div
+              className={[
+                'factory-input',
+                selected && selectedLane === 'input' ? 'lane-selected' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              <span className="stack-lane-label">Eingang</span>
+              <div className="cell-stack input-stack">
+                {inVisible.map((card, i) => {
+                  const fromTop = inVisible.length - 1 - i
+                  const inSelection =
+                    selected &&
+                    selectedLane === 'input' &&
+                    fromTop < selectedCount
+                  return (
+                    <PlayingCard
+                      key={card.id}
+                      card={card}
+                      compact
+                      stacked={i > 0}
+                      stackIndex={i}
+                      highlight={inSelection}
+                      dimmed={!inSelection && fromTop > 0 && selected && selectedLane === 'input'}
+                    />
+                  )
+                })}
+                {field.stack.length === 0 && (
+                  <span className="stack-empty-hint">ablegen</span>
+                )}
+                {field.stack.length > 1 && (
+                  <span
+                    className="stack-count stack-count-input"
+                    title={`${field.stack.length} Karten im Eingang (entnehmbar)`}
+                  >
+                    {field.stack.length}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div
+              className={[
+                'factory-output',
+                selected && selectedLane === 'output' ? 'lane-selected' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              <span className="stack-lane-label">Ausgabe</span>
+              <div className="cell-stack source-stack">
+                {outVisible.map((card, i) => {
+                  const fromTop = outVisible.length - 1 - i
+                  const faceDown = fromTop >= outRevealed
+                  const inSelection =
+                    selected &&
+                    selectedLane === 'output' &&
+                    !faceDown &&
+                    fromTop < selectedCount
+                  return (
+                    <PlayingCard
+                      key={card.id}
+                      card={card}
+                      compact
+                      stacked={i > 0}
+                      stackIndex={i}
+                      highlight={inSelection}
+                      faceDown={faceDown}
+                      dimmed={!faceDown && !inSelection && fromTop > 0}
+                    />
+                  )
+                })}
+                {output.length === 0 && (
+                  <span className="stack-empty-hint">leer</span>
+                )}
+                {output.length > 1 && (
+                  <span
+                    className="stack-count"
+                    title={`${output.length} Karten in der Ausgabe`}
+                  >
+                    {output.length}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div
+            className={[
+              'stack-slot',
+              field.kind === 'market' ? 'factory-input market-input' : '',
+              isSource && field.suit === 'energy'
+                ? 'factory-output regen-output'
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            {field.kind === 'market' && (
+              <span className="stack-lane-label">Eingang</span>
+            )}
+            {isSource && field.suit === 'energy' && (
+              <span className="stack-lane-label">Ausgabe</span>
+            )}
+            <div className={`cell-stack ${isSource ? 'source-stack' : ''}`}>
+              {(isSource ? sourceVisible : field.stack).map((card, i) => {
+                const stack = isSource ? sourceVisible : field.stack
+                const fromTop = stack.length - 1 - i
+                const inSelection = selected && fromTop < selectedCount
+                return (
+                  <PlayingCard
+                    key={card.id}
+                    card={card}
+                    compact
+                    stacked={i > 0}
+                    stackIndex={i}
+                    highlight={inSelection}
+                    dimmed={isSource && !inSelection && fromTop > 0}
+                  />
+                )
+              })}
+              {field.kind === 'market' && field.stack.length === 0 && (
+                <span className="stack-empty-hint">ablegen</span>
+              )}
+              {isSource && field.stack.length > 1 && (
+                <span
+                  className="stack-count"
+                  title={
+                    field.suit === 'energy'
+                      ? `${field.stack.length} Karten in der Ausgabe`
+                      : `${field.stack.length} Karten im Vorrat`
+                  }
+                >
+                  {field.stack.length}
+                </span>
+              )}
+              {field.kind === 'market' && field.stack.length > 1 && (
+                <span
+                  className="stack-count stack-count-input"
+                  title={`${field.stack.length} Karten im Eingang (entnehmbar)`}
+                >
+                  {field.stack.length}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {target && (
           <div className="target-badge">
             {target.cost > 0 ? `−${target.cost}¤` : 'frei'}
-            {target.kind === 'deliver' && target.income > 0 && (
-              <strong> +{target.income}¤</strong>
-            )}
+            {(target.kind === 'deliver' || target.kind === 'feed') &&
+              target.income > 0 && <strong> +{target.income}¤</strong>}
           </div>
         )}
       </div>

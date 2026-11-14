@@ -20,11 +20,16 @@ import {
 import {
   auctionInfo,
   executeAuction,
+  executeBuyFieldCopy,
+  executeBuyInfra,
+  type BuyableInfra,
   executeEndTurn,
   executeGift,
   executeMove,
+  hasOutputStack,
   selectField,
   setFee,
+  type StackLane,
 } from './rules'
 
 export type MoveAnim = {
@@ -45,14 +50,25 @@ export type AuctionDraft = {
   bidders: PlayerId[]
   highBid: number
   highBidder: PlayerId | null
+  kind: 'player'
 }
 
 function cleanUi(game: GameState): GameState {
   return { ...game, selection: null, actionError: null }
 }
 
-function topCards(state: GameState, fieldId: FieldId, count = 1): Card[] {
-  const stack = state.fields[fieldId]?.stack ?? []
+function topCards(
+  state: GameState,
+  fieldId: FieldId,
+  count = 1,
+  lane?: StackLane,
+): Card[] {
+  const field = state.fields[fieldId]
+  if (!field) return []
+  const stack =
+    hasOutputStack(field) && lane !== 'input'
+      ? (field.output ?? [])
+      : field.stack
   const n = Math.max(1, Math.min(count, stack.length))
   return stack.slice(stack.length - n)
 }
@@ -74,7 +90,7 @@ interface GameStore {
   exportRecord: () => string | null
   goMonteCarlo: () => void
   backToMenu: () => void
-  select: (fieldId: FieldId) => void
+  select: (fieldId: FieldId, lane?: StackLane) => void
   clearSelection: () => void
   moveTo: (to: FieldId) => void
   finishMoveAnimation: () => void
@@ -82,6 +98,12 @@ interface GameStore {
   gift: (to: PlayerId, amount: number) => void
   /** „Karten ziehen und Produzieren“ — beendet den Zug. */
   endTurn: () => void
+  /** Infrastruktur kaufen (Schuppen, Getreidefeld, Mehlmühle, …). */
+  buyInfra: (item: BuyableInfra) => void
+  /** Kopie eines Feldes mit positivem Bedarf kaufen. */
+  buyFieldCopy: (fieldId: FieldId) => void
+  /** @deprecated nutze buyInfra('schuppen') */
+  buyBeet: () => void
   openAuction: (fieldId: FieldId) => void
   /** Gebot abgeben; muss das Höchstgebot um mindestens 1 übertreffen. */
   placeBid: (player: PlayerId, amount: number) => void
@@ -168,10 +190,10 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     backToMenu: () => set({ ...RESET, phase: 'menu' }),
 
-    select: (fieldId) => {
+    select: (fieldId, lane) => {
       const game = idleGame()
       if (!game) return
-      set({ game: selectField(game, fieldId) })
+      set({ game: selectField(game, fieldId, lane) })
     },
 
     clearSelection: () => {
@@ -185,8 +207,9 @@ export const useGameStore = create<GameStore>((set, get) => {
       if (!game || !game.selection) return
       const from = game.selection.fieldId
       const count = game.selection.count
+      const lane = game.selection.lane
       const player = game.players[game.currentPlayerIndex]!.id
-      const next = executeMove(game, from, to, count)
+      const next = executeMove(game, from, to, count, lane)
       if (next.actionError) {
         set({ game: next })
         return
@@ -197,12 +220,13 @@ export const useGameStore = create<GameStore>((set, get) => {
         from,
         to,
         ...(count > 1 ? { count } : {}),
+        ...(lane === 'input' ? { lane } : {}),
       }
 
       // Brett bleibt im Vor-Zug-Zustand; nach der Fluganimation committen.
       set({
         moveAnim: {
-          cards: topCards(game, from, count),
+          cards: topCards(game, from, count, lane),
           path: [from, to],
           nextGame: next,
           liveAction: action,
@@ -237,6 +261,10 @@ export const useGameStore = create<GameStore>((set, get) => {
       const player = game.players[game.currentPlayerIndex]!.id
       if (field.owner !== player) return
       const next = setFee(game, fieldId, nextFee)
+      if (next.actionError) {
+        set({ game: next })
+        return
+      }
       appendAction(
         get,
         set,
@@ -265,6 +293,32 @@ export const useGameStore = create<GameStore>((set, get) => {
       appendAction(get, set, { type: 'endTurn', player }, next)
     },
 
+    buyInfra: (item) => {
+      const game = idleGame()
+      if (!game) return
+      const player = game.players[game.currentPlayerIndex]!.id
+      const next = executeBuyInfra(game, item)
+      if (next.actionError) {
+        set({ game: next })
+        return
+      }
+      appendAction(get, set, { type: 'buyInfra', player, item }, next)
+    },
+    buyFieldCopy: (fieldId) => {
+      const game = idleGame()
+      if (!game) return
+      const player = game.players[game.currentPlayerIndex]!.id
+      const next = executeBuyFieldCopy(game, fieldId)
+      if (next.actionError) {
+        set({ game: next })
+        return
+      }
+      appendAction(get, set, { type: 'buyFieldCopy', player, at: fieldId }, next)
+    },
+    buyBeet: () => {
+      get().buyInfra('schuppen')
+    },
+
     openAuction: (fieldId) => {
       const game = idleGame()
       if (!game) return
@@ -286,6 +340,7 @@ export const useGameStore = create<GameStore>((set, get) => {
           bidders: info.bidders,
           highBid: 0,
           highBidder: null,
+          kind: 'player',
         },
       })
     },
@@ -349,7 +404,7 @@ export const useGameStore = create<GameStore>((set, get) => {
           const count = action.count ?? 1
           set({
             moveAnim: {
-              cards: topCards(before, action.from, count),
+              cards: topCards(before, action.from, count, action.lane),
               path: [action.from, action.to],
               nextGame: replayTo(record, clamped),
               seekIndex: clamped,
@@ -370,7 +425,7 @@ export const useGameStore = create<GameStore>((set, get) => {
           const count = action.count ?? 1
           set({
             moveAnim: {
-              cards: topCards(before, action.from, count),
+              cards: topCards(before, action.from, count, action.lane),
               path: [action.to, action.from],
               nextGame: before,
               seekIndex: clamped,

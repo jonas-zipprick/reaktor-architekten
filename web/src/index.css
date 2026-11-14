@@ -1,30 +1,82 @@
 :root {
-  --bg-deep: #070b14;
-  --bg: #0b1220;
-  --bg-elev: #121a2b;
-  --bg-elev-2: #182236;
-  --line: rgba(180, 205, 255, 0.12);
-  --line-strong: rgba(180, 205, 255, 0.22);
-  --text: #e8eefc;
-  --text-dim: #8b9bb8;
-  --text-mute: #5d6d8a;
-  --amber: #f0a830;
-  --amber-soft: rgba(240, 168, 48, 0.18);
-  --heart: #ff5d7a;
-  --club: #3dcf8e;
-  --spade: #6b9fff;
-  --energy: #f0c020;
-  --diamond: #ff9a4a;
-  --danger: #ff6b6b;
-  --ok: #3dcf8e;
-  --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
-  --radius: 14px;
-  --font: 'Outfit', system-ui, sans-serif;
-  --display: 'Syne', 'Outfit', sans-serif;
-  color-scheme: dark;
+  /* Papier & Leinen */
+  --bg-deep: #eae1cd;
+  --bg: #f4eddc;
+  --bg-elev: #fffdf8;
+  --bg-elev-2: #f6efe0;
+  --line: rgba(84, 66, 34, 0.16);
+  --line-strong: rgba(84, 66, 34, 0.34);
+
+  /* Tinte */
+  --text: #2a251d;
+  --text-dim: #574f41;
+  --text-mute: #766d5c;
+
+  /* Akzente: Laubgrün (Handeln), Honig (Geld), Kornblume (Auswahl) */
+  --brand: #2f6b45;
+  --brand-strong: #23543a;
+  --brand-soft: #e2efdd;
+  --honey: #955808;
+  --honey-soft: #fbeecb;
+  --honey-line: rgba(149, 88, 8, 0.4);
+  --focus: #2a6db0;
+  --focus-strong: #1f5288;
+  --focus-soft: rgba(42, 109, 176, 0.18);
+  --danger: #b3261e;
+  --danger-soft: #fbe4e0;
+  --ok: #2f7a43;
+
+  /* Bisherige Namen zeigen auf die neuen Akzente. */
+  --amber: var(--honey);
+  --amber-soft: var(--honey-soft);
+
+  /* Sorten: Grundton, Kopfband, Flächentönung, Schrift */
+  --saat: #34804a;
+  --saat-soft: #cde5c9;
+  --saat-tint: #eef6ea;
+  --saat-ink: #1e4f2d;
+
+  --getreide: #b3963a;
+  --getreide-soft: #ece0a6;
+  --getreide-tint: #f9f5dd;
+  --getreide-ink: #5a4406;
+
+  --wasser: #2a8fc4;
+  --wasser-soft: #b7e0f5;
+  --wasser-tint: #e8f6fc;
+  --wasser-ink: #0d4a6b;
+
+  --mehl: #96603a;
+  --mehl-soft: #e9d3bc;
+  --mehl-tint: #f9f0e6;
+  --mehl-ink: #583314;
+
+  --obst: #cc3643;
+  --obst-soft: #f7cccd;
+  --obst-tint: #fdeeed;
+  --obst-ink: #861722;
+
+  --konfituere: #8a3a78;
+  --konfituere-soft: #e7cde1;
+  --konfituere-tint: #f8eef5;
+  --konfituere-ink: #5a1f4e;
+
+  --heart: var(--saat);
+  --spade: var(--getreide);
+  --energy: var(--wasser);
+  --diamond: var(--mehl);
+  --club: var(--obst);
+  --steel: var(--konfituere);
+
+  --shadow: 0 1px 2px rgba(84, 66, 34, 0.1), 0 10px 28px rgba(84, 66, 34, 0.12);
+  --shadow-soft: 0 1px 2px rgba(84, 66, 34, 0.08);
+  --radius: 16px;
+  --font: 'Nunito', system-ui, sans-serif;
+  --display: 'Fraunces', 'Nunito', Georgia, serif;
+  color-scheme: light;
   font-family: var(--font);
   line-height: 1.45;
-  font-weight: 450;
+  font-weight: 500;
   color: var(--text);
   background: var(--bg-deep);
   font-synthesis: none;
@@ -49,10 +101,9 @@ body,
 body {
   min-width: 320px;
   background:
-    radial-gradient(1200px 700px at 10% -10%, rgba(80, 120, 255, 0.16), transparent 55%),
-    radial-gradient(900px 600px at 90% 0%, rgba(240, 168, 48, 0.1), transparent 50%),
-    radial-gradient(800px 500px at 50% 100%, rgba(61, 207, 142, 0.08), transparent 55%),
-    var(--bg-deep);
+    radial-gradient(900px 520px at 6% -8%, rgba(255, 214, 150, 0.5), transparent 60%),
+    radial-gradient(800px 480px at 96% 0%, rgba(184, 214, 160, 0.45), transparent 55%),
+    linear-gradient(180deg, #f3ebd9 0%, #eae1cd 100%);
 }
 
 button,
@@ -65,6 +116,127 @@ button {
   cursor: pointer;
 }
 
+input {
+  accent-color: var(--brand);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 ::selection {
-  background: rgba(240, 168, 48, 0.35);
+  background: rgba(42, 109, 176, 0.24);
+}
+
+/* Jede Sorte bringt ihre vier Töne mit; Felder, Karten und Messer lesen sie. */
+.suit-hearts,
+.back-hearts,
+.pip-hearts {
+  --suit: var(--saat);
+  --suit-soft: var(--saat-soft);
+  --suit-tint: var(--saat-tint);
+  --suit-ink: var(--saat-ink);
+}
+
+.suit-spades,
+.back-spades,
+.pip-spades {
+  --suit: var(--getreide);
+  --suit-soft: var(--getreide-soft);
+  --suit-tint: var(--getreide-tint);
+  --suit-ink: var(--getreide-ink);
+}
+
+.suit-energy,
+.back-energy,
+.pip-energy {
+  --suit: var(--wasser);
+  --suit-soft: var(--wasser-soft);
+  --suit-tint: var(--wasser-tint);
+  --suit-ink: var(--wasser-ink);
+}
+
+.suit-diamonds,
+.back-diamonds,
+.pip-diamonds {
+  --suit: var(--mehl);
+  --suit-soft: var(--mehl-soft);
+  --suit-tint: var(--mehl-tint);
+  --suit-ink: var(--mehl-ink);
+}
+
+.suit-clubs,
+.back-clubs,
+.pip-clubs {
+  --suit: var(--obst);
+  --suit-soft: var(--obst-soft);
+  --suit-tint: var(--obst-tint);
+  --suit-ink: var(--obst-ink);
+}
+
+.suit-steel,
+.back-steel,
+.pip-steel {
+  --suit: var(--konfituere);
+  --suit-soft: var(--konfituere-soft);
+  --suit-tint: var(--konfituere-tint);
+  --suit-ink: var(--konfituere-ink);
+}
+
+/* Knöpfe gelten überall: Menü, Spiel, Dialoge, Simulation. */
+.primary-btn,
+.ghost-btn {
+  border-radius: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-elev);
+  color: var(--text);
+  font-weight: 600;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    transform 120ms ease;
+}
+
+.primary-btn {
+  background: linear-gradient(180deg, #3a7d52, var(--brand));
+  color: #fff;
+  border-color: var(--brand-strong);
+  font-weight: 700;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 2px 0 var(--brand-strong);
+}
+
+.primary-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #418a5b, #33744b);
+}
+
+.primary-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 var(--brand-strong);
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primary-btn .btn-sub {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.88;
+  margin-top: 2px;
+}
+
+.ghost-btn:hover:not(:disabled) {
+  background: var(--bg-elev-2);
+  border-color: rgba(84, 66, 34, 0.5);
+}
+
+.ghost-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }

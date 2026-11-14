@@ -31,12 +31,12 @@ export function ScenarioPicker() {
       <div className="menu-atmosphere" aria-hidden />
       <div className="menu-content">
         <header className="menu-hero">
-          <p className="menu-kicker">Playtest-Simulation · v8</p>
-          <h1>Versorgungs-Architekten</h1>
+          <p className="menu-kicker">Playtest · Garten & Wochenmarkt</p>
+          <h1>Ernte & Wochenmarkt</h1>
           <p className="menu-lead">
-            Rohstoffe zu Produkten verarbeiten und Märkte versorgen — Karten
-            teleportieren ohne Wegkosten zwischen Quellen, Fabriken, Lagern und
-            Märkten.
+            Saat und Getreide ernten, zu Obst und Mehl veredeln, Konfitüre kochen
+            und an den Ständen verkaufen — Karten wandern frei zwischen Feldern,
+            Küchen, Schuppen und Marktständen.
           </p>
         </header>
 
@@ -67,22 +67,23 @@ export function ScenarioPicker() {
             <div className="mode-brief">
               {single ? (
                 <p>
-                  Allein am Tisch. Quellen, Fabriken und Märkte sind
-                  gemeinschaftlich (ohne Gebühr). Nur Lager sind staatlich —
-                  keine Auktionen, kein Schenken. Ziel: die Bank leeren und
-                  möglichst viel Gesamtvermögen ansammeln.
+                  Allein im Garten. Felder, Küchen und Stände sind
+                  gemeinschaftlich, bis jemand sie kauft. Schuppen gehören dir
+                  persönlich. Einziges Siegziel: {scenario.marketsToWin} Märkte
+                  mit Versorgung &gt; 0 am Zugende. Ohne Geld geht die Partie
+                  weiter.
                 </p>
               ) : (
                 <p>
-                  Höchstes Gesamtvermögen gewinnt: Bargeld + Bankforderungen.
-                  Die Partie endet, sobald die Bank leer ist. Nur Lager haben
-                  Eigentümer und Gebühren (Start: Staat); Quellen, Fabriken und
-                  Märkte sind gebührenfrei.
+                  Einziges Siegziel: {scenario.marketsToWin} Märkte mit
+                  Versorgung &gt; 0 am Zugende. Leere Kasse beendet nichts. Jeder
+                  hat eigene Schuppen; gekaufte Felder/Küchen/Stände gehören dem
+                  Käufer (Gebühr setzbar).
                 </p>
               )}
               <ul className="scenario-facts">
                 {(
-                  ['source', 'factory', 'storage', 'market'] as const
+                  ['source', 'factory', 'market'] as const
                 ).map((kind) => {
                     const list = scenario.fields.filter((f) => f.kind === kind)
                     if (!list.length) return null
@@ -90,12 +91,10 @@ export function ScenarioPicker() {
                       <li key={kind}>
                         <strong>
                           {kind === 'source'
-                            ? 'Quellen'
+                            ? 'Felder'
                             : kind === 'factory'
-                              ? 'Fabriken'
-                              : kind === 'storage'
-                                ? 'Lager'
-                                : 'Märkte'}
+                              ? 'Küchen'
+                              : 'Stände'}
                         </strong>
                         {list
                           .map((f) =>
@@ -108,6 +107,14 @@ export function ScenarioPicker() {
                     )
                   },
                 )}
+                <li>
+                  <strong>Je Spieler</strong>
+                  {scenario.beetsPerPlayer} Schuppen
+                </li>
+                <li>
+                  <strong>Siegziel</strong>
+                  {scenario.marketsToWin}× Versorgung &gt; 0
+                </li>
               </ul>
             </div>
 
@@ -153,34 +160,30 @@ export function ScenarioPicker() {
                 beendet den Zug
               </li>
               <li>
-                Infrastruktur (Lager): Ablegen kostenlos; Abheben von
-                staatlichem/fremdem Lager kostet
+                + kauft Schuppen, Getreidefeld, Mehlmühle, Konfitürenküche,
+                Mehl- und Konfitürenstand (20¤, 40¤, 80¤, …)
               </li>
               <li>
-                Stapel: absteigend (7 → … → 2 → Ass); Mehrfachklick wählt
+                Stapel: absteigend (7 → … → 2); Mehrfachklick wählt
                 Teilstapel
               </li>
               <li>
-                Fabrik: je voller Rezept-Erfüllung ein Produkt am Zugende
-                (Extras werden mit abgeräumt)
-              </li>
-              <li>Zugende: Bedarf je Markt −1</li>
-              <li>
-                Ein Exp-Zähler für alle Märkte (+1/Zugende, 10 → Ausbau); jeder
-                Marktkollaps setzt ihn auf 0
+                Küche & Saatstand: offene Ausgabekarten per Mehrfachklick
+                (Gebühr nur bei Bedarf &lt; 0; bei ≥ 0 Ziehen gratis, Abliefern
+                ohne Belohnung);
+                Eingänge (Küche, Saatstand, Markt) entnehmbar — Abrechnung am
+                Zugende
               </li>
               <li>
-                Quelle mit mehr als 8 Karten kollabiert (Stapel weg);
-                Ablage jeder Farbe auf Quellen erlaubt
+                Zugende: Regen/Getreide +1; Ausgaben +1 offen; Märkte &amp;
+                Eingänge abrechnen; Marktbedarf −1; Bedarf &gt; 0 → Kopie
+                käuflich; über +5 oder unter −8 → Feld weg (kein Markt =
+                verloren)
               </li>
-              {!single && (
-                <li>
-                  Pro Zug eine Auktion: nur Lager privatisieren/verkaufen
-                </li>
-              )}
-              {single && (
-                <li>Einspieler: Lager bleiben Staat — keine Auktionen</li>
-              )}
+              <li>
+                Regen/Getreide am Zugende mehr als 8 Karten: Überernte (Stapel
+                weg)
+              </li>
               <li>Zeitstrahl: Züge scrubben, JSON exportieren/importieren</li>
             </ul>
           </section>

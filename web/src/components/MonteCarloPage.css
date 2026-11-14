@@ -18,16 +18,19 @@
 
 .mc-kicker {
   margin: 0 0 4px;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-mute);
+  color: var(--honey);
 }
 
 .mc-header h1 {
   margin: 0;
   font-family: var(--display);
   font-size: clamp(1.8rem, 4vw, 2.4rem);
+  line-height: 1.1;
+  color: var(--brand-strong);
 }
 
 .mc-lead {
@@ -40,17 +43,18 @@
 .mc-results {
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: linear-gradient(160deg, rgba(18, 28, 44, 0.9), rgba(10, 14, 24, 0.95));
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-soft);
   padding: 18px 18px 20px;
 }
 
 .mc-config h2,
 .mc-results h2 {
   margin: 0 0 14px;
-  font-size: 1rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  font-family: var(--display);
+  font-size: 1.15rem;
+  line-height: 1.25;
+  color: var(--text);
 }
 
 .mc-results h2 em {
@@ -81,13 +85,20 @@
 .mc-filters > label > input,
 .mc-filters > label > select {
   appearance: none;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: 10px;
-  background: var(--bg-elev);
+  background: #fff;
   color: var(--text);
   padding: 8px 10px;
   font-size: 0.92rem;
   font-variant-numeric: tabular-nums;
+}
+
+.mc-grid input[type='range'] {
+  appearance: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
 .mc-span {
@@ -110,7 +121,7 @@
 
 .mc-start,
 .mc-pause {
-  border: none;
+  border: 1px solid transparent;
   border-radius: 12px;
   padding: 10px 18px;
   font-weight: 700;
@@ -118,13 +129,16 @@
 }
 
 .mc-start {
-  color: #1a1205;
-  background: linear-gradient(180deg, #ffd27a, #f0a830);
+  color: #fff;
+  background: linear-gradient(180deg, #3a7d52, var(--brand));
+  border-color: var(--brand-strong);
+  box-shadow: 0 2px 0 var(--brand-strong);
 }
 
 .mc-pause {
-  color: #1a1205;
-  background: linear-gradient(180deg, #c5d8ff, #7aa2e8);
+  color: #5f3804;
+  background: var(--honey-soft);
+  border-color: var(--honey);
 }
 
 .mc-progress {
@@ -132,7 +146,10 @@
   margin-top: 14px;
   height: 28px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-elev-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-weight: 700;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -145,12 +162,12 @@
   position: absolute;
   inset: 0 auto 0 0;
   width: 100%;
-  background: linear-gradient(90deg, rgba(61, 207, 142, 0.35), rgba(240, 168, 48, 0.55));
-  opacity: 0.45;
+  background: linear-gradient(90deg, #a9d4a3, #f2cf7c, #a9d4a3);
+  opacity: 0.7;
 }
 
 .mc-bar-live {
-  opacity: 0.7;
+  opacity: 1;
   background-size: 200% 100%;
   animation: mc-bar-pulse 1.2s linear infinite;
 }
@@ -173,6 +190,7 @@
   margin: 10px 0 0;
   color: var(--danger);
   font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .mc-results-head {
@@ -204,7 +222,7 @@
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--muted, #8a8494);
+  color: var(--text-mute);
   padding: 0;
   margin-bottom: 4px;
 }
@@ -235,22 +253,23 @@
   border: none;
   border-radius: 0;
   background: transparent;
-  accent-color: var(--accent, #5b8def);
+  accent-color: var(--brand);
 }
 
 .mc-table-wrap {
   overflow: auto;
   max-height: min(60vh, 640px);
   border-radius: 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
+  background: #fff;
 }
 
 .mc-table thead th {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--bg-elev, #141c2c);
-  box-shadow: 0 1px 0 var(--line);
+  background: var(--bg-elev-2);
+  box-shadow: 0 1px 0 var(--line-strong);
 }
 
 .mc-pager {
@@ -261,7 +280,7 @@
   gap: 10px 16px;
   margin-top: 10px;
   font-size: 0.82rem;
-  color: var(--text-mute, #8a8494);
+  color: var(--text-dim);
 }
 
 .mc-pager-size {
@@ -277,9 +296,9 @@
 
 .mc-pager-size select {
   appearance: none;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: 8px;
-  background: var(--bg-elev);
+  background: #fff;
   color: var(--text);
   padding: 4px 8px;
   font-size: 0.82rem;
@@ -339,7 +358,8 @@
   background: none;
   color: var(--text-dim);
   font: inherit;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
+  font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
@@ -347,32 +367,40 @@
 }
 
 .mc-table th button:hover {
-  color: var(--amber);
+  color: var(--brand);
 }
 
 .mc-table tbody tr {
   cursor: pointer;
 }
 
-.mc-table tbody tr:hover {
-  background: rgba(240, 168, 48, 0.08);
+.mc-table tbody tr:nth-child(even) {
+  background: rgba(84, 66, 34, 0.035);
 }
 
-.mc-table tr.outcome-win td:nth-child(2) {
+.mc-table tbody tr:hover {
+  background: var(--brand-soft);
+}
+
+.mc-table tr[class*='outcome-'] td:nth-child(2) {
+  font-weight: 700;
+}
+
+.mc-table tr.outcome-finished td:nth-child(2) {
   color: var(--ok);
 }
 
-.mc-table tr.outcome-loss td:nth-child(2) {
+.mc-table tr.outcome-lost td:nth-child(2) {
   color: var(--danger);
 }
 
-.mc-table tr.outcome-broke td:nth-child(2) {
-  color: #d99220;
+.mc-table tr.outcome-stalled td:nth-child(2) {
+  color: var(--honey);
 }
 
 .mc-table tr.outcome-aborted td:nth-child(2),
 .mc-table tr.outcome-stuck td:nth-child(2) {
-  color: var(--amber);
+  color: var(--text-mute);
 }
 
 .mc-empty {

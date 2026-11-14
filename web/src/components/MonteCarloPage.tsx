@@ -13,7 +13,8 @@ import type { SimRunSummary } from '../sim/mcStorage'
 import './MonteCarloPage.css'
 
 const OUTCOME_LABEL: Record<SimOutcome, string> = {
-  finished: 'Bank leer',
+  finished: 'Sieg',
+  lost: 'Niederlage',
   stalled: 'Stillstand',
   aborted: 'Abbruch',
   stuck: 'Fehler',
@@ -28,7 +29,7 @@ const COLUMNS: { key: SortKey; label: string; tip: string }[] = [
   {
     key: 'outcome',
     label: 'Ergebnis',
-    tip: 'Bank leer = reguläres Spielende. Stillstand = mehrere Runden lang nur noch Zugenden. Abbruch = Aktionslimit. Fehler = Bot konnte keine gültige Aktion ausführen.',
+    tip: 'Sieg = genug Märkte mit Versorgung > 0 am Zugende. Niederlage = kein Marktstand mehr. Stillstand = nur Zugenden. Abbruch = Aktionslimit. Fehler = Bot ohne gültige Aktion.',
   },
   {
     key: 'leader',
@@ -53,27 +54,27 @@ const COLUMNS: { key: SortKey; label: string; tip: string }[] = [
   {
     key: 'productions',
     label: 'Prod.',
-    tip: 'Fertigprodukte, die Fabriken erzeugt haben.',
+    tip: 'Karten, die am Zugende auf Ausgabestapel (Küchen/Saatstand) gelegt wurden.',
   },
   {
     key: 'productsDelivered',
     label: 'Lief.',
-    tip: 'Produktkarten, die auf Planeten geliefert wurden.',
+    tip: 'Produktkarten, die auf Marktstände geliefert wurden.',
   },
   {
     key: 'marketCollapses',
     label: 'M-Kol.',
-    tip: 'Markt-Kollapse (Bedarfsmesser unter −8).',
+    tip: 'Felder mit Bedarfsmesser entfernt (unter −8 oder über +5).',
   },
   {
     key: 'sourceCollapses',
     label: 'Q-Kol.',
-    tip: 'Quellen-Kollapse (mehr als 8 Karten auf dem Stapel).',
+    tip: 'Quellen-Kollapse (am Zugende noch mehr als 8 Karten auf dem Stapel).',
   },
   {
     key: 'marketsSpawned',
     label: 'Spawn',
-    tip: 'Durch anhaltende Befriedigung gespawnte Märkte.',
+    tip: 'Gekaufte Feldkopien (bei positivem Bedarf).',
   },
   {
     key: 'marketIncome',
@@ -88,27 +89,22 @@ const COLUMNS: { key: SortKey; label: string; tip: string }[] = [
   {
     key: 'feesPaidToBank',
     label: 'Geb.→Bank',
-    tip: 'Summe aller Gebühren staatlicher Betriebe an die Bank.',
-  },
-  {
-    key: 'auctionsSold',
-    label: 'Aukt.',
-    tip: 'Auktionen mit Zuschlag (Privatisierungen und Weiterverkäufe).',
-  },
-  {
-    key: 'auctionVolume',
-    label: 'Aukt.¤',
-    tip: 'Summe aller Zuschlagspreise.',
+    tip: 'Summe Gebühren und Kaufpreise an die Bank.',
   },
   {
     key: 'privateBusinesses',
     label: 'Privat',
-    tip: 'Lager in Privatbesitz am Ende.',
+    tip: 'Felder/Küchen/Stände/Schuppen in Privatbesitz am Ende.',
+  },
+  {
+    key: 'fieldsBought',
+    label: 'Käufe',
+    tip: 'Anzahl gekaufter Felder (Infrastruktur und Kopien) während der Partie.',
   },
   {
     key: 'actions',
     label: 'Aktionen',
-    tip: 'Aufgezeichnete Aktionen (Kartenbewegungen, Gebühren, Auktionen, Zugenden).',
+    tip: 'Aufgezeichnete Aktionen (Kartenbewegungen, Käufe, Gebühren, Zugenden).',
   },
   {
     key: 'turns',
@@ -118,7 +114,7 @@ const COLUMNS: { key: SortKey; label: string; tip: string }[] = [
   {
     key: 'bankLeft',
     label: 'Bank',
-    tip: 'Verbleibendes Bankgeld am Ende (0 = Bank ist leer).',
+    tip: 'Verbleibendes Bankgeld am Ende (Start 2000¤; leere Bank beendet nicht).',
   },
   {
     key: 'durationMs',
@@ -177,6 +173,7 @@ export function MonteCarloPage() {
     config.workers > 0 ? String(config.workers) : `auto (${hw})`
 
   useEffect(() => {
+    if (progress.running) return
     void hydrateFromDisk()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- einmal beim Öffnen
   }, [])
@@ -211,6 +208,7 @@ export function MonteCarloPage() {
   }
 
   const finished = results.filter((r) => r.outcome === 'finished').length
+  const lost = results.filter((r) => r.outcome === 'lost').length
 
   return (
     <div className="mc-page">
@@ -307,9 +305,8 @@ export function MonteCarloPage() {
               }
             />
             <span className="mc-hint">
-              0 = zufällig · 1 = beste Kartenbewegung (Liefereinkommen,
-              Rezeptfortschritt), gezielte Privatisierung; ohne klaren Nutzen →
-              Zugende. Max. 12 Bewegungen je Zug.
+              0 = zufällig · 1 = beste Aktion (Liefern, Käufe, Feldkopien);
+              ohne klaren Nutzen → Zugende. Max. 12 Aktionen je Zug.
             </span>
           </label>
         </div>
@@ -356,7 +353,8 @@ export function MonteCarloPage() {
                 : progress.paused
                   ? ` · pausiert · weiter ab ${progress.nextSeed}`
                   : ''}
-              {results.length > 0 && ` · ${finished}× Bank leer`}
+              {results.length > 0 &&
+                ` · ${finished}× Sieg · ${lost}× Niederlage`}
             </span>
           </div>
         )}
@@ -473,9 +471,8 @@ export function MonteCarloPage() {
                   <td>{r.marketIncome}</td>
                   <td>{r.feesPaidToPlayers}</td>
                   <td>{r.feesPaidToBank}</td>
-                  <td>{r.auctionsSold}</td>
-                  <td>{r.auctionVolume}</td>
                   <td>{r.privateBusinesses}</td>
+                  <td>{r.fieldsBought ?? 0}</td>
                   <td>{r.actions}</td>
                   <td>{r.turns}</td>
                   <td>{r.bankLeft}</td>

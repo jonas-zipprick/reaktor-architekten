@@ -3,11 +3,12 @@ import { rankLabel, suitName, suitSymbol } from '../types'
 import './PlayingCard.css'
 
 const suitRole: Record<Suit, string> = {
-  hearts: 'Rohstoff',
-  spades: 'Rohstoff',
+  hearts: 'Ernte',
+  spades: 'Ernte',
   energy: 'Rohstoff',
-  diamonds: 'Fertigprodukt',
-  clubs: 'Fertigprodukt',
+  diamonds: 'Ware',
+  clubs: 'Ware',
+  steel: 'Ware',
 }
 
 export function PlayingCard({

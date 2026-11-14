@@ -1,14 +1,23 @@
+/* Felder ohne Sorte (Schuppen) bekommen Packpapier-Töne. */
+:where(.board-cell) {
+  --suit: #a08a5c;
+  --suit-soft: #e8dabb;
+  --suit-tint: #f5ecd8;
+  --suit-ink: #54411c;
+}
+
 .board-cell {
   position: relative;
   appearance: none;
-  border: 1px solid var(--line);
+  border: 1.5px solid color-mix(in srgb, var(--suit) 60%, #fff);
   border-radius: 12px;
   padding: 0;
   margin: 0;
   width: var(--cell-size);
   height: var(--cell-height);
-  background: linear-gradient(160deg, #152036, #0e1626);
-  color: inherit;
+  background: var(--suit-tint);
+  color: var(--text);
+  box-shadow: var(--shadow-soft);
   text-align: left;
   overflow: visible;
   transition:
@@ -18,16 +27,9 @@
 }
 
 .board-cell:hover {
-  border-color: var(--line-strong);
+  border-color: var(--suit);
   transform: translateY(-1px);
-  z-index: 2;
-}
-
-.board-cell.is-target {
-  border-color: rgba(107, 159, 255, 0.85);
-  box-shadow:
-    0 0 0 1px rgba(107, 159, 255, 0.45),
-    0 0 18px rgba(107, 159, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(84, 66, 34, 0.16);
   z-index: 2;
 }
 
@@ -37,163 +39,124 @@
 
 @keyframes produced-pulse {
   0% {
-    filter: brightness(1);
-  }
-  30% {
-    filter: brightness(1.45);
+    box-shadow: 0 0 0 0 rgba(47, 122, 67, 0.6);
   }
   100% {
-    filter: brightness(1);
+    box-shadow: 0 0 0 14px rgba(47, 122, 67, 0);
   }
 }
 
 .cell-glow {
   position: absolute;
   inset: 0;
-  border-radius: inherit;
+  border-radius: 10.5px;
   pointer-events: none;
-  opacity: 1;
 }
 
-/* Rohstoffquellen */
-.kind-source.suit-hearts {
-  background: linear-gradient(160deg, #4a1826 0%, #241018 100%);
-  border-color: rgba(255, 93, 122, 0.4);
-}
-
-.kind-source.suit-hearts .cell-glow {
-  background:
-    radial-gradient(circle at 50% 22%, rgba(255, 120, 150, 0.4), transparent 46%),
-    radial-gradient(circle at 50% 70%, rgba(180, 40, 80, 0.22), transparent 58%);
-}
-
-.kind-source.suit-spades {
-  background: linear-gradient(160deg, #1a2c58 0%, #0e1830 100%);
-  border-color: rgba(107, 159, 255, 0.4);
-}
-
-.kind-source.suit-spades .cell-glow {
-  background:
-    radial-gradient(circle at 50% 22%, rgba(130, 175, 255, 0.4), transparent 46%),
-    radial-gradient(circle at 50% 70%, rgba(50, 90, 200, 0.22), transparent 58%);
-}
-
-.kind-source.suit-energy {
-  background: linear-gradient(160deg, #3a3210 0%, #1c1808 100%);
-  border-color: rgba(240, 200, 40, 0.45);
-}
-
-.kind-source.suit-energy .cell-glow {
-  background:
-    radial-gradient(circle at 50% 22%, rgba(255, 230, 100, 0.42), transparent 46%),
-    radial-gradient(circle at 50% 70%, rgba(200, 150, 20, 0.22), transparent 58%);
-}
-
-/* Fabriken — industrielles Raster, getönt nach Produktfarbe */
+/* Küchen: helle Arbeitsfläche, nur der Kopf trägt die Farbe der Ware. */
 .kind-factory {
-  background: linear-gradient(160deg, #2a2a38 0%, #15161f 100%);
+  background: linear-gradient(180deg, var(--suit-tint), var(--bg-elev) 70%);
 }
 
-.kind-factory .cell-glow {
+/* Schuppen: Bretterwand, gestrichelter Rand solange er der Gemeinde gehört. */
+.kind-storage {
+  border-style: dashed;
+  border-color: #a8956c;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 40%),
     repeating-linear-gradient(
       90deg,
-      transparent 0 9px,
-      rgba(255, 255, 255, 0.045) 9px 10px
-    );
+      transparent 0 19px,
+      rgba(110, 84, 36, 0.09) 19px 20px
+    ),
+    var(--suit-tint);
 }
 
-.kind-factory.suit-diamonds {
-  background: linear-gradient(160deg, #3d2e14 0%, #1c160c 100%);
-  border-color: rgba(240, 168, 48, 0.4);
+/* Spezialisierte Schuppen (Fass, Silo, …): farbiger Kopf, sonst Packpapier. */
+.kind-storage.suit-hearts,
+.kind-storage.suit-spades,
+.kind-storage.suit-energy,
+.kind-storage.suit-diamonds,
+.kind-storage.suit-clubs,
+.kind-storage.suit-steel {
+  border-color: color-mix(in srgb, var(--suit) 55%, #fff);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 19px,
+      color-mix(in srgb, var(--suit) 12%, transparent) 19px 20px
+    ),
+    linear-gradient(180deg, var(--suit-tint), var(--bg-elev) 72%);
 }
 
-.kind-factory.suit-clubs {
-  background: linear-gradient(160deg, #163a2a 0%, #0c1c15 100%);
-  border-color: rgba(61, 207, 142, 0.4);
-}
-
-/* Lager — neutrales Umsortierfeld */
-.kind-storage {
-  background: linear-gradient(165deg, #2a2f3a 0%, #151820 100%);
-  border-color: rgba(180, 190, 210, 0.35);
-  border-style: dashed;
-}
-
-.kind-storage .cell-glow {
-  background: radial-gradient(
-    circle at 50% 40%,
-    rgba(180, 190, 210, 0.16),
-    transparent 55%
-  );
-}
-
-.kind-storage .cell-kind {
-  color: #c5ccd8;
-}
-
-/* Markt — Orbit / Teal */
+/* Marktstände: gestreifte Markise in der Farbe der Ware. */
 .kind-market {
-  background: linear-gradient(165deg, #0d3d36 0%, #082428 55%, #0a1a28 100%);
-  border-color: rgba(61, 207, 142, 0.4);
+  background: var(--bg-elev);
 }
 
 .kind-market .cell-glow {
   background:
-    radial-gradient(circle at 68% 38%, rgba(90, 220, 170, 0.4), transparent 38%),
-    radial-gradient(circle at 30% 72%, rgba(70, 140, 220, 0.24), transparent 48%);
-  animation: planet-drift 8s ease-in-out infinite;
+    radial-gradient(circle at 4.5px 0, var(--suit) 4.3px, transparent 4.8px) 0
+      9px / 18px 5px repeat-x,
+    radial-gradient(circle at 13.5px 0, var(--suit-soft) 4.3px, transparent 4.8px)
+      0 9px / 18px 5px repeat-x,
+    repeating-linear-gradient(90deg, var(--suit) 0 9px, var(--suit-soft) 9px 18px)
+      0 0 / 100% 9px no-repeat;
 }
 
-/* Baustelle — Sand / Amber */
-.kind-site {
-  background: linear-gradient(165deg, #3a3020 0%, #1e1810 55%, #14100c 100%);
-  border-color: rgba(220, 170, 70, 0.45);
-}
-
-.kind-site .cell-glow {
-  background:
-    radial-gradient(circle at 40% 30%, rgba(240, 180, 60, 0.28), transparent 42%),
-    radial-gradient(circle at 70% 70%, rgba(180, 120, 40, 0.18), transparent 50%);
-}
-
-@keyframes planet-drift {
-  0%,
-  100% {
-    filter: hue-rotate(0deg);
-  }
-  50% {
-    filter: hue-rotate(14deg);
-  }
-}
-
-/* Eigentum = Spielerfarbe (wie PLAYER_META); Staat bleibt neutral */
+/* Eigentum = Spielerfarbe; Gemeinde bleibt neutral. */
 .board-cell.owner-white {
-  border-color: rgba(244, 240, 232, 0.8);
-  box-shadow: inset 0 0 0 2px rgba(244, 240, 232, 0.6);
+  border-style: solid;
+  border-color: #8c8271;
+  box-shadow:
+    inset 0 0 0 2.5px #fff,
+    var(--shadow-soft);
 }
 
 .board-cell.owner-black {
-  border-color: rgba(90, 100, 120, 0.9);
-  box-shadow: inset 0 0 0 2px rgba(42, 49, 66, 0.95);
+  border-style: solid;
+  border-color: #2f2c27;
+  box-shadow:
+    inset 0 0 0 2.5px rgba(47, 44, 39, 0.85),
+    var(--shadow-soft);
 }
 
 .board-cell.owner-red {
-  border-color: rgba(232, 93, 76, 0.8);
-  box-shadow: inset 0 0 0 2px rgba(232, 93, 76, 0.7);
+  border-style: solid;
+  border-color: #c2303d;
+  box-shadow:
+    inset 0 0 0 2.5px rgba(204, 54, 67, 0.75),
+    var(--shadow-soft);
 }
 
 .board-cell.owner-green {
-  border-color: rgba(60, 184, 138, 0.8);
-  box-shadow: inset 0 0 0 2px rgba(60, 184, 138, 0.7);
+  border-style: solid;
+  border-color: #2a6e3d;
+  box-shadow:
+    inset 0 0 0 2.5px rgba(52, 128, 74, 0.75),
+    var(--shadow-soft);
+}
+
+/* Mögliches Ziel der Auswahl: gestrichelter Kornblumenrand. */
+.board-cell.is-target {
+  border-color: var(--focus);
+  border-style: dashed;
+  box-shadow: 0 0 0 3px var(--focus-soft);
+  z-index: 2;
+}
+
+.board-cell.is-target:hover {
+  border-style: solid;
+  box-shadow:
+    0 0 0 3px var(--focus-soft),
+    0 6px 14px rgba(31, 82, 136, 0.22);
 }
 
 .board-cell.selected {
-  border-color: var(--amber);
+  border-style: solid;
+  border-color: var(--focus);
   box-shadow:
-    0 0 0 1px rgba(240, 168, 48, 0.45),
-    0 10px 24px rgba(240, 168, 48, 0.15);
+    0 0 0 3px rgba(42, 109, 176, 0.38),
+    0 10px 22px rgba(31, 82, 136, 0.2);
   z-index: 3;
 }
 
@@ -204,170 +167,164 @@
   display: flex;
   flex-direction: column;
   padding: 6px;
-  gap: 4px;
+  gap: 5px;
 }
 
+/* Kopfband mit Feldname und Gebühr. */
 .cell-meta {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 4px;
+  min-height: 1.45rem;
+  margin: -6px -6px 0;
+  padding: 3px 7px;
+  border-radius: 10.5px 10.5px 0 0;
+  background: var(--suit-soft);
+  border-bottom: 1px solid color-mix(in srgb, var(--suit) 40%, transparent);
+}
+
+.kind-market .cell-frame {
+  padding-top: 17px;
+}
+
+.kind-market .cell-meta {
+  margin: 0;
+  padding: 0 1px;
   min-height: 1.1rem;
+  background: none;
+  border: 0;
 }
 
 .cell-kind {
-  font-size: 0.6rem;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--suit-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
 }
 
-.kind-source.suit-hearts .cell-kind {
-  color: #ffb3c2;
-}
-
-.kind-source.suit-spades .cell-kind {
-  color: #b3ccff;
-}
-
-.kind-source.suit-energy .cell-kind {
-  color: #ffe98a;
-}
-
-.kind-factory.suit-diamonds .cell-kind {
-  color: #ffe29a;
-}
-
-.kind-factory.suit-clubs .cell-kind,
-.kind-market .cell-kind,
-.kind-site .cell-kind {
-  color: #8af0c0;
-}
-
 .cell-toll {
   flex-shrink: 0;
-  font-size: 0.65rem;
-  font-weight: 700;
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1.35;
   border-radius: 999px;
-  padding: 1px 5px;
+  padding: 0 6px;
+  font-variant-numeric: tabular-nums;
 }
 
 .cell-toll.toll-state {
-  color: #d8dee9;
-  background: rgba(160, 170, 190, 0.2);
-  border: 1px solid rgba(180, 190, 210, 0.45);
+  color: var(--text-dim);
+  background: var(--bg-elev);
+  border: 1px solid var(--line-strong);
 }
 
 .cell-toll.toll-white {
-  color: #1a1814;
-  background: #f4f0e8;
-  border: 1px solid #fff8ee;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid #8c8271;
 }
 
 .cell-toll.toll-black {
-  color: #e8eefc;
-  background: #2a3142;
-  border: 1px solid #5a6578;
+  color: #fff;
+  background: #2f2c27;
+  border: 1px solid #2f2c27;
 }
 
 .cell-toll.toll-red {
-  color: #fff5f2;
-  background: #e85d4c;
-  border: 1px solid #ff8a7a;
+  color: #fff;
+  background: #c2303d;
+  border: 1px solid #a42430;
 }
 
 .cell-toll.toll-green {
-  color: #0a1f18;
-  background: #3cb88a;
-  border: 1px solid #6ee0b0;
+  color: #fff;
+  background: #2f7a43;
+  border: 1px solid #23603a;
 }
 
 .cell-toll.toll-none {
   color: var(--text-mute);
-  border: 1px dashed rgba(180, 190, 210, 0.3);
-  font-weight: 500;
+  border: 1px dashed var(--line-strong);
+  font-weight: 600;
 }
 
-/* Rezept: benötigte Farben, gefüllt sobald die Karte liegt */
+/* Rezept: benötigte Sorten, kräftig sobald die Karte liegt. */
 .recipe {
   position: relative;
   z-index: 2;
+  align-self: flex-start;
   display: flex;
   align-items: center;
-  gap: 2px;
-  min-height: 1rem;
-  padding: 1px 4px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid transparent;
-  font-size: 0.78rem;
+  gap: 3px;
+  min-height: 1.5rem;
+  padding: 2px 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--line-strong);
+  font-size: 0.8rem;
   line-height: 1;
 }
 
 .recipe.recipe-ready {
-  border-color: rgba(61, 207, 142, 0.75);
-  background: rgba(61, 207, 142, 0.16);
+  border-color: var(--ok);
+  background: #dff1dc;
+  box-shadow: 0 0 0 2px rgba(47, 122, 67, 0.18);
 }
 
 .recipe.recipe-blocked {
-  border-color: rgba(239, 90, 69, 0.75);
-  background: rgba(239, 90, 69, 0.14);
+  border-color: var(--danger);
+  background: var(--danger-soft);
 }
 
+/* Fehlende Zutat: blasser Platzhalter. Liegende Zutat: farbige Marke. */
 .recipe-pip {
-  opacity: 0.38;
+  display: inline-grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  border: 1px dashed var(--line-strong);
+  font-size: 0.74rem;
+  opacity: 0.62;
+  filter: grayscale(0.75);
 }
 
 .recipe-pip.filled {
+  border: 1px solid var(--suit, var(--line-strong));
+  background: var(--suit-soft, transparent);
   opacity: 1;
-}
-
-.recipe-pip.pip-hearts {
-  color: var(--heart);
-}
-
-.recipe-pip.pip-spades {
-  color: var(--spade);
-}
-
-.recipe-pip.pip-energy {
-  color: var(--energy);
-}
-
-.recipe-pip.pip-diamonds {
-  color: var(--amber);
-}
-
-.recipe-pip.pip-clubs {
-  color: var(--club);
+  filter: none;
 }
 
 .recipe-batches {
-  margin-left: 2px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--amber);
+  margin-left: 1px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--ok);
 }
 
 .recipe-arrow {
   margin: 0 1px;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
+  font-weight: 800;
   color: var(--text-dim);
 }
 
 .source-caption {
-  margin-left: 2px;
-  font-size: 0.56rem;
-  letter-spacing: 0.03em;
-  color: var(--text-dim);
+  margin: 0 5px 0 1px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--suit-ink);
   white-space: nowrap;
 }
 
 .cell-stack {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -378,8 +335,92 @@
   isolation: isolate;
 }
 
-.cell-stack {
-  position: relative;
+/* Einzelstapel (Regen, Markt, Schuppen, …): Slot füllt die Zelle, Karten unten. */
+.stack-slot {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Küche: Eingang (nur Ablegen) links, Ausgabe (ziehbar) rechts. */
+.factory-stacks {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.factory-output,
+.factory-input {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.factory-stacks .factory-output,
+.factory-stacks .factory-input {
+  min-height: 0;
+}
+
+.factory-output.lane-selected,
+.factory-input.lane-selected {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+}
+
+.stack-lane-label {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--suit-ink, var(--text-mute));
+  text-align: center;
+}
+
+.factory-output .cell-stack,
+.factory-input .cell-stack {
+  flex: 1;
+  min-height: 52px;
+  border-radius: 8px;
+  border: 1px dashed color-mix(in srgb, var(--suit) 35%, transparent);
+  background: rgba(255, 255, 255, 0.35);
+  padding: 2px 0 4px;
+}
+
+.factory-output .cell-stack {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--suit) 55%, #fff);
+}
+
+.stack-empty-hint {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-mute);
+  padding: 10px 2px;
+  margin-top: auto;
+}
+
+.stack-count-input {
+  background: var(--text-dim);
+}
+
+/* Leeres Feld zeigt, wo Karten hinkommen. */
+.cell-stack:empty::after {
+  content: '';
+  width: 34px;
+  height: 46px;
+  border-radius: 7px;
+  border: 1.5px dashed color-mix(in srgb, var(--suit) 55%, transparent);
+  background: rgba(255, 255, 255, 0.45);
 }
 
 /* Rang und Farbe jeder Karte bleiben am oberen Rand lesbar. */
@@ -395,18 +436,18 @@
 .stack-count {
   position: absolute;
   bottom: 2px;
-  right: 2px;
+  right: 0;
   z-index: 20;
-  min-width: 1.1rem;
-  padding: 0 3px;
+  min-width: 1.25rem;
+  padding: 0 4px;
   border-radius: 999px;
-  font-size: 0.58rem;
-  font-weight: 700;
-  line-height: 1.3;
+  font-size: 0.64rem;
+  font-weight: 800;
+  line-height: 1.45;
   text-align: center;
-  color: #dce8ff;
-  background: rgba(20, 30, 54, 0.9);
-  border: 1px solid var(--line-strong);
+  color: #fff;
+  background: var(--text);
+  border: 1.5px solid #fff;
   pointer-events: none;
 }
 
@@ -416,52 +457,26 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  margin: 2px 0 4px;
 }
 
+/* Bedarfsmesser: neun Felder von Kollaps (links) bis gesättigt (rechts). */
 .tension-meter {
   width: 100%;
-  padding: 0 1px 2px;
   position: relative;
   z-index: 2;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 4px;
+  border-radius: 6px;
 }
 
 .tension-suit {
   flex-shrink: 0;
-  width: 12px;
+  width: 14px;
   font-size: 0.72rem;
-  font-weight: 700;
   line-height: 1;
   text-align: center;
-}
-
-.tension-meter.suit-diamonds .tension-suit,
-.tension-meter.suit-diamonds .tension-value {
-  color: #ffe29a;
-}
-
-.tension-meter.suit-clubs .tension-suit,
-.tension-meter.suit-clubs .tension-value {
-  color: #8af0c0;
-}
-
-.tension-meter.suit-hearts .tension-suit,
-.tension-meter.suit-hearts .tension-value {
-  color: #ff8a9a;
-}
-
-.tension-meter.suit-spades .tension-suit,
-.tension-meter.suit-spades .tension-value {
-  color: #c5d0e8;
-}
-
-.tension-meter.suit-energy .tension-suit,
-.tension-meter.suit-energy .tension-value {
-  color: #ffe98a;
 }
 
 .tension-scale {
@@ -471,110 +486,81 @@
   display: grid;
   /* Spaltenzahl kommt inline aus TENSION_MIN…MAX (aktuell 9). */
   grid-template-columns: repeat(9, 1fr);
+  gap: 1.5px;
   align-items: stretch;
-  height: 18px;
-  border-radius: 3px;
-  background: linear-gradient(
-    90deg,
-    rgba(239, 90, 69, 0.35),
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(239, 90, 69, 0.35)
-  );
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  overflow: hidden;
+  height: 10px;
 }
 
 .tension-tick {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
   min-width: 0;
-  color: rgba(255, 255, 255, 0.55);
-  font-style: normal;
+  border-radius: 2px;
+  background: rgba(84, 66, 34, 0.17);
 }
 
+/* Die beiden Felder vor dem Kollaps. */
+.tension-tick:nth-child(-n + 2) {
+  background: #eea79f;
+}
+
+.tension-tick.active {
+  background: var(--suit);
+}
+
+.tension-meter.danger .tension-tick.active {
+  background: var(--danger);
+}
+
+/* Die Zahl steht groß rechts; Skalenbeschriftung wäre hier zu klein. */
+.tension-tick em,
 .tension-line {
-  position: absolute;
-  top: 0;
-  bottom: 7px;
-  left: 50%;
-  width: 1px;
-  margin-left: -0.5px;
-  background: rgba(255, 255, 255, 0.35);
-  pointer-events: none;
-}
-
-.tension-tick.major .tension-line {
-  bottom: 8px;
-  width: 1.5px;
-  margin-left: -0.75px;
-  background: rgba(255, 255, 255, 0.65);
-}
-
-.tension-tick.zero .tension-line {
-  background: rgba(255, 236, 170, 0.9);
-  width: 2px;
-  margin-left: -1px;
-}
-
-.tension-tick em {
-  position: relative;
-  z-index: 1;
-  font-style: normal;
-  font-size: 0.42rem;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  padding-bottom: 1px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.tension-tick.major em {
-  color: rgba(255, 255, 255, 0.78);
-  font-weight: 700;
-  font-size: 0.45rem;
-}
-
-.tension-tick.zero em {
-  color: #ffe29a;
-}
-
-.tension-tick.active em {
-  color: #fff;
-  font-weight: 800;
-}
-
-.tension-tick.active .tension-line {
-  background: rgba(255, 255, 255, 0.95);
+  display: none;
 }
 
 .tension-stone {
   position: absolute;
-  top: 1px;
-  width: 8px;
-  height: 8px;
-  margin-left: -4px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #f4f0e6, #8a7a5c 55%, #3a3224);
-  border: 1px solid rgba(0, 0, 0, 0.45);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  background: var(--suit-ink);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgba(42, 37, 29, 0.45);
+  transition: left 200ms ease;
   pointer-events: none;
   z-index: 2;
 }
 
+.tension-meter.danger .tension-stone {
+  background: var(--danger);
+}
+
 .tension-value {
-  align-self: flex-end;
-  font-size: 0.62rem;
-  font-weight: 700;
+  flex-shrink: 0;
+  min-width: 1.1rem;
+  text-align: right;
+  font-size: 0.74rem;
+  font-weight: 800;
   line-height: 1;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--suit-ink);
   font-variant-numeric: tabular-nums;
 }
 
-.tension-meter.danger .tension-scale {
-  border-color: rgba(239, 90, 69, 0.7);
-  box-shadow: 0 0 8px rgba(239, 90, 69, 0.35);
+.tension-meter.danger .tension-value {
+  color: var(--danger);
+}
+
+.tension-meter.surplus .tension-tick.active {
+  background: var(--brand);
+}
+
+.tension-meter.surplus .tension-stone {
+  background: var(--brand-strong);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 45%, transparent);
+}
+
+.tension-meter.surplus .tension-value {
+  color: var(--brand-strong);
 }
 
 .tension-meter.demand-pulse {
@@ -587,55 +573,48 @@
 
 @keyframes demand-meter-pulse {
   0% {
-    filter: brightness(1);
-    box-shadow: none;
+    box-shadow: 0 0 0 0 rgba(47, 122, 67, 0);
   }
   25% {
-    filter: brightness(1.35);
-    box-shadow: 0 0 14px rgba(100, 230, 160, 0.55);
+    box-shadow: 0 0 0 4px rgba(47, 122, 67, 0.4);
   }
   100% {
-    filter: brightness(1);
-    box-shadow: none;
+    box-shadow: 0 0 0 0 rgba(47, 122, 67, 0);
   }
 }
 
 @keyframes limit-meter-pulse {
   0% {
-    filter: brightness(1);
-    box-shadow: none;
+    box-shadow: 0 0 0 0 rgba(179, 38, 30, 0);
   }
   25% {
-    filter: brightness(1.4);
-    box-shadow: 0 0 16px rgba(239, 90, 69, 0.65);
+    box-shadow: 0 0 0 4px rgba(179, 38, 30, 0.5);
   }
   100% {
-    filter: brightness(1);
-    box-shadow: none;
+    box-shadow: 0 0 0 0 rgba(179, 38, 30, 0);
   }
 }
 
-.tension-meter.danger .tension-value {
-  color: #ef5a45;
-}
-
+/* Kosten und Einkommen eines möglichen Ziels. */
 .target-badge {
   position: absolute;
   left: 50%;
   bottom: 4px;
   transform: translateX(-50%);
   white-space: nowrap;
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #dce8ff;
-  background: rgba(20, 40, 80, 0.92);
-  border: 1px solid rgba(107, 159, 255, 0.55);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.5;
+  color: #fff;
+  background: var(--focus-strong);
+  border: 1.5px solid #fff;
   border-radius: 999px;
-  padding: 1px 7px;
+  padding: 0 8px;
+  box-shadow: 0 2px 6px rgba(31, 82, 136, 0.35);
   z-index: 25;
   pointer-events: none;
 }
 
 .target-badge strong {
-  color: #ffd27a;
+  color: #ffe08a;
 }

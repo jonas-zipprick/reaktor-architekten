@@ -5,8 +5,9 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(4, 7, 14, 0.66);
-  backdrop-filter: blur(2px);
+  /* Ohne Blur, damit Kontostände in der Seitenleiste lesbar bleiben. */
+  background: rgba(42, 37, 29, 0.22);
+  pointer-events: auto;
 }
 
 .auction-dialog {
@@ -14,30 +15,36 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 18px;
-  border-radius: 16px;
-  border: 1px solid rgba(240, 168, 48, 0.45);
-  background: linear-gradient(180deg, #162036, #0d1422);
-  box-shadow: var(--shadow);
+  padding: 20px;
+  border-radius: 18px;
+  border: 1px solid var(--line-strong);
+  border-top: 5px solid var(--honey);
+  background: var(--bg-elev);
+  color: var(--text);
+  box-shadow:
+    0 2px 4px rgba(42, 37, 29, 0.12),
+    0 24px 60px rgba(42, 37, 29, 0.3);
 }
 
 .auction-kicker {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--amber);
+  color: var(--honey);
 }
 
 .auction-dialog h2 {
   margin: 0;
   font-family: var(--display);
-  font-size: 1.4rem;
+  font-size: 1.45rem;
+  line-height: 1.2;
 }
 
 .auction-note {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.86rem;
   color: var(--text-dim);
 }
 
@@ -45,8 +52,10 @@
   margin: 0;
   padding: 8px 10px;
   border-radius: 10px;
-  background: var(--amber-soft);
-  border: 1px solid rgba(240, 168, 48, 0.35);
+  font-weight: 700;
+  color: #6f4106;
+  background: var(--honey-soft);
+  border: 1px solid var(--honey-line);
 }
 
 .auction-bidders {
@@ -64,12 +73,14 @@
   gap: 8px;
   padding: 6px 8px;
   border-radius: 10px;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line-strong);
+  background: #fff;
 }
 
 .auction-bidders li.leading {
-  border-color: rgba(240, 168, 48, 0.65);
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  box-shadow: 0 0 0 1px var(--brand);
 }
 
 .auction-name {
@@ -78,40 +89,46 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
+  font-weight: 700;
 }
 
 .auction-name i {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(42, 37, 29, 0.55);
   flex-shrink: 0;
 }
 
 .auction-name em {
   font-style: normal;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 500;
   color: var(--text-dim);
 }
 
 .auction-status {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--text-dim);
 }
 
 .auction-bidders li.leading .auction-status {
-  color: var(--amber);
-  font-weight: 650;
+  color: var(--brand-strong);
+  font-weight: 800;
 }
 
 .auction-bidders input,
 .auction-fee input {
   width: 64px;
   border-radius: 8px;
-  border: 1px solid var(--line);
-  background: var(--bg-elev);
+  border: 1px solid var(--line-strong);
+  background: #fff;
   color: var(--text);
   padding: 4px 6px;
+}
+
+.auction-bidders .ghost-btn {
+  padding: 4px 10px;
 }
 
 .auction-fee {
@@ -120,4 +137,17 @@
   align-items: center;
   gap: 8px;
   font-size: 0.88rem;
+}
+
+.auction-solo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.auction-solo-actions .ghost-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 10px 12px;
 }

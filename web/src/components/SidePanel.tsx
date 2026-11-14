@@ -2,9 +2,9 @@ import { useState } from 'react'
 import type { GameState, PlayerId } from '../types'
 import { useGameStore } from '../state/gameStore'
 import {
-  auctionInfo,
   checkMove,
   describeCard,
+  suppliedMarketCount,
   totalWealth,
 } from '../state/rules'
 import { PlayingCard } from './PlayingCard'
@@ -14,16 +14,14 @@ export function SidePanel({ game }: { game: GameState }) {
   const undo = useGameStore((s) => s.undo)
   const viewIndex = useGameStore((s) => s.viewIndex)
   const clearSelection = useGameStore((s) => s.clearSelection)
-  const setFee = useGameStore((s) => s.setFee)
   const endTurn = useGameStore((s) => s.endTurn)
   const gift = useGameStore((s) => s.gift)
-  const openAuction = useGameStore((s) => s.openAuction)
+  const setFee = useGameStore((s) => s.setFee)
   const backToMenu = useGameStore((s) => s.backToMenu)
   const goMonteCarlo = useGameStore((s) => s.goMonteCarlo)
   const moveAnim = useGameStore((s) => s.moveAnim)
   const auction = useGameStore((s) => s.auction)
 
-  const [auctionField, setAuctionField] = useState('')
   const [giftTo, setGiftTo] = useState<PlayerId | ''>('')
   const [giftAmount, setGiftAmount] = useState(1)
 
@@ -51,21 +49,14 @@ export function SidePanel({ game }: { game: GameState }) {
       ).length
     : 0
 
-  const ownFields = Object.values(game.fields).filter(
-    (f) => f.owner === current.id,
-  )
-
-  const auctionable = Object.values(game.fields).filter(
-    (f) => auctionInfo(game, f.id).ok,
-  )
-  const auctionChoice = auctionable.some((f) => f.id === auctionField)
-    ? auctionField
-    : (auctionable[0]?.id ?? '')
-
   const others = game.players.filter((p) => p.id !== current.id)
   const giftTarget = others.some((p) => p.id === giftTo)
     ? (giftTo as PlayerId)
     : others[0]?.id
+
+  const ownedBusinesses = Object.values(game.fields).filter(
+    (f) => f.owner === current.id && f.kind !== 'storage',
+  )
 
   return (
     <aside className="side-panel">
@@ -115,6 +106,16 @@ export function SidePanel({ game }: { game: GameState }) {
       </section>
 
       <section className="stat-grid">
+        <div
+          className="stat"
+          title="Marktstände mit Versorgung > 0 (Bedarf über 0) / Siegziel"
+        >
+          <span>Versorgt</span>
+          <strong>
+            {suppliedMarketCount(game)}
+            <em> / {game.marketsToWin}</em>
+          </strong>
+        </div>
         <div className="stat bank-stat">
           <span>Bank</span>
           <strong>{game.bank}¤</strong>
@@ -184,91 +185,74 @@ export function SidePanel({ game }: { game: GameState }) {
         </div>
       </section>
 
-      {game.players.length > 1 && !game.ended && (
+      {ownedBusinesses.length > 0 && !game.ended && (
+        <section className="market-box">
+          <h3>Meine Betriebe · Gebühr</h3>
+          <ul className="fee-list">
+            {ownedBusinesses.map((f) => (
+              <li key={f.id} className="fee-row">
+                <span>{f.label}</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  aria-label={`Gebühr ${f.label}`}
+                  value={f.fee}
+                  disabled={busy}
+                  onChange={(e) =>
+                    setFee(
+                      f.id,
+                      Math.max(0, Math.floor(Number(e.target.value)) || 0),
+                    )
+                  }
+                />
+                <span className="fee-unit">¤</span>
+              </li>
+            ))}
+          </ul>
+          <p className="hint">
+            Gebühr addiert sich zum Bedarfspreis; sie geht an dich, der
+            Bedarfspreis an die Bank.
+          </p>
+        </section>
+      )}
+
+      {game.players.length > 1 && !game.ended && others.length > 0 && giftTarget && (
         <section className="market-box">
           <h3>Markt</h3>
           <div className="market-row">
             <select
-              aria-label="Lager zur Auktion"
-              value={auctionChoice}
-              disabled={busy || auctionable.length === 0}
-              onChange={(e) => setAuctionField(e.target.value)}
+              aria-label="Empfänger"
+              value={giftTarget}
+              disabled={busy}
+              onChange={(e) => setGiftTo(e.target.value as PlayerId)}
             >
-              {auctionable.length === 0 && (
-                <option value="">
-                  {game.auctionUsed ? 'Auktion bereits genutzt' : 'Kein Lager'}
-                </option>
-              )}
-              {auctionable.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.label} ({f.owner === 'state' ? 'Staat' : 'eigen'})
+              {others.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
                 </option>
               ))}
             </select>
+            <input
+              type="number"
+              aria-label="Betrag"
+              min={1}
+              max={Math.max(1, current.money)}
+              value={giftAmount}
+              disabled={busy}
+              onChange={(e) =>
+                setGiftAmount(Math.max(1, Math.floor(Number(e.target.value)) || 1))
+              }
+            />
             <button
               type="button"
               className="ghost-btn"
-              disabled={busy || !auctionChoice}
-              onClick={() => openAuction(auctionChoice)}
-              title="Höchstens eine Auktion pro Zug"
+              disabled={busy || current.money < giftAmount}
+              onClick={() => gift(giftTarget, giftAmount)}
             >
-              Auktion
+              Geld schenken
             </button>
           </div>
-
-          {others.length > 0 && giftTarget && (
-            <div className="market-row">
-              <select
-                aria-label="Empfänger"
-                value={giftTarget}
-                disabled={busy}
-                onChange={(e) => setGiftTo(e.target.value as PlayerId)}
-              >
-                {others.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                aria-label="Betrag"
-                min={1}
-                max={Math.max(1, current.money)}
-                value={giftAmount}
-                disabled={busy}
-                onChange={(e) =>
-                  setGiftAmount(Math.max(1, Math.floor(Number(e.target.value)) || 1))
-                }
-              />
-              <button
-                type="button"
-                className="ghost-btn"
-                disabled={busy || current.money < giftAmount}
-                onClick={() => gift(giftTarget, giftAmount)}
-              >
-                Geld schenken
-              </button>
-            </div>
-          )}
-        </section>
-      )}
-
-      {game.players.length > 1 && ownFields.length > 0 && !game.ended && (
-        <section className="toll-box">
-          <h3>Eigene Gebühren</h3>
-          {ownFields.map((f) => (
-            <label key={f.id} className="toll-row">
-              <span>{f.label}</span>
-              <input
-                type="number"
-                min={0}
-                value={f.fee}
-                disabled={busy}
-                onChange={(e) => setFee(f.id, Number(e.target.value) || 0)}
-              />
-            </label>
-          ))}
         </section>
       )}
 

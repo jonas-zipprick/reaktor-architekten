@@ -1,3 +1,4 @@
+/* Kurze Meldung über dem Tisch: Laubgrün mit heller Schrift. */
 .demand-flash {
   position: absolute;
   top: 18px;
@@ -8,13 +9,10 @@
   padding: 12px 16px 10px;
   border-radius: 14px;
   text-align: center;
-  color: #f4fff8;
-  background:
-    linear-gradient(165deg, rgba(28, 110, 72, 0.95), rgba(14, 48, 36, 0.96));
-  border: 1px solid rgba(100, 230, 160, 0.55);
-  box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.35),
-    0 0 24px rgba(61, 207, 142, 0.25);
+  color: #fff;
+  background: var(--brand-strong);
+  border: 2px solid #fff;
+  box-shadow: 0 12px 30px rgba(35, 84, 58, 0.35);
   pointer-events: none;
   animation: demand-flash-in 1800ms ease both;
 }
@@ -22,10 +20,10 @@
 .demand-flash-title {
   margin: 0 0 6px;
   font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 800;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #9af0c4;
+  color: #cfe8cb;
 }
 
 .demand-flash ul {
@@ -35,7 +33,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 0.82rem;
+  font-size: 0.86rem;
+  font-weight: 600;
   line-height: 1.35;
 }
 

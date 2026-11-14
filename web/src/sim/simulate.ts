@@ -13,7 +13,9 @@ import {
   pickTurnAction,
   planAuction,
   planFeeChange,
+  rejectImmediateUndos,
 } from './legalMoves'
+import type { MoveAction } from '../state/recordFormat'
 import type { SimOutcome, SimRunResult } from './types'
 
 /** Max. Kartenbewegungen pro Spielerzug, danach Zugende (Anti-Schleife). */
@@ -50,12 +52,15 @@ export function simulateGame(opts: {
   /** Aufeinanderfolgende Züge, die nur aus dem Zugende bestanden. */
   let idleTurns = 0
   let actedThisTurn = false
+  /** Letzte Kartenbewegung — nächster Zug darf sie nicht 1:1 rückgängig machen. */
+  let lastMove: MoveAction | null = null
   const stallLimit = STALL_ROUNDS * state.players.length
 
   const apply = (action: GameAction): boolean => {
     try {
       state = applyAction(state, action)
       record.actions.push(action)
+      lastMove = action.type === 'move' ? action : null
       return true
     } catch {
       status.outcome = 'stuck'
@@ -79,7 +84,7 @@ export function simulateGame(opts: {
       if (!running()) break
     }
 
-    const moves = listLegalMoves(state)
+    const moves = rejectImmediateUndos(listLegalMoves(state), lastMove)
     const chosen = pickTurnAction(state, moves, opts.heuristic, botRng, {
       forceEnd: movesThisTurn >= MAX_MOVES_PER_TURN,
     })
@@ -96,6 +101,13 @@ export function simulateGame(opts: {
       continue
     }
 
+    if (chosen.kind === 'buyInfra' || chosen.kind === 'buyFieldCopy') {
+      if (!apply(chosen.action)) break
+      movesThisTurn += 1
+      actedThisTurn = true
+      continue
+    }
+
     if (!apply(chosen.move)) {
       break
     }
@@ -104,7 +116,12 @@ export function simulateGame(opts: {
   }
 
   const finalOutcome: SimOutcome =
-    status.outcome ?? (state.ended ? 'finished' : 'aborted')
+    status.outcome ??
+    (state.ended
+      ? state.winnerText?.includes('verloren')
+        ? 'lost'
+        : 'finished'
+      : 'aborted')
 
   const wealth = state.players.map(totalWealth)
   const t1 =
@@ -134,6 +151,9 @@ export function simulateGame(opts: {
     auctionVolume: state.stats.auctionVolume,
     privateBusinesses: Object.values(state.fields).filter(
       (f) => f.owner && f.owner !== 'state',
+    ).length,
+    fieldsBought: record.actions.filter(
+      (a) => a.type === 'buyInfra' || a.type === 'buyFieldCopy',
     ).length,
     durationMs: Math.round(t1 - t0),
     record,

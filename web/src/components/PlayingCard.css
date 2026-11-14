@@ -1,20 +1,22 @@
 .pcard {
-  --pcard-ink: #fff8e8;
-  --pcard-fill: #334;
+  --pcard-ink: #fff;
+  --pcard-top: #8a8272;
+  --pcard-bottom: #6f6858;
+  --pcard-edge: #4d4638;
   width: 42px;
   height: 58px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background-color: var(--pcard-fill);
+  border-radius: 9px;
+  border: 1px solid var(--pcard-edge);
+  background: linear-gradient(180deg, var(--pcard-top), var(--pcard-bottom));
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.22) inset,
-    0 8px 16px rgba(0, 0, 0, 0.35);
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 1px 2px rgba(60, 44, 16, 0.3);
   display: grid;
   grid-template-rows: auto 1fr;
   align-items: center;
   justify-items: center;
   padding: 4px 3px 6px;
-  font-family: var(--display);
+  font-family: var(--font);
   font-weight: 800;
   line-height: 1;
   color: var(--pcard-ink);
@@ -28,22 +30,11 @@
     box-shadow 160ms ease;
 }
 
-.pcard::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.18), transparent 45%),
-    radial-gradient(circle at 80% 90%, rgba(0, 0, 0, 0.16), transparent 50%);
-  pointer-events: none;
-}
-
 .pcard.compact {
   width: 34px;
   height: 46px;
   padding: 3px 2px 4px;
-  border-radius: 8px;
+  border-radius: 7px;
 }
 
 .pcard.stacked {
@@ -58,13 +49,13 @@
   margin-top: -24px;
 }
 
+/* Auswahl: weißer Rand plus Kornblumenring hebt sich von jeder Sorte ab. */
 .pcard.highlight {
-  outline: 2px solid var(--amber);
-  outline-offset: 2px;
   transform: translateY(-3px) scale(1.05);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.28) inset,
-    0 12px 24px rgba(240, 168, 48, 0.4);
+    0 0 0 1.5px #fff,
+    0 0 0 4px var(--focus),
+    0 8px 16px rgba(31, 82, 136, 0.35);
 }
 
 .pcard-edge {
@@ -80,139 +71,131 @@
 }
 
 .pcard-edge-rank {
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
 .pcard.compact .pcard-edge-rank {
-  font-size: 0.58rem;
+  font-size: 0.66rem;
 }
 
 .pcard-rank {
-  font-size: 1.15rem;
+  font-family: var(--display);
+  font-size: 1.2rem;
   letter-spacing: -0.03em;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   position: relative;
   z-index: 1;
 }
 
 .pcard.compact .pcard-rank {
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
+/* Verdeckter Vorrat unter der obersten Karte tritt zurück, bleibt lesbar. */
 .pcard.dimmed {
-  filter: brightness(0.72) saturate(0.8);
+  filter: saturate(0.72) brightness(0.96);
 }
 
 .pcard-edge-icon {
-  font-size: 0.7rem;
-  opacity: 0.95;
+  font-size: 0.68rem;
 }
 
 .pcard.compact .pcard-edge-icon {
-  font-size: 0.62rem;
+  font-size: 0.6rem;
 }
 
-/* ♥ Herz — Rohstoff */
+/* 🌱 Saat */
 .pcard.suit-hearts {
-  --pcard-ink: #fff3f5;
-  --pcard-fill: #d93a5c;
-  background-image: linear-gradient(155deg, #ff8fa6 0%, #d93a5c 48%, #8e1c38 100%);
-  border-color: rgba(255, 170, 190, 0.5);
+  --pcard-ink: #fff;
+  --pcard-top: #38844d;
+  --pcard-bottom: #2a6e3d;
+  --pcard-edge: #1c4f2b;
 }
 
-/* ♠ Pik — Rohstoff */
+/* 🌾 Getreide */
 .pcard.suit-spades {
-  --pcard-ink: #f0f6ff;
-  --pcard-fill: #4a7ae8;
-  background-image: linear-gradient(155deg, #8eb8ff 0%, #4a7ae8 48%, #2446a0 100%);
-  border-color: rgba(170, 210, 255, 0.45);
+  --pcard-ink: #3a2c04;
+  --pcard-top: #efe0a2;
+  --pcard-bottom: #dcc673;
+  --pcard-edge: #9a7f2c;
 }
 
-/* ⚡ Energie — Rohstoff */
+/* 💧 Wasser */
 .pcard.suit-energy {
-  --pcard-ink: #1a1400;
-  --pcard-fill: #f5d547;
-  background-image: linear-gradient(155deg, #fff3a8 0%, #f0c020 48%, #c48a00 100%);
-  border-color: rgba(255, 230, 120, 0.55);
+  --pcard-ink: #062a3d;
+  --pcard-top: #6ec8ef;
+  --pcard-bottom: #2a8fc4;
+  --pcard-edge: #176894;
 }
 
-/* ♦ Karo — Fertigprodukt */
+/* 🥖 Mehl */
 .pcard.suit-diamonds {
-  --pcard-ink: #2a1805;
-  --pcard-fill: #f0a830;
-  background-image: linear-gradient(155deg, #ffe9ad 0%, #f0a830 45%, #c97a12 100%);
-  border-color: rgba(255, 220, 140, 0.55);
+  --pcard-ink: #fff;
+  --pcard-top: #9c6239;
+  --pcard-bottom: #824d29;
+  --pcard-edge: #5c3417;
 }
 
-/* ♣ Kreuz — Fertigprodukt */
+/* 🍎 Obst */
 .pcard.suit-clubs {
-  --pcard-ink: #f2fff8;
-  --pcard-fill: #1f9a62;
-  background-image: linear-gradient(155deg, #4fe0a0 0%, #1f9a62 48%, #0d5c3a 100%);
-  border-color: rgba(140, 255, 200, 0.4);
+  --pcard-ink: #fff;
+  --pcard-top: #d23c48;
+  --pcard-bottom: #b42936;
+  --pcard-edge: #851923;
 }
 
+/* 🍯 Konfitüre */
+.pcard.suit-steel {
+  --pcard-ink: #fff;
+  --pcard-top: #964683;
+  --pcard-bottom: #742c65;
+  --pcard-edge: #521c47;
+}
+
+/* Rücken: Karotuch in der Farbe des jeweiligen Decks. */
 .pcard.back {
-  --back-tint: 240, 168, 48;
-  background:
-    linear-gradient(145deg, #1a2744, #0d1528 60%),
-    repeating-linear-gradient(
-      135deg,
-      rgba(var(--back-tint), 0.12) 0 4px,
-      transparent 4px 8px
-    );
-  border: 1px solid rgba(var(--back-tint), 0.45);
   display: block;
+  border-color: color-mix(in srgb, var(--suit, #8a8272) 70%, #fff);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--suit, #8a8272) 26%, transparent) 0 4px,
+      transparent 4px 8px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--suit, #8a8272) 26%, transparent) 0 4px,
+      transparent 4px 8px
+    ),
+    #fffaf0;
 }
 
-.pcard.back::before {
-  background: radial-gradient(
-    circle at 50% 40%,
-    rgba(var(--back-tint), 0.26),
-    transparent 55%
-  );
-}
-
+/* Sortenzeichen auf hellem Fleck, damit es über dem Karo lesbar bleibt. */
 .pcard.back::after {
-  content: '◈';
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  color: rgba(var(--back-tint), 0.75);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  background: radial-gradient(circle, #fffaf0 0 10px, transparent 11px);
 }
 
-/* Rücken in der Farbe des jeweiligen Decks */
-.pcard.back.back-hearts {
-  --back-tint: 255, 93, 122;
-}
 .pcard.back.back-hearts::after {
-  content: '♥';
-}
-.pcard.back.back-spades {
-  --back-tint: 107, 159, 255;
+  content: '🌱';
 }
 .pcard.back.back-spades::after {
-  content: '♠';
-}
-.pcard.back.back-energy {
-  --back-tint: 240, 200, 40;
+  content: '🌾';
 }
 .pcard.back.back-energy::after {
-  content: '⚡';
-}
-.pcard.back.back-diamonds {
-  --back-tint: 240, 168, 48;
+  content: '💧';
 }
 .pcard.back.back-diamonds::after {
-  content: '♦';
-}
-.pcard.back.back-clubs {
-  --back-tint: 61, 207, 142;
+  content: '🥖';
 }
 .pcard.back.back-clubs::after {
-  content: '♣';
+  content: '🍎';
+}
+.pcard.back.back-steel::after {
+  content: '🍯';
 }
