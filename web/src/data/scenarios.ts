@@ -32,6 +32,7 @@ export const ROW = {
   source: 0,
   factory: 1,
   storage: 1,
+  victory: 1,
   market: 2,
 } as const
 
@@ -175,11 +176,11 @@ export const SCENARIOS: ScenarioDef[] = [
     name: 'Nachbarschaftsmarkt',
     players: ['white', 'black'],
     description:
-      '2 Spieler · Saatstand, Regen, Beet, Obststand; je 1 Schuppen. Ziel: 3 Märkte mit Versorgung > 0 am Zugende. Getreidefeld, Mehlmühle, Konfitürenküche, Mehl- und Konfitürenstand käuflich (+).',
+      '2 Spieler · Saatstand, 2 Regen, Beet, Obststand; je 1 Schuppen. Ziel: 3 Märkte mit Versorgung > 0 am Zugende. Getreidefeld, Mehlmühle, Konfitürenküche, Mehl- und Konfitürenstand käuflich (+).',
     beetsPerPlayer: 1,
     marketsToWin: 3,
     fields: [
-      ...sources({ hearts: 1, energy: 1 }),
+      ...sources({ hearts: 1, energy: 2 }),
       MARKT_KREUZ(),
       ...factories(0, 1),
     ],

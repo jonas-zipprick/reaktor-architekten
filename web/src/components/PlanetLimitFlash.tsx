@@ -19,24 +19,27 @@ export function PlanetLimitFlash({ game }: { game: GameState }) {
   if (!visible || !text) return null
 
   const isSource = /\d+ Karten/.test(text)
-  const isSpawn = text.includes('→') && !/\d+ Karten/.test(text)
+  const isExpand =
+    text.includes('neuer Ausgabestapel') || text.includes('neuer Eingang')
 
   return (
     <div className="planet-limit-flash" role="status" aria-live="polite">
       <p className="planet-limit-flash-title">
-        {isSpawn
-          ? 'Neue Kopie'
+        {isExpand
+          ? text.includes('Eingang')
+            ? 'Neuer Eingang'
+            : 'Neuer Ausgabestapel'
           : isSource
             ? 'Quelle kollabiert'
             : 'Feld kollabiert'}
       </p>
       <p className="planet-limit-flash-body">{text}</p>
       <p className="planet-limit-flash-note">
-        {isSpawn
-          ? 'Gegen Bezahlung · Eigentum des Käufers'
+        {isExpand
+          ? 'Überversorgung > +5 · Bedarf auf 0'
           : isSource
-            ? 'Stapel weg'
-            : 'Bedarf unter −8 oder über +5'}
+            ? 'Feld entfernt'
+            : 'Bedarf unter −8'}
       </p>
     </div>
   )

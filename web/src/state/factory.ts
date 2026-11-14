@@ -15,13 +15,22 @@ import type {
   ScenarioId,
   Suit,
 } from '../types'
-import { hasOwnership, isSeedBed, SEED_BED_RECIPE, SUITS } from '../types'
+import {
+  hasOwnership,
+  isSeedBed,
+  POINTS_SUIT,
+  SEED_BED_RECIPE,
+  SUITS,
+} from '../types'
 import { createRng, shuffle } from './rng'
 
 const RANKS: Rank[] = [7, 6, 5, 4, 3, 2]
 const CARDS_PER_RANK = 6
 /** Zusätzlich je Sorte (gleichmäßig über die Ränge). */
 const EXTRA_CARDS_PER_DECK = 40
+/** Siegpunkt-Deck: endlich, gekaufte Karten kommen nicht zurück. */
+const POINTS_CARDS_PER_RANK = 8
+const POINTS_EXTRA_CARDS = 36
 
 /** Eindeutige ID-Präfixe (suit[0] kollidiert bei spades/steel). */
 const SUIT_ID_PREFIX: Record<Suit, string> = {
@@ -31,12 +40,13 @@ const SUIT_ID_PREFIX: Record<Suit, string> = {
   diamonds: 'd',
   clubs: 'c',
   steel: 't',
+  points: 'p',
 }
 
 const START_CARDS_PER_SOURCE = 2
 /** Küchen-Ausgabe: hoher Startvorrat der Produktfarbe. */
 export const FACTORY_OUTPUT_SIZE = 24
-const START_MONEY = 10
+const START_MONEY = 5
 /** Große Bank — leere Bank beendet die Partie nicht. */
 const BANK_START = 2000
 
@@ -44,8 +54,10 @@ function buildDeck(suit: Suit, rng: () => number): Card[] {
   const cards: Card[] = []
   let n = 0
   const prefix = SUIT_ID_PREFIX[suit]
+  const perRank = suit === POINTS_SUIT ? POINTS_CARDS_PER_RANK : CARDS_PER_RANK
+  const extra = suit === POINTS_SUIT ? POINTS_EXTRA_CARDS : EXTRA_CARDS_PER_DECK
   for (const rank of RANKS) {
-    for (let i = 0; i < CARDS_PER_RANK; i++) {
+    for (let i = 0; i < perRank; i++) {
       n += 1
       cards.push({
         id: `${prefix}${n}`,
@@ -54,7 +66,7 @@ function buildDeck(suit: Suit, rng: () => number): Card[] {
       })
     }
   }
-  for (let i = 0; i < EXTRA_CARDS_PER_DECK; i++) {
+  for (let i = 0; i < extra; i++) {
     n += 1
     cards.push({
       id: `${prefix}${n}`,
@@ -63,6 +75,20 @@ function buildDeck(suit: Suit, rng: () => number): Card[] {
     })
   }
   return shuffle(cards, rng)
+}
+
+function takeOutputCards(
+  decks: Record<Suit, DeckState>,
+  suit: Suit,
+  count: number,
+): Card[] {
+  const out: Card[] = []
+  for (let n = 0; n < count; n++) {
+    const card = decks[suit]!.draw.pop()
+    if (!card) break
+    out.push(card)
+  }
+  return out
 }
 
 export function createGame(
@@ -94,27 +120,25 @@ export function createGame(
     }
     if (f.kind === 'market') {
       field.demand = 0
+      field.inputs = [[]]
+      const out = takeOutputCards(decks, POINTS_SUIT, FACTORY_OUTPUT_SIZE)
+      field.outputs = [out]
+      field.outputsRevealed = [out.length > 0 ? 1 : 0]
     }
     if (f.kind === 'factory' && f.suit) {
       field.demand = 0
-      field.output = []
-      for (let n = 0; n < FACTORY_OUTPUT_SIZE; n++) {
-        const card = decks[f.suit]!.draw.pop()
-        if (!card) break
-        field.output.push(card)
-      }
+      const out = takeOutputCards(decks, f.suit, FACTORY_OUTPUT_SIZE)
+      field.outputs = [out]
+      field.outputsRevealed = [out.length > 0 ? 1 : 0]
     }
     if (f.kind === 'source' && f.suit) {
       if (isSeedBed(f)) {
         // Saatstand: endloser Saat-Ausgang, Obst-Eingang, Bedarfsmesser bei 0.
         field.demand = 0
         field.recipe = SEED_BED_RECIPE
-        field.output = []
-        for (let n = 0; n < FACTORY_OUTPUT_SIZE; n++) {
-          const card = decks[f.suit]!.draw.pop()
-          if (!card) break
-          field.output.push(card)
-        }
+        const out = takeOutputCards(decks, f.suit, FACTORY_OUTPUT_SIZE)
+        field.outputs = [out]
+        field.outputsRevealed = [out.length > 0 ? 1 : 0]
       } else {
         for (let n = 0; n < START_CARDS_PER_SOURCE; n++) {
           const card = decks[f.suit]!.draw.pop()
@@ -139,6 +163,19 @@ export function createGame(
         stack: [],
       }
     }
+    const vpName = multi
+      ? `Siegpunkte ${PLAYER_META[playerId].short}`
+      : 'Siegpunkte'
+    fields[`sieg-${playerId}`] = {
+      id: `sieg-${playerId}`,
+      kind: 'victory',
+      label: vpName,
+      row: ROW.victory,
+      owner: playerId,
+      fee: 0,
+      stack: [],
+      inputs: [[], [], []],
+    }
   }
 
   const players: PlayerState[] = playerIds.map((id) => ({
@@ -152,8 +189,8 @@ export function createGame(
   const startPlayerIndex = Math.floor(rng() * players.length)
   const single =
     players.length === 1
-      ? 'Einspieler — Startguthaben 10¤, eigene Schuppen.'
-      : `${players.length} Spieler · jeder hat eigene Schuppen (ohne Gebühren).`
+      ? 'Einspieler — Startguthaben 5¤, eigene Schuppen.'
+      : `${players.length} Spieler · Startguthaben 5¤ · jeder hat eigene Schuppen (ohne Gebühren).`
 
   return {
     scenarioId,

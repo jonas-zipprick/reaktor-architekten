@@ -2,7 +2,7 @@ import type { ScenarioId } from '../types'
 import type { GameRecord } from '../state/recordFormat'
 
 /**
- * finished = genug Märkte mit Versorgung > 0 am Zugende (Sieg)
+ * finished = 3 Siegpunkte-Spalten voll (je 6 Karten, 7→2) — Sieg
  * lost     = alle Marktstände weg (Niederlage)
  * stalled  = Stillstand: mehrere Runden lang nur noch Zugenden
  * aborted  = Aktionslimit erreicht
@@ -19,10 +19,11 @@ export interface SimConfig {
   /** Worker count; 0 = hardwareConcurrency. */
   workers: number
   /**
-   * 0 = uniform random among legal actions.
-   * 1 = greedy: best-scoring card move (delivery income, recipe progress),
-   *     otherwise end the turn.
-   * In between: with probability h pick greedy, else random.
+   * 0 = uniform random among legal actions (moves, buys, gifts, endTurn).
+   * 1 = greedy: best score among moves/buys/gifts/endTurn (projected market
+   *     supply, recipe progress, source pressure, chain buys).
+   * In between: with probability h pick greedy, else random (endTurn always
+   *     in the explore pool).
    */
   heuristic: number
 }

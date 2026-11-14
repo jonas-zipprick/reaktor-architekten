@@ -19,7 +19,7 @@ import type { MoveAction } from '../state/recordFormat'
 import type { SimOutcome, SimRunResult } from './types'
 
 /** Max. Kartenbewegungen pro Spielerzug, danach Zugende (Anti-Schleife). */
-const MAX_MOVES_PER_TURN = 12
+const MAX_MOVES_PER_TURN = 18
 
 /**
  * Stillstand: so viele volle Runden hintereinander, in denen jeder Spieler
@@ -101,9 +101,9 @@ export function simulateGame(opts: {
       continue
     }
 
-    if (chosen.kind === 'buyInfra' || chosen.kind === 'buyFieldCopy') {
+    if (chosen.kind === 'buyInfra' || chosen.kind === 'gift') {
       if (!apply(chosen.action)) break
-      movesThisTurn += 1
+      // Käufe/Geschenke zählen nicht gegen das Move-Limit.
       actedThisTurn = true
       continue
     }
@@ -152,9 +152,7 @@ export function simulateGame(opts: {
     privateBusinesses: Object.values(state.fields).filter(
       (f) => f.owner && f.owner !== 'state',
     ).length,
-    fieldsBought: record.actions.filter(
-      (a) => a.type === 'buyInfra' || a.type === 'buyFieldCopy',
-    ).length,
+    fieldsBought: record.actions.filter((a) => a.type === 'buyInfra').length,
     durationMs: Math.round(t1 - t0),
     record,
     winnerText: state.winnerText,

@@ -62,7 +62,7 @@ import {
 } from './rules'
 
 export const RECORD_FORMAT = 'va-record' as const
-export const RECORD_VERSION = 42 as const
+export const RECORD_VERSION = 43 as const
 
 export interface GameRecordSetup {
   scenarioId: ScenarioId
@@ -78,6 +78,10 @@ export type MoveAction = {
   count?: number
   /** Küche/Saatstand: von Eingang statt Ausgabe. */
   lane?: 'input' | 'output'
+  /** Ausgabe- bzw. Markteingangs-Index der Quelle (Default 0). */
+  stackIndex?: number
+  /** Markteingangs-Index des Ziels (Default 0). */
+  toStackIndex?: number
 }
 
 export type SetFeeAction = {
@@ -222,6 +226,10 @@ export function applyAction(state: GameState, action: GameAction): GameState {
         action.to,
         action.count ?? 1,
         action.lane,
+        {
+          stackIndex: action.stackIndex,
+          toStackIndex: action.toStackIndex,
+        },
       )
       if (next.actionError) {
         throw new Error(`Replay move failed: ${next.actionError}`)
@@ -366,6 +374,12 @@ export function parseRecord(raw: string): GameRecord {
           : {}),
         ...(act.lane === 'input' || act.lane === 'output'
           ? { lane: act.lane }
+          : {}),
+        ...(typeof act.stackIndex === 'number' && act.stackIndex > 0
+          ? { stackIndex: Math.floor(act.stackIndex) }
+          : {}),
+        ...(typeof act.toStackIndex === 'number' && act.toStackIndex > 0
+          ? { toStackIndex: Math.floor(act.toStackIndex) }
           : {}),
       })
     } else if (act.type === 'setFee') {

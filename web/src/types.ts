@@ -5,6 +5,7 @@ export type Suit =
   | 'diamonds'
   | 'clubs'
   | 'steel'
+  | 'points'
 /** Rohstoffe (gameRules §2.2). */
 export type RawSuit = 'hearts' | 'spades' | 'energy'
 /** Fertigprodukte. Obst braucht Saat; Konfitüre braucht Obst. */
@@ -18,9 +19,12 @@ export const SUITS: Suit[] = [
   'diamonds',
   'clubs',
   'steel',
+  'points',
 ]
 export const RAW_SUITS: RawSuit[] = ['energy', 'hearts', 'spades']
 export const PRODUCT_SUITS: ProductSuit[] = ['diamonds', 'clubs', 'steel']
+/** Siegpunkte — Markt-Ausgabe; permanent nur auf dem VP-Stapel. */
+export const POINTS_SUIT: Suit = 'points'
 
 export type PlayerId = 'white' | 'black' | 'red' | 'green'
 /** Szenario legt die Spielerzahl fest (A = 1, sonst ≥ 2). */
@@ -31,6 +35,8 @@ export type FieldKind =
   | 'factory'
   | 'storage'
   | 'market'
+  /** Persönliches Siegpunktefeld: 3 absteigende Spalten (Start bel., bis 2). */
+  | 'victory'
 export type FieldId = string
 /** Betriebe gehören dem Staat oder einem Spieler. */
 export type Owner = PlayerId | 'state'
@@ -71,7 +77,7 @@ export interface ScenarioDef {
   /** Persönliche Schuppen je Spieler (nur dem Spieler). */
   beetsPerPlayer: number
   /**
-   * Sieg am Zugende: so viele Marktstände mit Bedarf (Versorgung) &gt; 0.
+   * @deprecated Früheres Siegziel; Sieg = 3 volle VP-Spalten (7→2).
    */
   marketsToWin: number
 }
@@ -98,26 +104,32 @@ export interface FieldState {
   /**
    * Offener Stapel (unten → oben).
    * Quelle: Vorrat.
-   * Fabrik: Eingang (Zutaten); Ausgabe liegt in `output`.
+   * Fabrik/Saatstand: Rezept-Eingang (Zutaten).
    * Persönlicher Schuppen: Umsortieren (ggf. nur eine Sorte).
-   * Markt-Eingang: gelieferte Karten (entnehmbar; Abrechnung am Zugende).
+   * Markt: ungenutzt (Eingänge liegen in `inputs`).
    */
   stack: Card[]
   /**
-   * Küche und Saatstand: Ausgabestapel der Produkt-/Saatfarbe (unten → oben).
-   * Nur die oberste Karte ist aufgedeckt und zugänglich.
+   * Küche/Saatstand: Produkt-/Saat-Ausgabe.
+   * Markt: Siegpunkt-Ausgabe (`points`).
+   * Am Zugende erhält jeder Stapel eine offene Karte (Markt: aus dem VP-Deck).
+   * Überversorgung (>+5): Küche/Saat → Extra-Ausgabe; Markt → Extra-Eingang.
    */
-  output?: Card[]
+  outputs?: Card[][]
   /**
-   * Ausgabestapel: so viele Karten von oben liegen offen (mind. 1, wenn nicht leer).
-   * Am Zugende kommt eine offene Karte dazu; einmal offene bleiben offen.
+   * Parallel zu `outputs`: wie viele Karten von oben je Stapel offen liegen.
    */
-  outputRevealed?: number
+  outputsRevealed?: number[]
+  /**
+   * Markt: ein oder mehrere Eingangsstapel (gleiche Sorte).
+   * Überversorgung (>+5) fügt einen weiteren Eingang hinzu.
+   */
+  inputs?: Card[][]
   /**
    * Markt, Küche und Saatstand: Bedarfsmesser.
-   * Szenario-Start: 0; neu gekauft / Kopie: {@link BOUGHT_FIELD_START_DEMAND}.
+   * Szenario-Start sowie gekaufte Küchen/Märkte: 0.
    * Lieferung/Eingang hebt und zahlt max(0, −Bedarf); Ausgabe senkt und kostet
-   * max(0, −Bedarf). Am Zugende: unter −8 → Feld weg; über +5 → Feld weg.
+   * max(0, −Bedarf). Am Zugende: unter −8 → Feld weg; über +5 → Extra-Stapel, Bedarf 0.
    */
   demand?: number
 }
@@ -148,7 +160,7 @@ export interface GameStats {
   /** Felder mit Bedarfsmesser entfernt (unter −8). */
   marketCollapses: number
   sourceCollapses: number
-  /** Durch Überversorgung (> +5) gespawnte Feldkopien. */
+  /** Durch Überversorgung (> +5) erzeugte Extra-Stapel / Extra-Eingänge. */
   marketsSpawned: number
   stacksClearedByAce: number
   /** Einkommen aus Markt-Lieferungen. */
@@ -171,11 +183,13 @@ export interface GameState {
   /**
    * Aktuelle Kartenauswahl.
    * Bei Küche/Saatstand: `lane` wählt Eingang oder Ausgabe (Standard Ausgabe).
+   * `stackIndex` wählt welchen Ausgabe- bzw. Markteingangs-Stapel (Default 0).
    */
   selection: {
     fieldId: FieldId
     count: number
     lane?: 'input' | 'output'
+    stackIndex?: number
   } | null
   actionError: string | null
   demandRollSeq: number
@@ -195,16 +209,32 @@ export interface GameState {
   rngSeed: number
   /** Laufende Nummer für gespawnte Feld-IDs. */
   marketSpawnSeq: number
-  /** Sieg am Zugende: so viele Märkte mit Bedarf &gt; 0 (aus dem Szenario). */
+  /**
+   * @deprecated Früheres Siegziel (Märkte mit Versorgung &gt; 0).
+   * Aktuell: Sieg mit 3 vollen Siegpunkte-Spalten (7→2).
+   */
   marketsToWin: number
   /** Start-Schuppen je Spieler (für Kaufpreis: nur Extra-Käufe zählen). */
   beetsPerPlayer: number
 }
 
-/** Schuppen sind immer persönlich (nur Eigentümer nutzt sie). */
+/** Schuppen und Siegpunktefeld sind persönlich (nur Eigentümer nutzt sie). */
 export function hasOwnership(kind: FieldKind): boolean {
-  return kind === 'storage'
+  return kind === 'storage' || kind === 'victory'
 }
+
+export function isPointsSuit(suit: Suit): boolean {
+  return suit === 'points'
+}
+
+/** Drei Spalten im Siegpunktefeld. */
+export const VICTORY_COLUMN_COUNT = 3
+/** @deprecated Alias — bitte VICTORY_COLUMN_COUNT nutzen. */
+export const VICTORY_ROW_COUNT = VICTORY_COLUMN_COUNT
+/** Volle Spalte: absteigend 7…2 (6 Karten). */
+export const VICTORY_COLUMN_LENGTH = 6
+/** @deprecated Alias — bitte VICTORY_COLUMN_LENGTH nutzen. */
+export const VICTORY_ROW_LENGTH = VICTORY_COLUMN_LENGTH
 
 /** Unterhalb davon verschwindet das Feld am Zugende. */
 export const TENSION_MIN = -8
@@ -238,6 +268,8 @@ export function suitSymbol(suit: Suit): string {
       return '🍎'
     case 'steel':
       return '🍯'
+    case 'points':
+      return '★'
   }
 }
 
@@ -255,6 +287,8 @@ export function suitName(suit: Suit): string {
       return 'Obst'
     case 'steel':
       return 'Konfitüre'
+    case 'points':
+      return 'Siegpunkt'
   }
 }
 
@@ -271,14 +305,25 @@ export function sourceLabel(suit: Suit, index?: number): string {
   return index != null ? `${base} ${index}` : base
 }
 
-/** Anzahl offener Karten oben auf dem Ausgabestapel. */
-export function outputRevealedCount(field: {
-  output?: Card[]
-  outputRevealed?: number
-}): number {
-  const len = field.output?.length ?? 0
+/** Anzahl offener Karten oben auf einem Ausgabestapel (Index, Default 0). */
+export function outputRevealedCount(
+  field: {
+    outputs?: Card[][]
+    outputsRevealed?: number[]
+    /** @deprecated Legacy-Einzelstapel. */
+    output?: Card[]
+    outputRevealed?: number
+  },
+  stackIndex = 0,
+): number {
+  const stacks = field.outputs ?? (field.output ? [field.output] : [])
+  const revealed =
+    field.outputsRevealed ??
+    (field.outputRevealed != null ? [field.outputRevealed] : [])
+  const stack = stacks[stackIndex] ?? []
+  const len = stack.length
   if (len === 0) return 0
-  return Math.max(1, Math.min(len, field.outputRevealed ?? 1))
+  return Math.max(1, Math.min(len, revealed[stackIndex] ?? 1))
 }
 
 /** Saatstand: Eingang nimmt Obst, Ausgabe liefert Saat. */
@@ -367,9 +412,20 @@ export function suitCounts(cards: Card[]): Record<Suit, number> {
     diamonds: 0,
     clubs: 0,
     steel: 0,
+    points: 0,
   }
   for (const c of cards) counts[c.suit] += 1
   return counts
+}
+
+/** Waren/Zutaten ohne Siegpunkte (für Abrechnung). */
+export function withoutPoints(cards: Card[]): Card[] {
+  return cards.filter((c) => c.suit !== 'points')
+}
+
+/** Nur Siegpunkte. */
+export function onlyPoints(cards: Card[]): Card[] {
+  return cards.filter((c) => c.suit === 'points')
 }
 
 export function recipeFulfillments(cards: Card[], recipe: Recipe): number {

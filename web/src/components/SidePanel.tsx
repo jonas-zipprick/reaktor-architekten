@@ -3,10 +3,11 @@ import type { GameState, PlayerId } from '../types'
 import { useGameStore } from '../state/gameStore'
 import {
   checkMove,
+  completedVictoryColumns,
   describeCard,
-  suppliedMarketCount,
   totalWealth,
 } from '../state/rules'
+import { VICTORY_COLUMN_COUNT } from '../types'
 import { PlayingCard } from './PlayingCard'
 import './SidePanel.css'
 
@@ -19,6 +20,7 @@ export function SidePanel({ game }: { game: GameState }) {
   const setFee = useGameStore((s) => s.setFee)
   const backToMenu = useGameStore((s) => s.backToMenu)
   const goMonteCarlo = useGameStore((s) => s.goMonteCarlo)
+  const restart = useGameStore((s) => s.restart)
   const moveAnim = useGameStore((s) => s.moveAnim)
   const auction = useGameStore((s) => s.auction)
 
@@ -72,10 +74,18 @@ export function SidePanel({ game }: { game: GameState }) {
           </h2>
         </div>
         <div className="header-actions">
-          <button type="button" className="ghost-btn" onClick={goMonteCarlo}>
+          <button
+            type="button"
+            className="ghost-btn"
+            title={`Neu starten (aktueller Seed ${game.rngSeed})`}
+            onClick={() => restart()}
+          >
+            Neu
+          </button>
+          <button type="button" className="ghost-btn" onClick={() => goMonteCarlo()}>
             Monte Carlo
           </button>
-          <button type="button" className="ghost-btn" onClick={backToMenu}>
+          <button type="button" className="ghost-btn" onClick={() => backToMenu()}>
             Menü
           </button>
         </div>
@@ -108,12 +118,12 @@ export function SidePanel({ game }: { game: GameState }) {
       <section className="stat-grid">
         <div
           className="stat"
-          title="Marktstände mit Versorgung > 0 (Bedarf über 0) / Siegziel"
+          title="Volle Siegpunkte-Spalten (je 6 Karten, 7→2) / Siegziel"
         >
-          <span>Versorgt</span>
+          <span>Siegpunkte</span>
           <strong>
-            {suppliedMarketCount(game)}
-            <em> / {game.marketsToWin}</em>
+            {completedVictoryColumns(game, current.id)}
+            <em> / {VICTORY_COLUMN_COUNT}</em>
           </strong>
         </div>
         <div className="stat bank-stat">

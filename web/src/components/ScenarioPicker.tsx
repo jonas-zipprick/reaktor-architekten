@@ -176,7 +176,7 @@ export function ScenarioPicker() {
               </li>
               <li>
                 Zugende: Regen/Getreide +1; Ausgaben +1 offen; Märkte &amp;
-                Eingänge abrechnen; Marktbedarf −1; Bedarf &gt; 0 → Kopie
+                Eingänge abrechnen; &gt;+5 → Extra-Stapel
                 käuflich; über +5 oder unter −8 → Feld weg (kein Markt =
                 verloren)
               </li>

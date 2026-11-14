@@ -153,6 +153,14 @@
   --pcard-edge: #521c47;
 }
 
+/* ★ Siegpunkt */
+.pcard.suit-points {
+  --pcard-ink: #3a2e08;
+  --pcard-top: #f0d060;
+  --pcard-bottom: #d4a82a;
+  --pcard-edge: #8a6a12;
+}
+
 /* Rücken: Karotuch in der Farbe des jeweiligen Decks. */
 .pcard.back {
   display: block;

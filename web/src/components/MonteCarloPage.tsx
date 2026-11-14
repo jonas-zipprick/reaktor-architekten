@@ -29,7 +29,7 @@ const COLUMNS: { key: SortKey; label: string; tip: string }[] = [
   {
     key: 'outcome',
     label: 'Ergebnis',
-    tip: 'Sieg = genug Märkte mit Versorgung > 0 am Zugende. Niederlage = kein Marktstand mehr. Stillstand = nur Zugenden. Abbruch = Aktionslimit. Fehler = Bot ohne gültige Aktion.',
+    tip: 'Sieg = 3 Siegpunkte-Spalten voll (je 6 Karten, 7→2). Niederlage = kein Marktstand mehr. Stillstand = nur Zugenden. Abbruch = Aktionslimit. Fehler = Bot ohne gültige Aktion.',
   },
   {
     key: 'leader',
@@ -74,7 +74,7 @@ const COLUMNS: { key: SortKey; label: string; tip: string }[] = [
   {
     key: 'marketsSpawned',
     label: 'Spawn',
-    tip: 'Gekaufte Feldkopien (bei positivem Bedarf).',
+    tip: 'Extra-Stapel/Eingänge durch Überversorgung (>+5).',
   },
   {
     key: 'marketIncome',
@@ -99,7 +99,7 @@ const COLUMNS: { key: SortKey; label: string; tip: string }[] = [
   {
     key: 'fieldsBought',
     label: 'Käufe',
-    tip: 'Anzahl gekaufter Felder (Infrastruktur und Kopien) während der Partie.',
+    tip: 'Anzahl gekaufter Felder (Infrastruktur) während der Partie.',
   },
   {
     key: 'actions',
@@ -222,7 +222,7 @@ export function MonteCarloPage() {
             Kennzahlen.
           </p>
         </div>
-        <button type="button" className="ghost-btn" onClick={backToMenu}>
+        <button type="button" className="ghost-btn" onClick={() => backToMenu()}>
           Menü
         </button>
       </header>

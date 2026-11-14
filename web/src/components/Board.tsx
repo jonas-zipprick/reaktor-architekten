@@ -13,12 +13,10 @@ import { ROW } from '../data/scenarios'
 import {
   buyableInfraLabel,
   buyableInfraShort,
-  canBuyFieldCopy,
   checkMove,
   hasOutputStack,
   movableCard,
   nextBuyInfraPrice,
-  nextFieldCopyPrice,
   type BuyableInfra,
   type MoveCheck,
   type StackLane,
@@ -34,7 +32,7 @@ function isFactoryColumn(field: FieldState): boolean {
 }
 
 function isStorageColumn(field: FieldState): boolean {
-  return field.kind === 'storage'
+  return field.kind === 'storage' || field.kind === 'victory'
 }
 
 /** Saatstand / Getreide — ohne Regen (eigener Bereich). */
@@ -117,55 +115,12 @@ function BuyInfraButton({
   )
 }
 
-function BuyCopyButton({
-  field,
-  game,
-  disabled,
-  onBuy,
-}: {
-  field: FieldState
-  game: GameState
-  disabled: boolean
-  onBuy: (fieldId: string) => void
-}) {
-  const current = game.players[game.currentPlayerIndex]!
-  const price = nextFieldCopyPrice(game, field.id)
-  const allowed = canBuyFieldCopy(game, field.id)
-  const canBuy = !disabled && allowed && current.money >= price
-  return (
-    <button
-      type="button"
-      className="buy-beet-btn buy-copy-btn"
-      disabled={!canBuy}
-      title={
-        !allowed
-          ? `Kopie von ${field.label} nur bei Bedarf > 0`
-          : canBuy
-            ? `Kopie von ${field.label} für ${price}¤ bauen`
-            : `Kopie kostet ${price}¤ (Bargeld ${current.money}¤)`
-      }
-      aria-label={`Kopie von ${field.label} für ${price} Geld`}
-      onClick={(e) => {
-        e.stopPropagation()
-        onBuy(field.id)
-      }}
-    >
-      <span className="buy-beet-plus" aria-hidden>
-        +
-      </span>
-      <span className="buy-beet-name">Kopie</span>
-      <span className="buy-beet-price">{price}¤</span>
-    </button>
-  )
-}
-
 export function Board({ game }: { game: GameState }) {
   const select = useGameStore((s) => s.select)
   const moveTo = useGameStore((s) => s.moveTo)
   const clearSelection = useGameStore((s) => s.clearSelection)
   const endTurn = useGameStore((s) => s.endTurn)
   const buyInfra = useGameStore((s) => s.buyInfra)
-  const buyFieldCopy = useGameStore((s) => s.buyFieldCopy)
   const moveAnim = useGameStore((s) => s.moveAnim)
   const auction = useGameStore((s) => s.auction)
   const buyLocked = game.ended || !!moveAnim || !!auction
@@ -184,15 +139,27 @@ export function Board({ game }: { game: GameState }) {
   const targets = useMemo(() => {
     const map = new Map<string, MoveCheck>()
     if (!game.selection) return map
+    const fromOpts = { stackIndex: game.selection.stackIndex ?? 0 }
     for (const id of Object.keys(game.fields)) {
-      const check = checkMove(
-        game,
-        game.selection.fieldId,
-        id,
-        game.selection.count,
-        game.selection.lane,
-      )
-      if (check.ok) map.set(id, check)
+      const field = game.fields[id]!
+      const inputCount =
+        field.kind === 'market' || field.kind === 'victory'
+          ? (field.inputs?.length ?? (field.kind === 'victory' ? 3 : 1))
+          : 1
+      for (let toIdx = 0; toIdx < inputCount; toIdx++) {
+        const check = checkMove(
+          game,
+          game.selection.fieldId,
+          id,
+          game.selection.count,
+          game.selection.lane,
+          { ...fromOpts, toStackIndex: toIdx },
+        )
+        if (check.ok) {
+          map.set(id, check)
+          break
+        }
+      }
     }
     return map
   }, [game])
@@ -210,41 +177,72 @@ export function Board({ game }: { game: GameState }) {
     field: FieldState,
     _e: MouseEvent,
     lane?: StackLane,
+    stackIndex = 0,
   ) => {
     if (game.ended || moveAnim || auction) return
 
     const clickLane: StackLane | undefined = hasOutputStack(field)
       ? (lane ?? 'output')
       : undefined
+    const idx = Math.max(0, stackIndex)
 
     if (game.selection) {
       const sameField = game.selection.fieldId === field.id
       const sameLane =
         (game.selection.lane ?? 'output') === (clickLane ?? 'output')
+      const sameStack = (game.selection.stackIndex ?? 0) === idx
       // Erneuter Klick auf denselben Stapel: Teilstapelhöhe erhöhen.
-      if (sameField && sameLane) {
-        select(field.id, clickLane)
+      if (sameField && sameLane && sameStack) {
+        select(field.id, clickLane, idx)
         return
       }
-      // Andere Spur desselben Feldes: Spur wechseln (nicht als Ziel).
-      if (sameField && clickLane) {
-        select(field.id, clickLane)
+      // Siegpunkte: andere Spalte → Umsortieren wenn legal, sonst Auswahl wechseln.
+      if (sameField && field.kind === 'victory' && !sameStack) {
+        const reorder = checkMove(
+          game,
+          field.id,
+          field.id,
+          game.selection.count,
+          undefined,
+          {
+            stackIndex: game.selection.stackIndex ?? 0,
+            toStackIndex: idx,
+          },
+        )
+        if (reorder.ok) {
+          moveTo(field.id, idx)
+          return
+        }
+        select(field.id, undefined, idx)
+        return
+      }
+      // Andere Spur / anderer Stapel desselben Feldes: Auswahl wechseln.
+      if (sameField && (clickLane || field.kind === 'market')) {
+        select(field.id, clickLane, idx)
         return
       }
       if (targets.has(field.id)) {
-        moveTo(field.id)
+        moveTo(
+          field.id,
+          field.kind === 'market' || field.kind === 'victory' ? idx : 0,
+        )
         return
       }
       // Kein legales Ziel: stattdessen diese Karte auswählen, sonst Grund zeigen.
-      if (movableCard(game, field.id, clickLane)) {
-        select(field.id, clickLane)
+      if (movableCard(game, field.id, clickLane, idx)) {
+        select(field.id, clickLane, idx)
       } else {
-        moveTo(field.id)
+        moveTo(
+          field.id,
+          field.kind === 'market' || field.kind === 'victory' ? idx : 0,
+        )
       }
       return
     }
 
-    if (movableCard(game, field.id, clickLane)) select(field.id, clickLane)
+    if (movableCard(game, field.id, clickLane, idx)) {
+      select(field.id, clickLane, idx)
+    }
   }
 
   const onContextMenu = (e: MouseEvent) => {
@@ -351,6 +349,11 @@ export function Board({ game }: { game: GameState }) {
                       ? (game.selection.lane ?? 'output')
                       : null
                   }
+                  selectedStackIndex={
+                    game.selection?.fieldId === field.id
+                      ? (game.selection.stackIndex ?? 0)
+                      : 0
+                  }
                   selectedCount={
                     game.selection?.fieldId === field.id
                       ? game.selection.count
@@ -362,26 +365,18 @@ export function Board({ game }: { game: GameState }) {
                   limitFlash={game.planetLimitId === field.id}
                   limitFlashKey={game.planetLimitSeq}
                   produced={producedIds.has(field.id)}
-                  onClick={(e, lane) => onFieldClick(field, e, lane)}
+                  onClick={(e, lane, stackIndex) =>
+                    onFieldClick(field, e, lane, stackIndex)
+                  }
                 />
               )
-              const showCopy =
-                field.kind === 'market' || hasOutputStack(field)
-              if (!showCopy && extraBuys.length === 0) {
+              if (extraBuys.length === 0) {
                 return <div key={field.id}>{cell}</div>
               }
               return (
                 <div key={field.id} className="board-cell-with-buy">
                   {cell}
                   <div className="buy-btn-stack">
-                    {showCopy && (
-                      <BuyCopyButton
-                        field={field}
-                        game={game}
-                        disabled={buyLocked}
-                        onBuy={buyFieldCopy}
-                      />
-                    )}
                     {extraBuys.map((item) => (
                       <BuyInfraButton
                         key={item}
@@ -434,13 +429,15 @@ export function Board({ game }: { game: GameState }) {
                       {(() => {
                         const currentId =
                           game.players[game.currentPlayerIndex]!.id
+                        const sheds = storages.filter((f) => f.kind === 'storage')
+                        const victory = storages.filter((f) => f.kind === 'victory')
                         // +Schuppen nur am eigenen letzten Schuppen — Preis ist
                         // spielerspezifisch (sonst wirkt fremder Kauf wie teurer).
-                        const mine = storages.filter((f) => f.owner === currentId)
+                        const mine = sheds.filter((f) => f.owner === currentId)
                         const buyAtId = mine[mine.length - 1]?.id
                         return (
                           <>
-                            {storages.map((field) =>
+                            {sheds.map((field) =>
                               renderCell(
                                 field,
                                 field.id === buyAtId ? ['schuppen'] : [],
@@ -454,6 +451,7 @@ export function Board({ game }: { game: GameState }) {
                                 onBuy={buyInfra}
                               />
                             )}
+                            {victory.map((field) => renderCell(field))}
                           </>
                         )
                       })()}

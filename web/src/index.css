@@ -61,6 +61,11 @@
   --konfituere-tint: #f8eef5;
   --konfituere-ink: #5a1f4e;
 
+  --siegpunkt: #c9a227;
+  --siegpunkt-soft: #f3e6b0;
+  --siegpunkt-tint: #fbf6e4;
+  --siegpunkt-ink: #5c4808;
+
   --heart: var(--saat);
   --spade: var(--getreide);
   --energy: var(--wasser);
@@ -182,6 +187,15 @@ input {
   --suit-soft: var(--konfituere-soft);
   --suit-tint: var(--konfituere-tint);
   --suit-ink: var(--konfituere-ink);
+}
+
+.suit-points,
+.back-points,
+.pip-points {
+  --suit: var(--siegpunkt);
+  --suit-soft: var(--siegpunkt-soft);
+  --suit-tint: var(--siegpunkt-tint);
+  --suit-ink: var(--siegpunkt-ink);
 }
 
 /* Knöpfe gelten überall: Menü, Spiel, Dialoge, Simulation. */

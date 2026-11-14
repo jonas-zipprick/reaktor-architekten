@@ -7,6 +7,7 @@ import type {
   PlayerId,
   ScenarioId,
 } from '../types'
+import { parseLocation, syncUrl } from '../routing'
 import { createGame } from './factory'
 import {
   actionLabel,
@@ -62,13 +63,18 @@ function topCards(
   fieldId: FieldId,
   count = 1,
   lane?: StackLane,
+  stackIndex = 0,
 ): Card[] {
   const field = state.fields[fieldId]
   if (!field) return []
-  const stack =
-    hasOutputStack(field) && lane !== 'input'
-      ? (field.output ?? [])
-      : field.stack
+  let stack: Card[]
+  if (field.kind === 'market') {
+    stack = field.inputs?.[stackIndex] ?? field.inputs?.[0] ?? field.stack
+  } else if (hasOutputStack(field) && lane !== 'input') {
+    stack = field.outputs?.[stackIndex] ?? field.outputs?.[0] ?? []
+  } else {
+    stack = field.stack
+  }
   const n = Math.max(1, Math.min(count, stack.length))
   return stack.slice(stack.length - n)
 }
@@ -85,14 +91,20 @@ interface GameStore {
   /** Flying card animation for the last move. */
   moveAnim: MoveAnim | null
   auction: AuctionDraft | null
-  start: (scenarioId: ScenarioId, seed?: number) => void
+  start: (
+    scenarioId: ScenarioId,
+    seed?: number,
+    opts?: { replaceUrl?: boolean },
+  ) => void
+  /** Partie zurücksetzen: gleiches Szenario, neuer Zufalls-Seed. */
+  restart: () => void
   importRecord: (raw: string) => void
   exportRecord: () => string | null
-  goMonteCarlo: () => void
-  backToMenu: () => void
-  select: (fieldId: FieldId, lane?: StackLane) => void
+  goMonteCarlo: (opts?: { replaceUrl?: boolean }) => void
+  backToMenu: (opts?: { replaceUrl?: boolean }) => void
+  select: (fieldId: FieldId, lane?: StackLane, stackIndex?: number) => void
   clearSelection: () => void
-  moveTo: (to: FieldId) => void
+  moveTo: (to: FieldId, toStackIndex?: number) => void
   finishMoveAnimation: () => void
   setFee: (fieldId: FieldId, fee: number) => void
   gift: (to: PlayerId, amount: number) => void
@@ -157,7 +169,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     phase: 'menu',
     ...RESET,
 
-    start: (scenarioId, seed) => {
+    start: (scenarioId, seed, opts) => {
       const autoSeed =
         seed ??
         (typeof crypto !== 'undefined' && 'getRandomValues' in crypto
@@ -166,6 +178,17 @@ export const useGameStore = create<GameStore>((set, get) => {
       const game = createGame(scenarioId, autoSeed)
       const record = emptyRecord({ scenarioId, seed: autoSeed })
       set({ ...RESET, phase: 'play', game, record })
+      syncUrl(
+        { page: 'play', scenarioId, seed: autoSeed },
+        opts?.replaceUrl ? 'replace' : 'push',
+      )
+    },
+
+    restart: () => {
+      const scenarioId =
+        get().game?.scenarioId ?? get().record?.setup.scenarioId
+      if (!scenarioId) return
+      get().start(scenarioId, undefined, { replaceUrl: true })
     },
 
     importRecord: (raw) => {
@@ -178,6 +201,11 @@ export const useGameStore = create<GameStore>((set, get) => {
         record,
         viewIndex: record.actions.length,
       })
+      syncUrl({
+        page: 'play',
+        scenarioId: record.setup.scenarioId,
+        seed: record.setup.seed,
+      })
     },
 
     exportRecord: () => {
@@ -186,14 +214,20 @@ export const useGameStore = create<GameStore>((set, get) => {
       return serializeRecord(record)
     },
 
-    goMonteCarlo: () => set({ ...RESET, phase: 'montecarlo' }),
+    goMonteCarlo: (opts) => {
+      set({ ...RESET, phase: 'montecarlo' })
+      syncUrl({ page: 'montecarlo' }, opts?.replaceUrl ? 'replace' : 'push')
+    },
 
-    backToMenu: () => set({ ...RESET, phase: 'menu' }),
+    backToMenu: (opts) => {
+      set({ ...RESET, phase: 'menu' })
+      syncUrl({ page: 'menu' }, opts?.replaceUrl ? 'replace' : 'push')
+    },
 
-    select: (fieldId, lane) => {
+    select: (fieldId, lane, stackIndex) => {
       const game = idleGame()
       if (!game) return
-      set({ game: selectField(game, fieldId, lane) })
+      set({ game: selectField(game, fieldId, lane, stackIndex ?? 0) })
     },
 
     clearSelection: () => {
@@ -202,14 +236,19 @@ export const useGameStore = create<GameStore>((set, get) => {
       set({ game: cleanUi(game) })
     },
 
-    moveTo: (to) => {
+    moveTo: (to, toStackIndex) => {
       const game = idleGame()
       if (!game || !game.selection) return
       const from = game.selection.fieldId
       const count = game.selection.count
       const lane = game.selection.lane
+      const stackIndex = game.selection.stackIndex ?? 0
+      const toIdx = toStackIndex ?? 0
       const player = game.players[game.currentPlayerIndex]!.id
-      const next = executeMove(game, from, to, count, lane)
+      const next = executeMove(game, from, to, count, lane, {
+        stackIndex,
+        toStackIndex: toIdx,
+      })
       if (next.actionError) {
         set({ game: next })
         return
@@ -221,12 +260,14 @@ export const useGameStore = create<GameStore>((set, get) => {
         to,
         ...(count > 1 ? { count } : {}),
         ...(lane === 'input' ? { lane } : {}),
+        ...(stackIndex > 0 ? { stackIndex } : {}),
+        ...(toIdx > 0 ? { toStackIndex: toIdx } : {}),
       }
 
       // Brett bleibt im Vor-Zug-Zustand; nach der Fluganimation committen.
       set({
         moveAnim: {
-          cards: topCards(game, from, count, lane),
+          cards: topCards(game, from, count, lane, stackIndex),
           path: [from, to],
           nextGame: next,
           liveAction: action,
@@ -456,3 +497,42 @@ export const useGameStore = create<GameStore>((set, get) => {
 })
 
 export { actionLabel }
+
+/**
+ * URL → Store. Beim ersten Laden und bei Browser zurück/vor.
+ * Nutzt replaceUrl, damit popstate keine Extra-History-Einträge erzeugt.
+ */
+export function applyRouteFromLocation(): void {
+  const route = parseLocation()
+  const store = useGameStore.getState()
+
+  if (route.page === 'menu') {
+    store.backToMenu({ replaceUrl: true })
+    return
+  }
+
+  if (route.page === 'montecarlo') {
+    store.goMonteCarlo({ replaceUrl: true })
+    return
+  }
+
+  const current = store.record?.setup
+  if (
+    store.phase === 'play' &&
+    store.game &&
+    current?.scenarioId === route.scenarioId &&
+    (route.seed == null || route.seed === current.seed)
+  ) {
+    syncUrl(
+      {
+        page: 'play',
+        scenarioId: current.scenarioId,
+        seed: current.seed,
+      },
+      'replace',
+    )
+    return
+  }
+
+  store.start(route.scenarioId, route.seed, { replaceUrl: true })
+}

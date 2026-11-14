@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { AuctionDialog } from './components/AuctionDialog'
 import { Board } from './components/Board'
 import { DemandRollFlash } from './components/DemandRollFlash'
@@ -7,7 +8,7 @@ import { PlanetLimitFlash } from './components/PlanetLimitFlash'
 import { ScenarioPicker } from './components/ScenarioPicker'
 import { SidePanel } from './components/SidePanel'
 import { Timeline } from './components/Timeline'
-import { useGameStore } from './state/gameStore'
+import { applyRouteFromLocation, useGameStore } from './state/gameStore'
 import './App.css'
 
 export default function App() {
@@ -15,6 +16,13 @@ export default function App() {
   const game = useGameStore((s) => s.game)
   const isHistoric = useGameStore((s) => s.isHistoric)
   const auction = useGameStore((s) => s.auction)
+
+  useEffect(() => {
+    applyRouteFromLocation()
+    const onPop = () => applyRouteFromLocation()
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
 
   if (phase === 'menu') {
     return <ScenarioPicker />
