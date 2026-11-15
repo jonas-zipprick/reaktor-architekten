@@ -103,7 +103,11 @@ export function ScenarioPicker() {
                 )}
                 <li>
                   <strong>Je Spieler</strong>
-                  1 Schuppen
+                  1 Schuppen · 3 Erntefelder
+                </li>
+                <li>
+                  <strong>Gemeinschaft</strong>
+                  1 Markt (nur Eingang, Küchenware)
                 </li>
                 <li>
                   <strong>Karten</strong>

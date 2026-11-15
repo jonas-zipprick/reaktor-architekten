@@ -63,6 +63,13 @@ function main(): void {
     (f) => f.kind === 'victory',
   ).length
   assert(harvestCount === state.players.length * 3, '3 Erntefelder je Spieler')
+  const market = Object.values(state.fields).find((f) => f.kind === 'market')
+  assert(market, 'Markt erwartet')
+  assert(market!.demand === 0, 'Markt startet mit Bedarf 0')
+  assert(
+    (market!.inputs?.length ?? 0) >= 1,
+    'Markt braucht mindestens einen Eingang',
+  )
   for (const m of moves) {
     const to = state.fields[m.move.to]
     if (to?.kind === 'victory') {

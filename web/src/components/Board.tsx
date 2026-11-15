@@ -141,15 +141,28 @@ export function Board({ game }: { game: GameState }) {
     if (!game.selection) return map
     const fromOpts = { stackIndex: game.selection.stackIndex ?? 0 }
     for (const id of Object.keys(game.fields)) {
-      const check = checkMove(
-        game,
-        game.selection.fieldId,
-        id,
-        game.selection.count,
-        game.selection.lane,
-        fromOpts,
-      )
-      if (check.ok) map.set(id, check)
+      const toField = game.fields[id]!
+      const toIndices =
+        toField.kind === 'market'
+          ? Array.from(
+              { length: Math.max(1, toField.inputs?.length ?? 1) },
+              (_, i) => i,
+            )
+          : [0]
+      for (const toStackIndex of toIndices) {
+        const check = checkMove(
+          game,
+          game.selection.fieldId,
+          id,
+          game.selection.count,
+          game.selection.lane,
+          { ...fromOpts, toStackIndex },
+        )
+        if (check.ok) {
+          map.set(id, check)
+          break
+        }
+      }
     }
     return map
   }, [game])
@@ -187,19 +200,19 @@ export function Board({ game }: { game: GameState }) {
         return
       }
       // Andere Spur / anderer Stapel desselben Feldes: Auswahl wechseln.
-      if (sameField && clickLane) {
+      if (sameField && (clickLane || field.kind === 'market')) {
         select(field.id, clickLane, idx)
         return
       }
       if (targets.has(field.id)) {
-        moveTo(field.id, 0)
+        moveTo(field.id, field.kind === 'market' ? idx : 0)
         return
       }
       // Kein legales Ziel: stattdessen diese Karte auswählen, sonst Grund zeigen.
       if (movableCard(game, field.id, clickLane, idx)) {
         select(field.id, clickLane, idx)
       } else {
-        moveTo(field.id, 0)
+        moveTo(field.id, field.kind === 'market' ? idx : 0)
       }
       return
     }
@@ -438,15 +451,28 @@ export function Board({ game }: { game: GameState }) {
             }
 
             if (row === ROW.victory) {
+              const harvest = [...fields]
+                .filter((f) => f.kind === 'victory')
+                .sort((a, b) => a.id.localeCompare(b.id))
+              const markets = [...fields]
+                .filter((f) => f.kind === 'market')
+                .sort((a, b) => a.id.localeCompare(b.id))
               return (
-                <div key={row} className="board-row-col board-harvest">
-                  <p className="board-row-label">Ernte</p>
-                  <div className="board-row">
-                    {[...fields]
-                      .filter((f) => f.kind === 'victory')
-                      .sort((a, b) => a.id.localeCompare(b.id))
-                      .map((field) => renderCell(field))}
+                <div key={row} className="board-row-split">
+                  <div className="board-row-col board-harvest">
+                    <p className="board-row-label">Ernte</p>
+                    <div className="board-row">
+                      {harvest.map((field) => renderCell(field))}
+                    </div>
                   </div>
+                  {markets.length > 0 && (
+                    <div className="board-row-col">
+                      <p className="board-row-label">Markt</p>
+                      <div className="board-row">
+                        {markets.map((field) => renderCell(field))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             }

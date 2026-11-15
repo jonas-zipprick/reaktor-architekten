@@ -62,9 +62,9 @@
   align-items: stretch;
 }
 
-/* Ernte unten als eigene Zeile. */
+/* Ernte und Markt teilen sich die untere Zeile nebeneinander. */
 .board-harvest {
-  width: 100%;
+  flex: 0 0 auto;
 }
 
 .board-cell-with-buy {

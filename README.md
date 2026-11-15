@@ -23,6 +23,7 @@ Die App ist eine Progressive Web App. Nach dem Deploy über **HTTPS** (oder loka
 - Kette **Saat → Obst → Konfitüre** (Beet: Wasser+Saat; Konfitürenküche: Obst+Wasser)
 - Parallel: Getreide → Mehl
 - Felder (u. a. Regen), Küchen, ein persönlicher Schuppen und drei Erntefelder je Spieler
+- Gemeinsamer Markt (nur Eingang) für Mehl, Obst und Konfitüre
 - Sieg: Mehl, Obst und Konfitüre jeweils auf einem eigenen Erntefeld
 - Jeder Spieler hat genau einen Schuppen (ohne Gebühren, nicht auktionierbar)
 - Zeitstrahl mit Export/Import; Monte-Carlo-Dauerlauf mit Bots

@@ -18,6 +18,7 @@ import type {
 import {
   hasOwnership,
   isSeedBed,
+  MARKET_FIELD_ID,
   SEED_BED_RECIPE,
   SUITS,
   VICTORY_COLUMN_COUNT,
@@ -161,6 +162,19 @@ export function createGame(
         stack: [],
       }
     }
+  }
+
+  // Ein gemeinsamer Markt neben den Erntefeldern (nur Eingang, Küchenware).
+  const marketInputs: FieldState['inputs'] = [[]]
+  fields[MARKET_FIELD_ID] = {
+    id: MARKET_FIELD_ID,
+    kind: 'market',
+    label: 'Markt',
+    row: ROW.market,
+    fee: 0,
+    stack: marketInputs[0]!,
+    inputs: marketInputs,
+    demand: 0,
   }
 
   const players: PlayerState[] = playerIds.map((id) => ({

@@ -32,6 +32,8 @@ export type FieldKind =
   | 'storage'
   /** Persönliches Erntefeld (eine Sorte als Ziel; nimmt alle drei Endprodukte). */
   | 'victory'
+  /** Gemeinschaftsmarkt: nur Eingänge für Küchenware, Bedarfsmesser. */
+  | 'market'
 export type FieldId = string
 /** Betriebe gehören dem Staat oder einem Spieler. */
 export type Owner = PlayerId | 'state'
@@ -112,14 +114,16 @@ export interface FieldState {
    */
   outputsRevealed?: number[]
   /**
-   * @deprecated Früheres Mehrspalten-Erntefeld; Erntefelder nutzen `stack`.
+   * Markt: ein oder mehrere Eingangsstapel (Küchenware).
+   * Erntefelder nutzen `stack`; bei Markt ist `stack` der erste Eingang.
    */
   inputs?: Card[][]
   /**
-   * Küche und Saatstand: Bedarfsmesser.
+   * Küche, Saatstand und Markt: Bedarfsmesser.
    * Szenario-Start sowie gekaufte Küchen: 0.
-   * Lieferung/Eingang hebt und zahlt max(0, −Bedarf); Ausgabe senkt und kostet
-   * max(0, −Bedarf). Am Zugende: unter −8 → Feld weg; über +5 → Extra-Stapel, Bedarf 0.
+   * Küche/Saatstand: Lieferung/Eingang hebt und zahlt max(0, −Bedarf); Ausgabe
+   * senkt und kostet max(0, −Bedarf). Markt: am Zugende zuerst −1, dann je
+   * Eingangskarte +1. Unter −8 → Feld weg; über +5 → Extra-Stapel/Eingang, Bedarf 0.
    */
   demand?: number
 }
@@ -328,6 +332,14 @@ export const SEED_BED_RECIPE: Recipe = { clubs: 1 }
 export function isSeedBed(field: { kind: string; suit?: Suit }): boolean {
   return field.kind === 'source' && field.suit === 'hearts'
 }
+
+/** Gemeinschaftsmarkt (nur Eingang, Küchenware). */
+export function isMarketField(field: { kind: string }): boolean {
+  return field.kind === 'market'
+}
+
+/** Feste ID des Start-Markts neben den Erntefeldern. */
+export const MARKET_FIELD_ID: FieldId = 'markt-1'
 
 /** Küche / Mühle für die Produktfarbe. */
 export function factoryLabel(suit: Suit, letter?: string): string {

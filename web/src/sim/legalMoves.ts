@@ -2,11 +2,13 @@ import type { Card, FieldId, FieldState, GameState, PlayerId } from '../types'
 import {
   beetFulfillments,
   jamFulfillments,
+  isMarketField,
   isProductSuit,
   isSeedBed,
   OVERSUPPLY_COLLAPSE,
   recipeFulfillments,
   SEED_BED_RECIPE,
+  TENSION_MIN,
   VICTORY_COLUMN_COUNT,
 } from '../types'
 import type {
@@ -27,6 +29,7 @@ import {
   hasOutputStack,
   isPlayerHarvestComplete,
   isVictoryFieldComplete,
+  marketInputStacks,
   maxMovableRun,
   movableCard,
   movableStack,
@@ -82,10 +85,18 @@ function fromStackIndices(field: FieldState, lane?: StackLane): number[] {
     const n = Math.max(1, factoryOutputs(field).length)
     return Array.from({ length: n }, (_, i) => i)
   }
+  if (isMarketField(field)) {
+    const n = Math.max(1, marketInputStacks(field).length)
+    return Array.from({ length: n }, (_, i) => i)
+  }
   return [0]
 }
 
-function toStackIndices(_field: FieldState): number[] {
+function toStackIndices(field: FieldState): number[] {
+  if (isMarketField(field)) {
+    const n = Math.max(1, marketInputStacks(field).length)
+    return Array.from({ length: n }, (_, i) => i)
+  }
   return [0]
 }
 
@@ -121,7 +132,7 @@ export function listLegalMoves(state: GameState): MoveCandidate[] {
   for (const from of ids) {
     const field = state.fields[from]!
     const lanes: Array<StackLane | undefined> =
-      field.kind === 'victory'
+      field.kind === 'victory' || isMarketField(field)
         ? [undefined]
         : hasOutputStack(field)
           ? ['output', 'input']
@@ -384,6 +395,20 @@ export function scoreMove(state: GameState, cand: MoveCandidate): number {
 
     if (gain >= 90) score += 40
 
+    score += cashReserveMalus(player.money - check.cost)
+    return score
+  }
+
+  if (check.kind === 'market') {
+    // Markt: Karten stillen Bedarf am Zugende; bei Unterversorgung retten.
+    const meter = to.demand ?? 0
+    score = 4 + count * 2 - check.cost * 3
+    if (meter <= 0) score += 10 + Math.min(8, -meter)
+    if (meter <= TENSION_MIN + 2) score += 16
+    if (meter > OVERSUPPLY_COLLAPSE - 1) score -= 8
+    if (fromFactoryOut) score += 6
+    else if (from.kind === 'storage') score += 4
+    else if (from.kind === 'victory') score -= 20
     score += cashReserveMalus(player.money - check.cost)
     return score
   }

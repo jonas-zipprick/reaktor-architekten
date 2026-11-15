@@ -28,6 +28,7 @@ export const ROW = {
   factory: 1,
   storage: 1,
   victory: 2,
+  market: 2,
 } as const
 
 export function rowForKind(kind: FieldKind): number {
@@ -204,5 +205,6 @@ export function fieldLabel(scenarioId: ScenarioId, fieldId: string): string {
     const base = `Ernte ${harvest[2]}`
     return multi ? `${PLAYER_META[harvest[1] as PlayerId].short}·${base}` : base
   }
+  if (fieldId === 'markt-1' || fieldId.startsWith('markt-')) return 'Markt'
   return fieldId
 }

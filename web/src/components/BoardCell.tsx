@@ -2,6 +2,7 @@ import type { MouseEvent } from 'react'
 import type { FieldState, Recipe, Suit } from '../types'
 import {
   hasOwnership,
+  isMarketField,
   isSeedBed,
   outputRevealedCount,
   recipeSuits,
@@ -17,6 +18,7 @@ import {
   hasOutputStack,
   isFactoryBlocked,
   isVictoryColumnComplete,
+  marketInputStacks,
   type MoveCheck,
 } from '../state/rules'
 import { PlayingCard } from './PlayingCard'
@@ -39,12 +41,14 @@ function DemandMeter({
   flash = false,
   flashKey = 0,
   limitPulse = false,
+  market = false,
 }: {
-  suit: Suit
+  suit?: Suit
   value: number
   flash?: boolean
   flashKey?: number
   limitPulse?: boolean
+  market?: boolean
 }) {
   const clamped = Math.max(TENSION_MIN, Math.min(TENSION_MAX, value))
   const steps = TENSION_MAX - TENSION_MIN + 1
@@ -52,17 +56,20 @@ function DemandMeter({
   const danger = value <= TENSION_MIN + 1
   const surplus = value > OVERSUPPLY_COLLAPSE
   const valueLabel = String(value)
-  const name = suitName(suit)
+  const name = market ? 'Markt' : suit ? suitName(suit) : 'Bedarf'
+  const surplusNote = market
+    ? ' (Überversorgung → Extra-Eingang)'
+    : ' (Überversorgung → Extra-Stapel)'
 
   return (
     <div
-      key={flash ? `flash-${suit}-${flashKey}` : `meter-${suit}`}
-      className={`tension-meter suit-${suit} ${danger ? 'danger' : ''} ${surplus ? 'surplus' : ''} ${flash ? 'demand-pulse' : ''} ${limitPulse ? 'limit-pulse' : ''}`}
-      title={`${name}-Bedarf ${valueLabel}${surplus ? ' (Überversorgung → Extra-Stapel)' : danger ? ' (Unterversorgung → weg)' : ''}`}
+      key={flash ? `flash-${suit ?? 'market'}-${flashKey}` : `meter-${suit ?? 'market'}`}
+      className={`tension-meter ${market ? 'market-meter' : ''} ${suit ? `suit-${suit}` : ''} ${danger ? 'danger' : ''} ${surplus ? 'surplus' : ''} ${flash ? 'demand-pulse' : ''} ${limitPulse ? 'limit-pulse' : ''}`}
+      title={`${name}-Bedarf ${valueLabel}${surplus ? surplusNote : danger ? ' (Unterversorgung → weg)' : ''}`}
       aria-label={`${name}-Bedarfsmesser ${valueLabel}`}
     >
       <span className="tension-suit" aria-hidden>
-        {suitSymbol(suit)}
+        {market ? '🧺' : suit ? suitSymbol(suit) : '·'}
       </span>
       <div
         className="tension-scale"
@@ -157,6 +164,14 @@ function statusLine(field: FieldState): string {
       ? `Sortiert · ${n} Karte${n === 1 ? '' : 'n'}`
       : `${n} Karte${n === 1 ? '' : 'n'} · nimmt Mehl, Obst und Konfitüre`
   }
+  if (isMarketField(field)) {
+    const inputs = marketInputStacks(field)
+    const inN = inputs.reduce((s, col) => s + col.length, 0)
+    const demand = field.demand ?? 0
+    const stacks =
+      inputs.length > 1 ? `${inputs.length} Eingänge` : 'Eingang'
+    return `${stacks} · ${inN} Karte${inN === 1 ? '' : 'n'} · Bedarf ${demand} · Zugende: −1, dann je Karte +1 und leeren`
+  }
   if (hasOutputStack(field)) {
     const outs = field.outputs ?? []
     const outN = outs.reduce((s, o) => s + o.length, 0)
@@ -225,12 +240,15 @@ export function BoardCell({
     stackIndex?: number,
   ) => void
 }) {
-  const isMeterField = field.kind === 'factory' || isSeedBed(field)
+  const isMeterField =
+    field.kind === 'factory' || isSeedBed(field) || isMarketField(field)
   const dualStack = hasOutputStack(field)
+  const isMarket = isMarketField(field)
   const isSource = field.kind === 'source' && !dualStack
   const isFactory = field.kind === 'factory'
   const ownerKey = field.owner ?? 'none'
   const have = suitCounts(field.stack)
+  const marketInputs = isMarket ? marketInputStacks(field) : []
 
   const recipeState: 'open' | 'blocked' =
     isFactory && isFactoryBlocked(field) ? 'blocked' : 'open'
@@ -270,7 +288,9 @@ export function BoardCell({
         selected ? 'selected' : '',
         target ? 'is-target' : '',
         produced ? 'just-produced' : '',
-        dualStack ? 'has-dual-stack' : '',
+        dualStack || (isMarket && marketInputs.length > 1)
+          ? 'has-dual-stack'
+          : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -285,6 +305,10 @@ export function BoardCell({
           if (node?.closest('.factory-input')) onClick(e, 'input', idx)
           else if (node?.closest('.factory-output')) onClick(e, 'output', idx)
           else onClick(e, 'output', idx)
+          return
+        }
+        if (isMarket) {
+          onClick(e, 'input', idx)
           return
         }
         onClick(e)
@@ -313,7 +337,7 @@ export function BoardCell({
           )}
         </div>
 
-        {isMeterField && field.demand != null && field.suit && (
+        {isMeterField && field.demand != null && (field.suit || isMarket) && (
           <div className="planet-meters">
             <DemandMeter
               suit={field.suit}
@@ -321,6 +345,7 @@ export function BoardCell({
               flash={demandFlash || limitFlash}
               flashKey={demandFlashKey + limitFlashKey * 1000}
               limitPulse={limitFlash}
+              market={isMarket}
             />
           </div>
         )}
@@ -403,6 +428,60 @@ export function BoardCell({
               </div>
             )
           })()
+        ) : isMarket ? (
+          <div className="factory-stacks market-inputs">
+            {(marketInputs.length ? marketInputs : [[]]).map((col, mi) => {
+              const hidden = Math.max(0, col.length - INPUT_VISIBLE)
+              const visible = col.slice(hidden)
+              const laneSelected =
+                selected && selectedStackIndex === mi
+              const label =
+                marketInputs.length > 1 ? `Eingang ${mi + 1}` : 'Eingang'
+              return (
+                <div
+                  key={`market-in-${mi}`}
+                  className={[
+                    'factory-input',
+                    laneSelected ? 'lane-selected' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  data-stack-index={mi}
+                >
+                  <span className="stack-lane-label">{label}</span>
+                  <div className="cell-stack input-stack">
+                    {visible.map((card, i) => {
+                      const fromTop = visible.length - 1 - i
+                      const inSelection =
+                        laneSelected && fromTop < selectedCount
+                      return (
+                        <PlayingCard
+                          key={card.id}
+                          card={card}
+                          compact
+                          stacked={i > 0}
+                          stackIndex={i}
+                          highlight={inSelection}
+                          dimmed={!inSelection && fromTop > 0 && laneSelected}
+                        />
+                      )
+                    })}
+                    {col.length === 0 && (
+                      <span className="stack-empty-hint">ablegen</span>
+                    )}
+                    {col.length > 1 && (
+                      <span
+                        className="stack-count stack-count-input"
+                        title={`${col.length} Karten (entnehmbar)`}
+                      >
+                        {col.length}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         ) : dualStack ? (
           <div className="factory-stacks">
             <div
@@ -564,6 +643,7 @@ export function BoardCell({
             {target.kind === 'feed' &&
               target.income > 0 && <strong> +{target.income}¤</strong>}
             {target.kind === 'claim' && <strong> Ernte</strong>}
+            {target.kind === 'market' && <strong> Markt</strong>}
           </div>
         )}
       </div>

@@ -6,7 +6,7 @@
 
 ## **1\. Spielidee und Spielziel**
 
-Die Spieler bewegen Karten zwischen Feldern, Küchen, eigenen Schuppen und den persönlichen **Erntefeldern**. Wer Zutaten in eine Küche oder den Saatstand legt, erhält bei Bedarf unter 0 Geld aus der Bank. Zu viel Versorgung lässt neue Ausgabestapel entstehen; zu wenig lässt Felder verschwinden.
+Die Spieler bewegen Karten zwischen Feldern, Küchen, eigenen Schuppen, dem gemeinsamen **Markt** und den persönlichen **Erntefeldern**. Wer Zutaten in eine Küche oder den Saatstand legt, erhält bei Bedarf unter 0 Geld aus der Bank. Am Markt stillen Küchenwaren den Bedarf. Zu viel Versorgung lässt neue Stapel/Eingänge entstehen; zu wenig lässt Felder verschwinden.
 
 **Spielziel:** Mehl, Obst und Konfitüre jeweils auf **einem eigenen Erntefeld** haben. Die drei Erntefelder sind neutral; jedes nimmt während des Spiels jede der drei Sorten an. Gewonnen ist erst, wenn jedes Feld nur eine Sorte trägt und zusammen alle drei Endprodukte vorkommen. Das gilt sofort nach dem Zug, der das schafft.
 
@@ -53,17 +53,18 @@ Rangfolge: **7 → 6 → 5 → 4 → 3 → 2**
 | Schuppen | Persönlich; nimmt jede Sorte an; genau einer je Spieler |
 | Spezialschuppen (Saatkiste, Getreidesilo, Regentonne, Mehlsack, Obstkiste, Fass) | Persönlich; nimmt nur eine Sorte an |
 | Erntefelder | Persönlich; drei neutrale Felder namens Ernte. Jedes nimmt Mehl, Obst und Konfitüre; Sieg erst, wenn jedes Feld nur eine Sorte hat und alle drei Sorten vorkommen |
+| Markt | Gemeinschaftlich; nur Eingang (keine Ausgabe); nimmt Mehl, Obst und Konfitüre; Bedarfsmesser |
 
-Ungekaufte Felder und Küchen sind gemeinschaftlich. Nach dem Kauf gehören sie dem Käufer (Gebühr setzbar); alle dürfen sie weiter nutzen und zahlen ggf. die Gebühr. Schuppen und die Erntefelder gehören einem Spieler; nur er darf Karten darauf legen oder davon nehmen.
+Ungekaufte Felder, Küchen und der Markt sind gemeinschaftlich. Nach dem Kauf gehören Felder und Küchen dem Käufer (Gebühr setzbar); alle dürfen sie weiter nutzen und zahlen ggf. die Gebühr. Schuppen und die Erntefelder gehören einem Spieler; nur er darf Karten darauf legen oder davon nehmen.
 
 ## **3\. Spielaufbau**
 
 1. Szenario wählen und dessen Felder und Küchen auslegen.
-2. Jeder Spieler erhält **genau einen eigenen Schuppen** sowie **drei persönliche Erntefelder**. Weitere Felder kann man im Zug mit dem **+**-Button kaufen: Getreidefeld, Mehlmühle und Konfitürenküche. Preis je Typ: 20¤, 40¤, 80¤, … (jeweils verdoppelt nach globaler Anzahl dieses Typs), Zahlung an die Bank. Wer ein Feld oder eine Küche kauft, wird **Eigentümer**. Gekaufte Küchen starten mit **Bedarf 0** (wie Szenario-Startfelder).
+2. Jeder Spieler erhält **genau einen eigenen Schuppen** sowie **drei persönliche Erntefelder**. Daneben liegt **ein gemeinsamer Markt** (nur Eingang, Bedarf 0). Weitere Felder kann man im Zug mit dem **+**-Button kaufen: Getreidefeld, Mehlmühle und Konfitürenküche. Preis je Typ: 20¤, 40¤, 80¤, … (jeweils verdoppelt nach globaler Anzahl dieses Typs), Zahlung an die Bank. Wer ein Feld oder eine Küche kauft, wird **Eigentümer**. Gekaufte Küchen starten mit **Bedarf 0** (wie Szenario-Startfelder).
 3. Die sechs Kartendecks getrennt mischen.
 4. Regen und Getreidefeld erhalten je 2 offene Karten.
 5. Jede Küche und jeder Saatstand erhält einen Ausgabestapel mit 10 Karten der Produktfarbe (Saatstand: Saat). Die oberste Karte liegt offen.
-6. Alle Bedarfsmesser stehen auf 0.
+6. Alle Bedarfsmesser (Küchen, Saatstand, Markt) stehen auf 0.
 7. Jeder Spieler erhält **5 Geld**. Die Bank startet mit 2000 Geld.
 8. Startspieler auslosen.
 
@@ -99,12 +100,15 @@ In der Simulation wählt man die Höhe durch mehrmaliges Anklicken des Stapels.
 | ----- | ----- |
 | Eigenen Schuppen | jede Sorte (Spezialschuppen: nur seine Sorte) |
 | Eigenes Erntefeld | nur Mehl, Obst und Konfitüre; **jedes Feld nimmt jede der drei Sorten** (absteigend; leeres Feld: beliebiger Start) |
+| Markt-Eingang | nur Mehl, Obst und Konfitüre (absteigend; leerer Eingang: beliebiger Start) |
 | Regen | nur Wasser |
 | Getreidefeld | jede Sorte |
 | Küchen-Eingang | **nur** Sorten aus dem Rezept (nie eigene Produktsorte) |
 | Saatstand-Eingang | nur Obst |
 
-Nur Rezeptkarten dürfen auf Eingänge. Mehl, Obst und Konfitüre gehören auf die Erntefelder, einen Schuppen oder in die Weiterverarbeitung.
+Nur Rezeptkarten dürfen auf Küchen-/Saatstand-Eingänge. Mehl, Obst und Konfitüre gehören auf die Erntefelder, den Markt, einen Schuppen oder in die Weiterverarbeitung.
+
+Karten darf man vom Markteingang jederzeit wieder nehmen (kostenlos, Bedarf ändert sich nicht).
 
 ## **5\. Regen und Getreidefeld**
 
@@ -155,6 +159,19 @@ Jeder Spieler hat **drei persönliche Erntefelder** (Ernte 1–3). Die Felder si
 * Ein Feld zeigt den Haken, sobald es mindestens eine Karte enthält und **nur eine** Endprodukt-Sorte. Fremde Karten darf man dort liegen lassen.
 * Gewonnen ist erst, wenn **jedes** Erntefeld nur eine Sorte trägt und die drei Felder zusammen Mehl, Obst und Konfitüre abdecken. Das gilt sofort nach dem Zug, der das schafft.
 
+## **8\. Markt**
+
+Es gibt **einen gemeinsamen Markt** neben den Erntefeldern. Er hat **nur Eingang** (keine Ausgabe) und einen **Bedarfsmesser** (Start 0).
+
+* Ablegen: nur Mehl, Obst und Konfitüre; absteigende Rangfolge.
+* Entnehmen vom Eingang ist kostenlos und ändert den Bedarf nicht.
+* Am Zugende, nach der Küchenabrechnung:
+  1. Der Bedarf sinkt um **1** (ein neuer Bedarf entsteht immer).
+  2. Alle Karten auf allen Markteingängen kommen auf die Ablage.
+  3. Für **jede** so entfernte Karte steigt der Bedarf um **1**.
+* Es gibt keine Bankzahlung am Markt — nur Bedarf wird gestillt.
+* Durch Überversorgung können weitere **Eingänge** entstehen (Abschnitt 10).
+
 ## **9\. Eigentum und Gebühren**
 
 Gekaufte Felder und Küchen haben einen Eigentümer. Der Eigentümer darf in seinem Zug die **Gebühr** beliebig oft auf einen Wert ≥ 0 setzen. Schuppen und Erntefelder haben keine Nutzungsgebühr.
@@ -163,10 +180,10 @@ Die Gebühr wird auf den bedarfsbestimmten Preis **addiert**. Der Bedarfspreis g
 
 ## **10\. Über- und Unterversorgung**
 
-Am Zugende, nach der Abrechnung, gilt für **jedes Feld mit Bedarfsmesser** (Küche, Saatstand):
+Am Zugende, nach Küchen- und Marktabrechnung, gilt für **jedes Feld mit Bedarfsmesser** (Küche, Saatstand, Markt):
 
 * **Unter −8:** Das Feld wird entfernt. Alle Karten darauf kommen auf den Ablagestapel.
-* **Über +5:** Das Feld bleibt. Stattdessen entsteht ein weiterer **Ausgabestapel** (mit frischem Vorrat), und der Bedarf fällt auf **0**. Am Zugende erhält **jeder** Ausgabestapel eine neue offene Karte.
+* **Über +5:** Das Feld bleibt. Stattdessen entsteht ein weiterer **Ausgabestapel** (Küche/Saatstand, mit frischem Vorrat) bzw. ein weiterer **Eingang** (Markt), und der Bedarf fällt auf **0**. Am Zugende erhält **jeder** Küchen-/Saatstand-Ausgabestapel eine neue offene Karte.
 
 Es gibt **keine** käuflichen Feldkopien mehr.
 
@@ -184,7 +201,8 @@ Der Zug endet mit **„Karten ziehen und Produzieren“**. Dabei geschieht in di
 1. Regen und Getreidefeld ziehen je eine Karte nach (Abschnitt 5).
 2. **Jeder** Ausgabestapel (Küchen und Saatstand) erhält eine neue offene Karte.
 3. Eingänge von Küchen und Saatstand abrechnen und leeren (Abschnitt 6.2).
-4. Über-/Unterversorgung: unter −8 Feld weg; über +5 Extra-Ausgabestapel (Abschnitt 10).
+4. Markt: Bedarf −1, dann alle Eingänge leeren und je Karte Bedarf +1 (Abschnitt 8).
+5. Über-/Unterversorgung: unter −8 Feld weg; über +5 Extra-Ausgabe bzw. Markteingang (Abschnitt 10).
 
 Alle Einnahmen am Zugende erhält der Spieler, der den Zug beendet.
 

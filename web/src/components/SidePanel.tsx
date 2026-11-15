@@ -51,9 +51,14 @@ export function SidePanel({ game }: { game: GameState }) {
     ? game.fields[game.selection.fieldId]
     : null
   const selectedCount = game.selection?.count ?? 0
+  const selectedStackIndex = game.selection?.stackIndex ?? 0
+  const selectedStack =
+    selectedField?.kind === 'market'
+      ? (selectedField.inputs?.[selectedStackIndex] ?? selectedField.stack)
+      : selectedField?.stack
   const selectedCards =
-    selectedField && selectedCount > 0
-      ? selectedField.stack.slice(selectedField.stack.length - selectedCount)
+    selectedStack && selectedCount > 0
+      ? selectedStack.slice(selectedStack.length - selectedCount)
       : []
   const selectedCard = selectedCards[selectedCards.length - 1] ?? null
   const targetCount = game.selection

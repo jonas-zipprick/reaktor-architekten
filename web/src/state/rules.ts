@@ -29,6 +29,7 @@ import {
   suitName,
   suitSymbol,
   hasOwnership,
+  isMarketField,
   isSeedBed,
   outputRevealedCount,
   BOUGHT_FIELD_START_DEMAND,
@@ -112,6 +113,36 @@ function setFieldMeter(field: FieldState, value: number): void {
 /** Feld mit Ausgabestapel (Küche oder Saatstand). */
 export function hasOutputStack(field: FieldState): boolean {
   return field.kind === 'factory' || isSeedBed(field)
+}
+
+/** Feld mit Bedarfsmesser (Küche, Saatstand, Markt). */
+export function hasDemandMeter(field: FieldState): boolean {
+  return hasOutputStack(field) || isMarketField(field)
+}
+
+/** Markteingänge (mindestens einer; `stack` bleibt der erste). */
+export function marketInputStacks(field: FieldState): Card[][] {
+  if (!isMarketField(field)) return []
+  if (!field.inputs || field.inputs.length === 0) {
+    field.inputs = [field.stack]
+  } else {
+    field.stack = field.inputs[0]!
+  }
+  return field.inputs
+}
+
+function marketInputStack(field: FieldState, stackIndex = 0): Card[] {
+  const stacks = marketInputStacks(field)
+  const i = Math.max(0, Math.floor(stackIndex))
+  while (stacks.length <= i) stacks.push([])
+  field.stack = stacks[0]!
+  return stacks[i]!
+}
+
+/** Neuen leeren Markteingang anlegen (Überversorgung). */
+function addMarketInputStack(field: FieldState): void {
+  const stacks = marketInputStacks(field)
+  stacks.push([])
 }
 
 /** Farbe der Ausgabe. */
@@ -339,6 +370,9 @@ export function movableStack(
   if (field.kind === 'victory') {
     return field.stack
   }
+  if (isMarketField(field)) {
+    return marketInputStack(field, stackIndex)
+  }
   const resolved = resolveLane(field, lane)
   if (resolved === 'output') return factoryOutputStack(field, stackIndex)
   return field.stack
@@ -350,7 +384,7 @@ export function maxMovableRun(
   lane?: StackLane,
   stackIndex = 0,
 ): number {
-  if (field.kind === 'victory') {
+  if (field.kind === 'victory' || isMarketField(field)) {
     return maxRunFromTop(movableStack(field, undefined, stackIndex))
   }
   const resolved = resolveLane(field, lane)
@@ -367,7 +401,7 @@ export function movableCard(
 ): Card | null {
   const field = state.fields[fieldId]
   if (!field || state.ended) return null
-  if (field.kind === 'victory') {
+  if (field.kind === 'victory' || isMarketField(field)) {
     const stack = movableStack(field, undefined, stackIndex)
     return stack[stack.length - 1] ?? null
   }
@@ -484,15 +518,18 @@ function fitsOnCards(card: Card, stack: Card[]): boolean {
 function fitsOnStack(
   card: Card,
   field: FieldState,
-  _toStackIndex = 0,
+  toStackIndex = 0,
 ): boolean {
   if (field.kind === 'victory') {
     if (field.stack.length >= VICTORY_COLUMN_LENGTH) return false
     if (field.stack.length === 0) return true
     return fitsOnCards(card, field.stack)
   }
+  if (isMarketField(field)) {
+    return fitsOnCards(card, marketInputStack(field, toStackIndex))
+  }
   if (hasOutputStack(field)) {
-    // Ziel ist immer der Rezept-/Markt-Eingang, nie eine Ausgabe.
+    // Ziel ist immer der Rezept-Eingang, nie eine Ausgabe.
     return fitsOnCards(card, field.stack)
   }
   return fitsOnCards(card, field.stack)
@@ -514,6 +551,8 @@ export type MoveKind =
   | 'park'
   /** Endprodukt auf eine Erntespalte (jede Spalte nimmt alle drei Sorten). */
   | 'claim'
+  /** Küchenware auf den Markteingang (Abrechnung am Zugende). */
+  | 'market'
 
 export interface MoveCheck {
   ok: boolean
@@ -630,6 +669,12 @@ export function checkMove(
     }
     kind = 'claim'
     payments = mergePayments(takeFees)
+  } else if (isMarketField(to)) {
+    if (!allProduct) {
+      return fail('Nur Mehl, Obst oder Konfitüre auf den Markt', { count: n })
+    }
+    kind = 'market'
+    payments = mergePayments(takeFees)
   } else if (to.kind === 'storage') {
     const toInfraBlock = infraOwnerRejected(to, mover.id)
     if (toInfraBlock) return fail(toInfraBlock, { count: n })
@@ -664,7 +709,7 @@ export function checkMove(
     )
   } else if (allProduct) {
     return fail(
-      'Mehl, Obst und Konfitüre gehören auf ein Erntefeld, einen Schuppen oder in die Weiterverarbeitung',
+      'Mehl, Obst und Konfitüre gehören auf ein Erntefeld, den Markt, einen Schuppen oder in die Weiterverarbeitung',
       { count: n },
     )
   } else {
@@ -796,7 +841,7 @@ export function selectField(
     return next
   }
   const field = next.fields[fieldId]!
-  if (field.kind === 'victory') {
+  if (field.kind === 'victory' || isMarketField(field)) {
     if (!movableCard(next, fieldId, undefined, idx)) {
       clearSelection(next)
       return next
@@ -869,21 +914,21 @@ export function selectField(
 }
 
 /**
- * Zugende: Unter-/Überversorgung prüfen (kein automatisches Markt-−1 mehr).
+ * Zugende: Unter-/Überversorgung prüfen.
  */
 function applyEndOfTurnDemand(state: GameState): void {
   if (state.ended) return
   resolveDemandExtremes(state)
 }
 
-/** Felder mit Bedarfsmesser (Küche, Saatstand). */
+/** Felder mit Bedarfsmesser (Küche, Saatstand, Markt). */
 function demandFields(state: GameState): FieldState[] {
-  return Object.values(state.fields).filter((f) => hasOutputStack(f))
+  return Object.values(state.fields).filter((f) => hasDemandMeter(f))
 }
 
 /**
  * Unter −8: Feld entfernen.
- * Über +5: Extra-Ausgabestapel (Küche, Saatstand), Bedarf → 0.
+ * Über +5: Extra-Ausgabe (Küche/Saatstand) bzw. Extra-Eingang (Markt), Bedarf → 0.
  */
 function resolveDemandExtremes(state: GameState): void {
   const snapshot = demandFields(state)
@@ -902,9 +947,23 @@ function resolveDemandExtremes(state: GameState): void {
   checkEndConditions(state)
 }
 
-/** Überversorgung: neuen Ausgabestapel, Bedarf auf 0. */
+/** Überversorgung: neuen Ausgabe- bzw. Markteingang, Bedarf auf 0. */
 function expandOversupply(state: GameState, field: FieldState): void {
   const before = meterLabel(fieldMeter(field))
+  if (isMarketField(field)) {
+    addMarketInputStack(field)
+    setFieldMeter(field, 0)
+    state.planetLimitSeq += 1
+    state.planetLimitFlash = `${field.label}: neuer Eingang`
+    state.planetLimitId = field.id
+    state.stats.marketsSpawned += 1
+    log(
+      state,
+      `${field.label}: Bedarf ${before} — neuer Eingang, Bedarf 0.`,
+      'tension',
+    )
+    return
+  }
   if (hasOutputStack(field)) {
     addFactoryOutputStack(state, field)
     setFieldMeter(field, 0)
@@ -926,8 +985,14 @@ function removeDemandField(state: GameState, field: FieldState): void {
   state.planetLimitSeq += 1
   state.planetLimitFlash = `${field.label}: ${label}`
   state.planetLimitId = field.id
-  discard(state, field.stack)
-  field.stack = []
+  if (isMarketField(field)) {
+    for (const input of marketInputStacks(field)) discard(state, input)
+    field.inputs = []
+    field.stack = []
+  } else {
+    discard(state, field.stack)
+    field.stack = []
+  }
   if (hasOutputStack(field)) {
     for (const out of factoryOutputs(field)) discard(state, out)
     field.outputs = []
@@ -941,6 +1006,50 @@ function removeDemandField(state: GameState, field: FieldState): void {
     `${field.label}: Bedarf ${label} — Feld entfernt.`,
     'tension',
   )
+}
+
+/**
+ * Markt am Zugende: immer Bedarf −1, dann alle Eingänge leeren und je Karte +1.
+ */
+function settleMarkets(state: GameState): void {
+  const markets = Object.values(state.fields).filter((f) => isMarketField(f))
+  if (markets.length === 0) return
+
+  const flashIds: FieldId[] = []
+  const flashLines: string[] = []
+  const notes: string[] = []
+
+  for (const field of markets) {
+    if (!state.fields[field.id]) continue
+    let meter = fieldMeter(field) - 1
+    const stacks = marketInputStacks(field)
+    let cleared = 0
+    for (const input of stacks) {
+      if (input.length === 0) continue
+      cleared += input.length
+      discard(state, input)
+      input.length = 0
+    }
+    meter += cleared
+    setFieldMeter(field, meter)
+    flashIds.push(field.id)
+    flashLines.push(`${field.label} ${meterLabel(meter)}`)
+    notes.push(
+      cleared > 0
+        ? `${field.label}: −1 Bedarf, ${cleared} Karte${cleared === 1 ? '' : 'n'} stillen → ${meterLabel(meter)}`
+        : `${field.label}: −1 Bedarf → ${meterLabel(meter)}`,
+    )
+    if (cleared > 0) state.stats.productsDelivered += cleared
+  }
+
+  if (flashIds.length) {
+    state.demandRollSeq += 1
+    state.demandRollIds = flashIds
+    state.demandRollFlash = flashLines
+  }
+  if (notes.length) {
+    log(state, `Markt: ${notes.join('; ')}.`, 'market')
+  }
 }
 
 /**
@@ -1188,23 +1297,35 @@ export function executeMove(
     from.outputsRevealed = outsRev
   }
 
-  const destStack = to.stack
+  const destStack = isMarketField(to)
+    ? marketInputStack(to, toStackIndex)
+    : to.stack
 
   const costNote = check.cost > 0 ? ` (−${check.cost}¤)` : ''
   const packetNote =
     n > 1 ? ` (${n} Karten: ${packet.map(describeCard).join(' ')})` : ''
   const fromLabel =
-    resolved === 'input' ? `${from.label} (Eingang)` : from.label
-  const toLabel = to.label
+    resolved === 'input' || isMarketField(from)
+      ? `${from.label} (Eingang)`
+      : from.label
+  const toLabel = isMarketField(to)
+    ? marketInputStacks(to).length > 1
+      ? `${to.label} (Eingang ${toStackIndex + 1})`
+      : `${to.label} (Eingang)`
+    : to.label
 
-  if (check.kind === 'feed') {
+  if (check.kind === 'feed' || check.kind === 'market') {
     for (const card of packet) destStack.push(card)
     pay(next, check.payments)
     const verb = 'legt'
     log(
       next,
       `${player.name} ${verb}${packetNote || ` ${describeCard(packet[0]!)}`} von ${fromLabel} auf ${toLabel}${costNote} (Abrechnung am Zugende).`,
-      check.cost > 0 ? 'money' : 'info',
+      check.kind === 'market'
+        ? 'market'
+        : check.cost > 0
+          ? 'money'
+          : 'info',
     )
   } else if (check.kind === 'claim') {
     pay(next, check.payments)
@@ -1628,7 +1749,8 @@ function settleAndClearInputs(state: GameState, player: PlayerState): void {
  * 1. Regen/Getreide ziehen nach (Saatstand nicht).
  * 2. Jeder Ausgabestapel erhält eine offene Karte obenauf.
  * 3. Küchen-/Saatstand-Eingänge abrechnen und ggf. leeren.
- * 4. Unter −8 Feld weg; über +5 Extra-Ausgabestapel.
+ * 4. Markt: Bedarf −1, Eingänge leeren und je Karte Bedarf +1.
+ * 5. Unter −8 Feld weg; über +5 Extra-Ausgabe bzw. Markteingang.
  */
 
 export function executeEndTurn(state: GameState): GameState {
@@ -1683,8 +1805,9 @@ export function executeEndTurn(state: GameState): GameState {
     'info',
   )
 
-  // Eingänge abrechnen, dann Über-/Unterversorgung.
+  // Eingänge abrechnen, Markt abrechnen, dann Über-/Unterversorgung.
   settleAndClearInputs(next, player)
+  settleMarkets(next)
 
   applyEndOfTurnDemand(next)
 
