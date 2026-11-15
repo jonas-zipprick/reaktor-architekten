@@ -12,6 +12,124 @@
   overflow-y: auto;
 }
 
+.side-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.side-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  font-size: 0.82em;
+  line-height: 1;
+}
+
+.side-collapse-label {
+  font-size: 0.92em;
+  font-weight: 700;
+}
+
+.side-essentials {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.side-money {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--brand);
+  background: var(--brand-soft);
+  box-shadow: 0 0 0 1px var(--brand);
+}
+
+.side-money-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-dim);
+  font-size: 0.72em;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.side-money-name i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid rgba(42, 37, 29, 0.55);
+  flex-shrink: 0;
+}
+
+.side-money-value {
+  font-size: 1.25em;
+  font-family: var(--display);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  color: var(--brand-strong);
+}
+
+.side-end-turn {
+  width: 100%;
+  padding: 10px 12px;
+}
+
+.side-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.side-details[hidden] {
+  display: none !important;
+}
+
+.side-panel.collapsed {
+  padding: 10px 8px;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.side-panel.collapsed .side-toolbar {
+  justify-content: center;
+}
+
+.side-panel.collapsed .side-collapse-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.side-panel.collapsed .side-money {
+  align-items: center;
+  text-align: center;
+  padding: 8px 6px;
+}
+
+.side-panel.collapsed .side-money-name {
+  justify-content: center;
+}
+
+.side-panel.collapsed .side-money-value {
+  font-size: 1.35em;
+}
+
+.side-panel.collapsed .side-end-turn {
+  padding: 10px 8px;
+  font-size: 0.92em;
+  line-height: 1.25;
+}
+
 .side-header {
   display: flex;
   justify-content: space-between;

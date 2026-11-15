@@ -16,7 +16,7 @@ const EMPTY_SURFACE =
   '.board-area, .board-viewport, .board-shell, .board-grid, .board-discards, .side-panel'
 
 const KEEPS_SELECTION =
-  'button, a, input, select, textarea, label, .balance-card, .stat, .action-box, .market-box, .log-box, .end-box, .toll-box, .timeline, .auction-backdrop, .historic-banner'
+  'button, a, input, select, textarea, label, .balance-card, .stat, .action-box, .market-box, .log-box, .end-box, .toll-box, .side-essentials, .side-money, .timeline, .auction-backdrop, .historic-banner'
 
 function isEmptySurfaceTap(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false

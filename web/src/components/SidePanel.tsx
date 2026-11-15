@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { GameState, PlayerId } from '../types'
 import { useGameStore } from '../state/gameStore'
 import {
@@ -10,6 +10,8 @@ import {
 import { VICTORY_COLUMN_COUNT } from '../types'
 import { PlayingCard } from './PlayingCard'
 import './SidePanel.css'
+
+const COLLAPSE_KEY = 'ernte-side-collapsed'
 
 export function SidePanel({ game }: { game: GameState }) {
   const undo = useGameStore((s) => s.undo)
@@ -26,6 +28,21 @@ export function SidePanel({ game }: { game: GameState }) {
 
   const [giftTo, setGiftTo] = useState<PlayerId | ''>('')
   const [giftAmount, setGiftAmount] = useState(1)
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(COLLAPSE_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0')
+    } catch {
+      /* ignore */
+    }
+  }, [collapsed])
 
   const current = game.players[game.currentPlayerIndex]!
   const busy = game.ended || Boolean(moveAnim) || Boolean(auction)
@@ -61,228 +78,296 @@ export function SidePanel({ game }: { game: GameState }) {
   )
 
   return (
-    <aside className="side-panel">
-      <header className="side-header">
-        <div>
-          <p className="eyebrow">Runde {game.turn}</p>
-          <h2>
-            <span
-              className="player-dot"
-              style={{ background: current.color }}
-            />
-            {current.name}
-          </h2>
-        </div>
-        <div className="header-actions">
-          <button
-            type="button"
-            className="ghost-btn"
-            title={`Neu starten (aktueller Seed ${game.rngSeed})`}
-            onClick={() => restart()}
-          >
-            Neu
-          </button>
-          <button type="button" className="ghost-btn" onClick={() => goMonteCarlo()}>
-            Monte Carlo
-          </button>
-          <button type="button" className="ghost-btn" onClick={() => backToMenu()}>
-            Menü
-          </button>
-        </div>
-      </header>
-
-      <section className={`balances ${game.players.length > 3 ? 'many' : ''}`}>
-        {game.players.map((p) => {
-          const active = p.id === current.id
-          return (
-            <div
-              key={p.id}
-              className={`balance-card ${active ? 'active' : ''}`}
-              title={
-                p.bankClaims > 0
-                  ? `${p.money}¤ Bargeld + ${p.bankClaims} Bankforderungen`
-                  : `${p.money}¤ Bargeld`
-              }
-            >
-              <span className="balance-name">
-                <i style={{ background: p.color }} />
-                {p.name}
-              </span>
-              <strong className="balance-money">{p.money}¤</strong>
-              <em>{totalWealth(p)} Ges.</em>
-            </div>
-          )
-        })}
-      </section>
-
-      <section className="stat-grid">
-        <div
-          className="stat"
-          title="Sortierte Erntefelder (je eine Endprodukt-Sorte, alle drei vorhanden)"
-        >
-          <span>Ernte</span>
-          <strong>
-            {completedVictoryColumns(game, current.id)}
-            <em> / {VICTORY_COLUMN_COUNT}</em>
-          </strong>
-        </div>
-        <div className="stat bank-stat">
-          <span>Bank</span>
-          <strong>{game.bank}¤</strong>
-        </div>
-      </section>
-
-      <section className="action-box">
-        <h3>Aktion</h3>
-        {!selectedField && (
-          <p className="hint">
-            Stapel anklicken, ggf. mehrfach für größere absteigende Auswahl, dann
-            das Ziel. Bewegungen kosten keine Aktion — nur Abheben von fremden
-            oder staatlichen Lagern kostet.
-          </p>
-        )}
-
-        {game.actionError && (
-          <p className="action-error">{game.actionError}</p>
-        )}
-
-        {selectedField && selectedCard && (
-          <div className="sel-card">
-            <div className="sel-cards-row">
-              {selectedCards.map((c) => (
-                <PlayingCard key={c.id} card={c} compact />
-              ))}
-              <p>
-                {selectedCount > 1
-                  ? `${selectedCount} Karten von ${selectedField.label}`
-                  : `${describeCard(selectedCard)} von ${selectedField.label}`}
-              </p>
-            </div>
-            <p className="hint">
-              {selectedCount > 1
-                ? 'Erneut auf den Stapel klicken ändert die Anzahl. '
-                : 'Erneut auf den Stapel klicken wählt mehr Karten. '}
-              {targetCount > 0
-                ? `${targetCount} mögliche${targetCount === 1 ? 's Ziel' : ' Ziele'} markiert.`
-                : 'Kein Feld nimmt diese Auswahl gerade an.'}
-            </p>
-            <button type="button" className="ghost-btn" onClick={clearSelection}>
-              Abbrechen
-            </button>
-          </div>
-        )}
-
+    <aside className={`side-panel ${collapsed ? 'collapsed' : ''}`}>
+      <div className="side-toolbar">
         <button
           type="button"
-          className="primary-btn"
-          disabled={busy}
-          onClick={() => endTurn()}
+          className="ghost-btn side-collapse-btn"
+          aria-expanded={!collapsed}
+          aria-controls="side-panel-details"
+          title={collapsed ? 'Seitenleiste ausklappen' : 'Seitenleiste einklappen'}
+          onClick={() => setCollapsed((v) => !v)}
         >
-          Karten ziehen und Produzieren
-          <span className="btn-sub">(Leertaste · beendet den Zug)</span>
+          {collapsed ? '«' : '»'}
+          <span className="side-collapse-label">
+            {collapsed ? 'Mehr' : 'Weniger'}
+          </span>
         </button>
+      </div>
 
-        <div className="action-row">
+      {collapsed && (
+        <div className="side-essentials">
+          <div
+            className="side-money"
+            title={
+              current.bankClaims > 0
+                ? `${current.money}¤ Bargeld + ${current.bankClaims} Bankforderungen`
+                : `${current.money}¤ Bargeld`
+            }
+          >
+            <span className="side-money-name">
+              <i style={{ background: current.color }} />
+              {current.name}
+            </span>
+            <strong className="side-money-value">{current.money}¤</strong>
+          </div>
+
           <button
             type="button"
-            className="ghost-btn"
-            onClick={undo}
-            disabled={viewIndex <= 0 || Boolean(moveAnim) || Boolean(auction)}
-            title="Einen aufgezeichneten Schritt zurück"
+            className="primary-btn side-end-turn"
+            disabled={busy}
+            onClick={() => endTurn()}
           >
-            Rückgängig
+            Karten ziehen und Produzieren
           </button>
         </div>
-      </section>
-
-      {ownedBusinesses.length > 0 && !game.ended && (
-        <section className="market-box">
-          <h3>Meine Betriebe · Gebühr</h3>
-          <ul className="fee-list">
-            {ownedBusinesses.map((f) => (
-              <li key={f.id} className="fee-row">
-                <span>{f.label}</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={1}
-                  aria-label={`Gebühr ${f.label}`}
-                  value={f.fee}
-                  disabled={busy}
-                  onChange={(e) =>
-                    setFee(
-                      f.id,
-                      Math.max(0, Math.floor(Number(e.target.value)) || 0),
-                    )
-                  }
-                />
-                <span className="fee-unit">¤</span>
-              </li>
-            ))}
-          </ul>
-          <p className="hint">
-            Gebühr addiert sich zum Bedarfspreis; sie geht an dich, der
-            Bedarfspreis an die Bank.
-          </p>
-        </section>
       )}
 
-      {game.players.length > 1 && !game.ended && others.length > 0 && giftTarget && (
-        <section className="market-box">
-          <h3>Markt</h3>
-          <div className="market-row">
-            <select
-              aria-label="Empfänger"
-              value={giftTarget}
-              disabled={busy}
-              onChange={(e) => setGiftTo(e.target.value as PlayerId)}
-            >
-              {others.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              aria-label="Betrag"
-              min={1}
-              max={Math.max(1, current.money)}
-              value={giftAmount}
-              disabled={busy}
-              onChange={(e) =>
-                setGiftAmount(Math.max(1, Math.floor(Number(e.target.value)) || 1))
-              }
-            />
+      <div
+        id="side-panel-details"
+        className="side-details"
+        hidden={collapsed}
+        inert={collapsed || undefined}
+      >
+        <header className="side-header">
+          <div>
+            <p className="eyebrow">Runde {game.turn}</p>
+            <h2>
+              <span
+                className="player-dot"
+                style={{ background: current.color }}
+              />
+              {current.name}
+            </h2>
+          </div>
+          <div className="header-actions">
             <button
               type="button"
               className="ghost-btn"
-              disabled={busy || current.money < giftAmount}
-              onClick={() => gift(giftTarget, giftAmount)}
+              title={`Neu starten (aktueller Seed ${game.rngSeed})`}
+              onClick={() => restart()}
             >
-              Geld schenken
+              Neu
+            </button>
+            <button
+              type="button"
+              className="ghost-btn"
+              onClick={() => goMonteCarlo()}
+            >
+              Monte Carlo
+            </button>
+            <button
+              type="button"
+              className="ghost-btn"
+              onClick={() => backToMenu()}
+            >
+              Menü
+            </button>
+          </div>
+        </header>
+
+        <section className={`balances ${game.players.length > 3 ? 'many' : ''}`}>
+          {game.players.map((p) => {
+            const active = p.id === current.id
+            return (
+              <div
+                key={p.id}
+                className={`balance-card ${active ? 'active' : ''}`}
+                title={
+                  p.bankClaims > 0
+                    ? `${p.money}¤ Bargeld + ${p.bankClaims} Bankforderungen`
+                    : `${p.money}¤ Bargeld`
+                }
+              >
+                <span className="balance-name">
+                  <i style={{ background: p.color }} />
+                  {p.name}
+                </span>
+                <strong className="balance-money">{p.money}¤</strong>
+                <em>{totalWealth(p)} Ges.</em>
+              </div>
+            )
+          })}
+        </section>
+
+        <section className="stat-grid">
+          <div
+            className="stat"
+            title="Sortierte Erntefelder (je eine Endprodukt-Sorte, alle drei vorhanden)"
+          >
+            <span>Ernte</span>
+            <strong>
+              {completedVictoryColumns(game, current.id)}
+              <em> / {VICTORY_COLUMN_COUNT}</em>
+            </strong>
+          </div>
+          <div className="stat bank-stat">
+            <span>Bank</span>
+            <strong>{game.bank}¤</strong>
+          </div>
+        </section>
+
+        <section className="action-box">
+          <h3>Aktion</h3>
+          {!selectedField && (
+            <p className="hint">
+              Stapel anklicken, ggf. mehrfach für größere absteigende Auswahl,
+              dann das Ziel. Bewegungen kosten keine Aktion — nur Abheben von
+              fremden oder staatlichen Lagern kostet.
+            </p>
+          )}
+
+          {game.actionError && (
+            <p className="action-error">{game.actionError}</p>
+          )}
+
+          {selectedField && selectedCard && (
+            <div className="sel-card">
+              <div className="sel-cards-row">
+                {selectedCards.map((c) => (
+                  <PlayingCard key={c.id} card={c} compact />
+                ))}
+                <p>
+                  {selectedCount > 1
+                    ? `${selectedCount} Karten von ${selectedField.label}`
+                    : `${describeCard(selectedCard)} von ${selectedField.label}`}
+                </p>
+              </div>
+              <p className="hint">
+                {selectedCount > 1
+                  ? 'Erneut auf den Stapel klicken ändert die Anzahl. '
+                  : 'Erneut auf den Stapel klicken wählt mehr Karten. '}
+                {targetCount > 0
+                  ? `${targetCount} mögliche${targetCount === 1 ? 's Ziel' : ' Ziele'} markiert.`
+                  : 'Kein Feld nimmt diese Auswahl gerade an.'}
+              </p>
+            <button
+              type="button"
+              className="ghost-btn"
+              onClick={clearSelection}
+            >
+              Abbrechen
+            </button>
+          </div>
+          )}
+
+          <button
+            type="button"
+            className="primary-btn"
+            disabled={busy}
+            onClick={() => endTurn()}
+          >
+            Karten ziehen und Produzieren
+            <span className="btn-sub">(Leertaste · beendet den Zug)</span>
+          </button>
+
+          <div className="action-row">
+            <button
+              type="button"
+              className="ghost-btn"
+              onClick={undo}
+              disabled={viewIndex <= 0 || Boolean(moveAnim) || Boolean(auction)}
+              title="Einen aufgezeichneten Schritt zurück"
+            >
+              Rückgängig
             </button>
           </div>
         </section>
-      )}
 
-      {game.ended && game.winnerText && (
-        <section className="end-box">
-          <h3>Spielende</h3>
-          <p>{game.winnerText}</p>
+        {ownedBusinesses.length > 0 && !game.ended && (
+          <section className="market-box">
+            <h3>Meine Betriebe · Gebühr</h3>
+            <ul className="fee-list">
+              {ownedBusinesses.map((f) => (
+                <li key={f.id} className="fee-row">
+                  <span>{f.label}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    aria-label={`Gebühr ${f.label}`}
+                    value={f.fee}
+                    disabled={busy}
+                    onChange={(e) =>
+                      setFee(
+                        f.id,
+                        Math.max(0, Math.floor(Number(e.target.value)) || 0),
+                      )
+                    }
+                  />
+                  <span className="fee-unit">¤</span>
+                </li>
+              ))}
+            </ul>
+            <p className="hint">
+              Gebühr addiert sich zum Bedarfspreis; sie geht an dich, der
+              Bedarfspreis an die Bank.
+            </p>
+          </section>
+        )}
+
+        {game.players.length > 1 &&
+          !game.ended &&
+          others.length > 0 &&
+          giftTarget && (
+            <section className="market-box">
+              <h3>Markt</h3>
+              <div className="market-row">
+                <select
+                  aria-label="Empfänger"
+                  value={giftTarget}
+                  disabled={busy}
+                  onChange={(e) => setGiftTo(e.target.value as PlayerId)}
+                >
+                  {others.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  aria-label="Betrag"
+                  min={1}
+                  max={Math.max(1, current.money)}
+                  value={giftAmount}
+                  disabled={busy}
+                  onChange={(e) =>
+                    setGiftAmount(
+                      Math.max(1, Math.floor(Number(e.target.value)) || 1),
+                    )
+                  }
+                />
+                <button
+                  type="button"
+                  className="ghost-btn"
+                  disabled={busy || current.money < giftAmount}
+                  onClick={() => gift(giftTarget, giftAmount)}
+                >
+                  Geld schenken
+                </button>
+              </div>
+            </section>
+          )}
+
+        {game.ended && game.winnerText && (
+          <section className="end-box">
+            <h3>Spielende</h3>
+            <p>{game.winnerText}</p>
+          </section>
+        )}
+
+        <section className="log-box">
+          <h3>Protokoll</h3>
+          <ul>
+            {game.log.map((e) => (
+              <li key={e.id} className={`tone-${e.tone ?? 'info'}`}>
+                {e.text}
+              </li>
+            ))}
+          </ul>
         </section>
-      )}
-
-      <section className="log-box">
-        <h3>Protokoll</h3>
-        <ul>
-          {game.log.map((e) => (
-            <li key={e.id} className={`tone-${e.tone ?? 'info'}`}>
-              {e.text}
-            </li>
-          ))}
-        </ul>
-      </section>
+      </div>
     </aside>
   )
 }

@@ -12,6 +12,11 @@
   grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
   min-height: 0;
   overflow: hidden;
+  transition: grid-template-columns 160ms ease;
+}
+
+.play-layout:has(.side-panel.collapsed) {
+  grid-template-columns: minmax(0, 1fr) 118px;
 }
 
 .play-layout.historic-view .board-area {
@@ -52,5 +57,9 @@
 @media (max-width: 960px) {
   .play-layout {
     grid-template-columns: minmax(0, 1fr) minmax(220px, 260px);
+  }
+
+  .play-layout:has(.side-panel.collapsed) {
+    grid-template-columns: minmax(0, 1fr) 108px;
   }
 }

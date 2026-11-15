@@ -1,20 +1,61 @@
 .timeline {
   flex-shrink: 0;
-  display: grid;
-  grid-template-columns: minmax(120px, 180px) minmax(0, 1fr) auto;
-  gap: 8px 12px;
-  align-items: center;
-  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 12px 8px;
   border-top: 1px solid var(--line-strong);
   background: var(--bg-elev);
   z-index: 5;
-  max-height: 88px;
+  max-height: 120px;
   overflow: hidden;
 }
 
 .timeline.historic {
   border-top: 2px solid var(--honey);
   background: var(--honey-soft);
+}
+
+.timeline-collapse-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.timeline-collapse-label {
+  font-weight: 700;
+}
+
+.timeline-collapse-pos {
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.timeline.historic .timeline-collapse-pos {
+  color: var(--honey);
+}
+
+.timeline-body {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+  min-height: 0;
+}
+
+.timeline-body[hidden] {
+  display: none !important;
+}
+
+.timeline.collapsed {
+  max-height: 40px;
+  padding: 4px 10px;
+  gap: 0;
 }
 
 .timeline-meta {
@@ -129,7 +170,7 @@
 }
 
 @media (max-width: 960px) {
-  .timeline {
+  .timeline-body {
     grid-template-columns: 1fr;
   }
 
