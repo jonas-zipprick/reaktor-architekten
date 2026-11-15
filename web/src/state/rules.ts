@@ -1009,9 +1009,10 @@ function removeDemandField(state: GameState, field: FieldState): void {
 }
 
 /**
- * Markt am Zugende: immer Bedarf −1, dann alle Eingänge leeren und je Karte +1.
+ * Markt am Zugende: immer Bedarf −1, dann je Eingangskarte auszahlen (+|Bedarf|
+ * bei Bedarf &lt; 0) und Bedarf +1, danach Eingänge leeren.
  */
-function settleMarkets(state: GameState): void {
+function settleMarkets(state: GameState, player: PlayerState): void {
   const markets = Object.values(state.fields).filter((f) => isMarketField(f))
   if (markets.length === 0) return
 
@@ -1024,22 +1025,31 @@ function settleMarkets(state: GameState): void {
     let meter = fieldMeter(field) - 1
     const stacks = marketInputStacks(field)
     let cleared = 0
+    let income = 0
     for (const input of stacks) {
       if (input.length === 0) continue
-      cleared += input.length
+      for (let i = 0; i < input.length; i++) {
+        const payout = meterDeliveryPayout(meter)
+        income += payout.income
+        meter = payout.meterAfter
+        cleared += 1
+      }
       discard(state, input)
       input.length = 0
     }
-    meter += cleared
     setFieldMeter(field, meter)
+    const paid = payFromBank(state, income)
+    const claim = income - paid
     flashIds.push(field.id)
     flashLines.push(`${field.label} ${meterLabel(meter)}`)
-    notes.push(
-      cleared > 0
-        ? `${field.label}: −1 Bedarf, ${cleared} Karte${cleared === 1 ? '' : 'n'} stillen → ${meterLabel(meter)}`
-        : `${field.label}: −1 Bedarf → ${meterLabel(meter)}`,
-    )
-    if (cleared > 0) state.stats.productsDelivered += cleared
+    if (cleared > 0) {
+      notes.push(
+        `${field.label}: −1 Bedarf, ${cleared} Karte${cleared === 1 ? '' : 'n'} → +${paid}¤${claim > 0 ? ` (+${claim} Forderung)` : ''} ${meterLabel(meter)}`,
+      )
+      state.stats.productsDelivered += cleared
+    } else {
+      notes.push(`${field.label}: −1 Bedarf → ${meterLabel(meter)}`)
+    }
   }
 
   if (flashIds.length) {
@@ -1048,7 +1058,11 @@ function settleMarkets(state: GameState): void {
     state.demandRollFlash = flashLines
   }
   if (notes.length) {
-    log(state, `Markt: ${notes.join('; ')}.`, 'market')
+    log(
+      state,
+      `${player.name}: Markt — ${notes.join('; ')}.`,
+      'money',
+    )
   }
 }
 
@@ -1807,7 +1821,7 @@ export function executeEndTurn(state: GameState): GameState {
 
   // Eingänge abrechnen, Markt abrechnen, dann Über-/Unterversorgung.
   settleAndClearInputs(next, player)
-  settleMarkets(next)
+  settleMarkets(next, player)
 
   applyEndOfTurnDemand(next)
 
