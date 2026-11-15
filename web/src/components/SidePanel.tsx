@@ -198,7 +198,7 @@ export function SidePanel({ game }: { game: GameState }) {
         <section className="stat-grid">
           <div
             className="stat"
-            title="Sortierte Erntefelder (je eine Endprodukt-Sorte, alle drei vorhanden)"
+            title="Fertige Erntefelder (volle Folge 7→2 je Sorte, alle drei vorhanden)"
           >
             <span>Ernte</span>
             <strong>

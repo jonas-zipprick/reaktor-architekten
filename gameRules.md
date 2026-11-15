@@ -8,7 +8,7 @@
 
 Die Spieler bewegen Karten zwischen Feldern, Küchen, eigenen Schuppen, dem gemeinsamen **Markt** und den persönlichen **Erntefeldern**. Wer Zutaten in eine Küche oder den Saatstand legt, erhält bei Bedarf unter 0 Geld aus der Bank. Am Markt stillen Küchenwaren den Bedarf. Zu viel Versorgung lässt neue Stapel/Eingänge entstehen; zu wenig lässt Felder verschwinden.
 
-**Spielziel:** Mehl, Obst und Konfitüre jeweils auf **einem eigenen Erntefeld** haben. Die drei Erntefelder sind neutral; jedes nimmt während des Spiels jede der drei Sorten an. Gewonnen ist erst, wenn jedes Feld nur eine Sorte trägt und zusammen alle drei Endprodukte vorkommen. Das gilt sofort nach dem Zug, der das schafft.
+**Spielziel:** Mehl, Obst und Konfitüre jeweils als **volle Folge 7→2** auf **einem eigenen Erntefeld** haben. Die drei Erntefelder sind neutral; jedes nimmt während des Spiels jede der drei Sorten an. Gewonnen ist erst, wenn jedes Feld eine komplette Folge trägt und zusammen alle drei Endprodukte vorkommen. Das gilt sofort nach dem Zug, der das schafft.
 
 Leere Spielerkasse oder leere Bank beenden die Partie nicht — es wird weitergespielt.
 
@@ -52,7 +52,7 @@ Rangfolge: **7 → 6 → 5 → 4 → 3 → 2**
 | Konfitürenküche 🍯 | Eingang (Obst + Wasser) → Ausgabe Konfitüre; Bedarfsmesser; käuflich (+) |
 | Schuppen | Persönlich; nimmt jede Sorte an; genau einer je Spieler |
 | Spezialschuppen (Saatkiste, Getreidesilo, Regentonne, Mehlsack, Obstkiste, Fass) | Persönlich; nimmt nur eine Sorte an |
-| Erntefelder | Persönlich; drei neutrale Felder namens Ernte. Jedes nimmt Mehl, Obst und Konfitüre; Sieg erst, wenn jedes Feld nur eine Sorte hat und alle drei Sorten vorkommen |
+| Erntefelder | Persönlich; drei neutrale Felder namens Ernte. Jedes nimmt Mehl, Obst und Konfitüre; Sieg erst bei voller Folge 7→2 je Feld und allen drei Sorten |
 | Markt | Gemeinschaftlich; nur Eingang (keine Ausgabe); nimmt Mehl, Obst und Konfitüre; Bedarfsmesser |
 
 Ungekaufte Felder, Küchen und der Markt sind gemeinschaftlich. Nach dem Kauf gehören Felder und Küchen dem Käufer (Gebühr setzbar); alle dürfen sie weiter nutzen und zahlen ggf. die Gebühr. Schuppen und die Erntefelder gehören einem Spieler; nur er darf Karten darauf legen oder davon nehmen.
@@ -156,8 +156,8 @@ Jeder Spieler hat **drei persönliche Erntefelder** (Ernte 1–3). Die Felder si
 * Nur die drei Endprodukte. **Jedes Feld nimmt jede der drei Sorten** an. Absteigende Rangfolge; ein leeres Feld darf mit jeder Rangzahl beginnen.
 * Zwischen den Erntefeldern darf man umsortieren.
 * Karten dürfen wieder vom Erntefeld auf Schuppen gelegt werden.
-* Ein Feld zeigt den Haken, sobald es mindestens eine Karte enthält und **nur eine** Endprodukt-Sorte. Fremde Karten darf man dort liegen lassen.
-* Gewonnen ist erst, wenn **jedes** Erntefeld nur eine Sorte trägt und die drei Felder zusammen Mehl, Obst und Konfitüre abdecken. Das gilt sofort nach dem Zug, der das schafft.
+* Ein Feld zeigt den Haken erst, wenn die **volle Folge 7→2** (6 Karten) **einer** Endprodukt-Sorte darauf liegt. Kürzere oder gemischte Stapel zählen nicht.
+* Gewonnen ist erst, wenn **jedes** Erntefeld eine volle Folge 7→2 trägt und die drei Felder zusammen Mehl, Obst und Konfitüre abdecken. Das gilt sofort nach dem Zug, der das schafft.
 
 ## **8\. Markt**
 
@@ -213,7 +213,7 @@ Einnahmen kommen aus der Bank. Kosten für das Ziehen von Ausgaben gehen an die 
 
 Kann die Bank eine Zahlung nicht vollständig leisten, erhält der Spieler das restliche Bankgeld. Der Fehlbetrag wird als **Bankforderung** notiert. Bankforderungen zählen zum Gesamtvermögen, können aber nicht ausgegeben werden.
 
-**Sieg:** Mehl, Obst und Konfitüre liegen jeweils auf einem eigenen Erntefeld (jedes Feld nur eine Sorte). Kein anderes Siegkriterium (auch nicht Vermögen oder leere Kasse).
+**Sieg:** Mehl, Obst und Konfitüre liegen jeweils als volle Folge 7→2 auf einem eigenen Erntefeld. Kein anderes Siegkriterium (auch nicht Vermögen oder leere Kasse).
 
 ## **13\. Szenarien**
 

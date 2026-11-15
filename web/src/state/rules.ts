@@ -327,29 +327,33 @@ export function victoryColumns(field: FieldState): Card[][] {
 export const victoryRows = victoryColumns
 
 /**
- * Stapel ist sortiert: mindestens eine Karte, alle dieselbe Endprodukt-Sorte.
- * Gemischte Stapel sind erlaubt, zählen aber nicht als fertig.
+ * Stapel ist fertig: volle Folge 7→2 einer Endprodukt-Sorte (6 Karten).
+ * Kürzere oder gemischte Stapel zählen nicht.
  */
 export function isVictoryColumnComplete(
   stack: Card[],
   _home?: ProductSuit | number,
 ): boolean {
-  if (stack.length === 0) return false
+  if (stack.length !== VICTORY_COLUMN_LENGTH) return false
   const suit = stack[0]!.suit
   if (!isProductSuit(suit)) return false
-  return stack.every((c) => c.suit === suit)
+  if (!stack.every((c) => c.suit === suit)) return false
+  for (let i = 0; i < stack.length; i++) {
+    if (stack[i]!.rank !== 7 - i) return false
+  }
+  return true
 }
 
 /** @deprecated Alias — bitte isVictoryColumnComplete nutzen. */
 export const isVictoryRowComplete = isVictoryColumnComplete
 
-/** Ein Erntefeld ist fertig (nur eine Endprodukt-Sorte). */
+/** Ein Erntefeld ist fertig (volle Folge 7→2 einer Endprodukt-Sorte). */
 export function isVictoryFieldComplete(field: FieldState): boolean {
   if (field.kind !== 'victory') return false
   return isVictoryColumnComplete(field.stack)
 }
 
-/** Sieg: drei Erntefelder, je eine andere der drei Endprodukt-Sorten. */
+/** Sieg: drei volle Erntefelder 7→2, je eine andere der drei Endprodukt-Sorten. */
 export function isPlayerHarvestComplete(
   state: GameState,
   playerId: PlayerId,
@@ -1198,7 +1202,7 @@ function spawnFactoryField(
   return spawned
 }
 
-/** Anzahl fertiger Erntefelder (nur eine Sorte je Feld). */
+/** Anzahl fertiger Erntefelder (volle Folge 7→2 je Feld). */
 export function completedVictoryColumns(
   state: GameState,
   playerId: PlayerId,
@@ -1222,7 +1226,7 @@ export function victoryPointCount(
 }
 
 /**
- * Sieg: Mehl, Obst und Konfitüre liegen jeweils nur auf ihrem Erntefeld.
+ * Sieg: Mehl, Obst und Konfitüre jeweils als volle Folge 7→2 auf einem Erntefeld.
  */
 function checkEndConditions(
   state: GameState,
@@ -1233,7 +1237,7 @@ function checkEndConditions(
     if (isPlayerHarvestComplete(state, player.id)) {
       endGame(
         state,
-        `${player.name} hat Mehl, Obst und Konfitüre jeweils auf einem eigenen Erntefeld.`,
+        `${player.name} hat Mehl, Obst und Konfitüre jeweils als Folge 7→2 auf einem eigenen Erntefeld.`,
       )
       return
     }

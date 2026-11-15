@@ -161,8 +161,8 @@ function statusLine(field: FieldState): string {
     const n = field.stack.length
     const done = isVictoryColumnComplete(field.stack)
     return done
-      ? `Sortiert · ${n} Karte${n === 1 ? '' : 'n'}`
-      : `${n} Karte${n === 1 ? '' : 'n'} · nimmt Mehl, Obst und Konfitüre`
+      ? `Fertig 7→2 · ${n} Karten`
+      : `${n} Karte${n === 1 ? '' : 'n'} · fertig erst mit 7→2 einer Sorte`
   }
   if (isMarketField(field)) {
     const inputs = marketInputStacks(field)
