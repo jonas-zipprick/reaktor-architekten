@@ -166,9 +166,9 @@ Es gibt **einen gemeinsamen Markt** neben den Erntefeldern. Er hat **nur Eingang
 * Ablegen: nur Mehl, Obst und Konfitüre; absteigende Rangfolge.
 * Entnehmen vom Eingang ist kostenlos und ändert den Bedarf nicht.
 * Am Zugende, nach der Küchenabrechnung:
-  1. Der Bedarf sinkt um **1** (ein neuer Bedarf entsteht immer).
-  2. Für **jede** Karte auf den Markteingängen: Auszahlung wie bei Küchen (`|Bedarf|` aus der Bank nur bei Bedarf unter 0), danach Bedarf **+1**.
-  3. Alle Markteingänge werden geleert (Karten auf die Ablage).
+  1. Für **jede** Karte auf den Markteingängen: Auszahlung wie bei Küchen (`|Bedarf|` aus der Bank nur bei Bedarf unter 0), danach Bedarf **+1**.
+  2. Alle Markteingänge werden geleert (Karten auf die Ablage).
+  3. Danach sinkt der Bedarf um **1** (ein neuer Bedarf entsteht immer).
 * Durch Überversorgung können weitere **Eingänge** entstehen (Abschnitt 10).
 
 ## **9\. Eigentum und Gebühren**
@@ -200,7 +200,7 @@ Der Zug endet mit **„Karten ziehen und Produzieren“**. Dabei geschieht in di
 1. Regen und Getreidefeld ziehen je eine Karte nach (Abschnitt 5).
 2. **Jeder** Ausgabestapel (Küchen und Saatstand) erhält eine neue offene Karte.
 3. Eingänge von Küchen und Saatstand abrechnen und leeren (Abschnitt 6.2).
-4. Markt: Bedarf −1, dann je Eingangskarte auszahlen und Bedarf +1, Eingänge leeren (Abschnitt 8).
+4. Markt: je Eingangskarte auszahlen und Bedarf +1, Eingänge leeren, danach Bedarf −1 (Abschnitt 8).
 5. Über-/Unterversorgung: unter −8 Feld weg; über +5 Extra-Ausgabe bzw. Markteingang (Abschnitt 10).
 
 Alle Einnahmen am Zugende erhält der Spieler, der den Zug beendet.

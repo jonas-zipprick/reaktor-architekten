@@ -1009,8 +1009,8 @@ function removeDemandField(state: GameState, field: FieldState): void {
 }
 
 /**
- * Markt am Zugende: immer Bedarf −1, dann je Eingangskarte auszahlen (+|Bedarf|
- * bei Bedarf &lt; 0) und Bedarf +1, danach Eingänge leeren.
+ * Markt am Zugende: zuerst je Eingangskarte auszahlen (+|Bedarf| bei Bedarf &lt; 0)
+ * und Bedarf +1, Eingänge leeren, danach Bedarf −1 (neuer Bedarf).
  */
 function settleMarkets(state: GameState, player: PlayerState): void {
   const markets = Object.values(state.fields).filter((f) => isMarketField(f))
@@ -1022,7 +1022,7 @@ function settleMarkets(state: GameState, player: PlayerState): void {
 
   for (const field of markets) {
     if (!state.fields[field.id]) continue
-    let meter = fieldMeter(field) - 1
+    let meter = fieldMeter(field)
     const stacks = marketInputStacks(field)
     let cleared = 0
     let income = 0
@@ -1037,6 +1037,8 @@ function settleMarkets(state: GameState, player: PlayerState): void {
       discard(state, input)
       input.length = 0
     }
+    // Neuer Bedarf erst nach der Auszahlung.
+    meter -= 1
     setFieldMeter(field, meter)
     const paid = payFromBank(state, income)
     const claim = income - paid
@@ -1044,7 +1046,7 @@ function settleMarkets(state: GameState, player: PlayerState): void {
     flashLines.push(`${field.label} ${meterLabel(meter)}`)
     if (cleared > 0) {
       notes.push(
-        `${field.label}: −1 Bedarf, ${cleared} Karte${cleared === 1 ? '' : 'n'} → +${paid}¤${claim > 0 ? ` (+${claim} Forderung)` : ''} ${meterLabel(meter)}`,
+        `${field.label}: ${cleared} Karte${cleared === 1 ? '' : 'n'} → +${paid}¤${claim > 0 ? ` (+${claim} Forderung)` : ''}, dann −1 Bedarf → ${meterLabel(meter)}`,
       )
       state.stats.productsDelivered += cleared
     } else {
@@ -1763,7 +1765,7 @@ function settleAndClearInputs(state: GameState, player: PlayerState): void {
  * 1. Regen/Getreide ziehen nach (Saatstand nicht).
  * 2. Jeder Ausgabestapel erhält eine offene Karte obenauf.
  * 3. Küchen-/Saatstand-Eingänge abrechnen und ggf. leeren.
- * 4. Markt: Bedarf −1, Eingänge leeren und je Karte Bedarf +1.
+ * 4. Markt: je Karte auszahlen/+1, Eingänge leeren, danach Bedarf −1.
  * 5. Unter −8 Feld weg; über +5 Extra-Ausgabe bzw. Markteingang.
  */
 

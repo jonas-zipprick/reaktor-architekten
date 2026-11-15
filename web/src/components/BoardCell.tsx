@@ -170,7 +170,7 @@ function statusLine(field: FieldState): string {
     const demand = field.demand ?? 0
     const stacks =
       inputs.length > 1 ? `${inputs.length} Eingänge` : 'Eingang'
-    return `${stacks} · ${inN} Karte${inN === 1 ? '' : 'n'} · Bedarf ${demand} · Zugende: −1, je Karte auszahlen/+1, dann leeren`
+    return `${stacks} · ${inN} Karte${inN === 1 ? '' : 'n'} · Bedarf ${demand} · Zugende: je Karte auszahlen/+1, leeren, dann −1`
   }
   if (hasOutputStack(field)) {
     const outs = field.outputs ?? []
