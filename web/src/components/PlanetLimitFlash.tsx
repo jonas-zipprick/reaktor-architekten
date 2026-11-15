@@ -18,7 +18,6 @@ export function PlanetLimitFlash({ game }: { game: GameState }) {
 
   if (!visible || !text) return null
 
-  const isSource = /\d+ Karten/.test(text)
   const isExpand =
     text.includes('neuer Ausgabestapel') || text.includes('neuer Eingang')
 
@@ -29,17 +28,13 @@ export function PlanetLimitFlash({ game }: { game: GameState }) {
           ? text.includes('Eingang')
             ? 'Neuer Eingang'
             : 'Neuer Ausgabestapel'
-          : isSource
-            ? 'Quelle kollabiert'
-            : 'Feld kollabiert'}
+          : 'Feld kollabiert'}
       </p>
       <p className="planet-limit-flash-body">{text}</p>
       <p className="planet-limit-flash-note">
         {isExpand
           ? 'Überversorgung > +5 · Bedarf auf 0'
-          : isSource
-            ? 'Feld entfernt'
-            : 'Bedarf unter −8'}
+          : 'Bedarf unter −8'}
       </p>
     </div>
   )

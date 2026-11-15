@@ -11,7 +11,6 @@ import {
   OVERSUPPLY_COLLAPSE,
   TENSION_MAX,
   TENSION_MIN,
-  VICTORY_COLUMN_COUNT,
 } from '../types'
 import { PLAYER_META } from '../data/scenarios'
 import {
@@ -23,10 +22,10 @@ import {
 import { PlayingCard } from './PlayingCard'
 import './BoardCell.css'
 
-/** So viele Karten einer Quelle/Ausgabe werden aufgefächert; der Rest steckt im Zähler. */
+/** So viele Karten einer Quelle/Ausgabe/Eingang werden aufgefächert; der Rest steckt im Zähler. */
 const SOURCE_VISIBLE = 7
-const OUTPUT_VISIBLE = 5
-const INPUT_VISIBLE = 4
+const OUTPUT_VISIBLE = 6
+const INPUT_VISIBLE = 6
 
 function ownerName(owner: FieldState['owner']): string {
   if (!owner) return 'herrenlos'
@@ -121,7 +120,6 @@ function RecipePips({
     diamonds: 0,
     clubs: 0,
     steel: 0,
-    points: 0,
   }
   return (
     <div className={`recipe recipe-${state}`}>
@@ -153,17 +151,11 @@ function RecipePips({
 
 function statusLine(field: FieldState): string {
   if (field.kind === 'victory') {
-    const rows = field.inputs ?? [[], [], []]
-    const filled = rows.filter((r) => isVictoryColumnComplete(r)).length
-    const n = rows.reduce((s, r) => s + r.length, 0)
-    return `${filled}/3 Spalten voll (je 6 Karten, 7→2) · ${n}★ · absteigend`
-  }
-  if (field.kind === 'market' && hasOutputStack(field)) {
-    const outs = field.outputs ?? []
-    const outN = outs.reduce((s, o) => s + o.length, 0)
-    const inN = (field.inputs ?? []).reduce((s, o) => s + o.length, 0)
-    const nIn = field.inputs?.length ?? 1
-    return `Ausgabe ★ ${outN} · Bedarf ${field.demand ?? 0} · ${nIn} Eingang${nIn === 1 ? '' : 'e'} (${inN} Karten); Abrechnung am Zugende`
+    const n = field.stack.length
+    const done = isVictoryColumnComplete(field.stack)
+    return done
+      ? `Sortiert · ${n} Karte${n === 1 ? '' : 'n'}`
+      : `${n} Karte${n === 1 ? '' : 'n'} · nimmt Mehl, Obst und Konfitüre`
   }
   if (hasOutputStack(field)) {
     const outs = field.outputs ?? []
@@ -189,20 +181,14 @@ function statusLine(field: FieldState): string {
       ? 'Schuppen zum Umsortieren (jede Sorte; nur Eigentümer)'
       : 'Leerer Schuppen — jede Sorte; nur Eigentümer'
   }
-  if (field.kind === 'market' && field.demand != null && field.suit) {
-    const n = field.inputs?.length ?? 1
-    return `Stand ${suitSymbol(field.suit)} Bedarf ${field.demand} · ${n} Eingang${n === 1 ? '' : 'e'}; Abrechnung am Zugende`
-  }
   if (field.kind === 'source') {
     const n = field.stack.length
     const isRegen = field.suit === 'energy'
     const parkRule = isRegen
       ? 'Ausgabe: nur Wasser ablegen; Entnahme gratis'
       : 'Ablage jeder Sorte; Entnahme gratis'
-    if (n > 8)
-      return `${n} Karten — Überernte droht am Zugende · ${parkRule}`
     if (!n) return `Leer — wächst nach · ${parkRule}`
-    return `${n} Karte${n === 1 ? '' : 'n'} · ${parkRule}; Überernte am Zugende ab 9`
+    return `${n} Karte${n === 1 ? '' : 'n'} · ${parkRule}`
   }
   return 'Nur die oberste Karte ist zugänglich'
 }
@@ -239,12 +225,10 @@ export function BoardCell({
     stackIndex?: number,
   ) => void
 }) {
-  const isMeterField =
-    field.kind === 'market' || field.kind === 'factory' || isSeedBed(field)
+  const isMeterField = field.kind === 'factory' || isSeedBed(field)
   const dualStack = hasOutputStack(field)
   const isSource = field.kind === 'source' && !dualStack
   const isFactory = field.kind === 'factory'
-  const isMarket = field.kind === 'market'
   const ownerKey = field.owner ?? 'none'
   const have = suitCounts(field.stack)
 
@@ -254,7 +238,6 @@ export function BoardCell({
   const personalOnly = hasOwnership(field.kind)
   const hasOwner = Boolean(field.owner && field.owner !== 'state')
   const outputs = field.outputs ?? []
-  const marketIns = field.inputs ?? (isMarket ? [field.stack] : [])
   const title = [
     field.label,
     hasOwner || personalOnly
@@ -272,12 +255,8 @@ export function BoardCell({
     : 0
   const sourceVisible = isSource ? field.stack.slice(sourceHidden) : []
 
-  const inputStack = isMarket
-    ? (marketIns[0] ?? [])
-    : field.stack
-  const inHidden = Math.max(0, inputStack.length - INPUT_VISIBLE)
-  const inVisible =
-    dualStack && !isMarket ? field.stack.slice(inHidden) : []
+  const inHidden = Math.max(0, field.stack.length - INPUT_VISIBLE)
+  const inVisible = dualStack ? field.stack.slice(inHidden) : []
 
   return (
     <button
@@ -286,13 +265,12 @@ export function BoardCell({
         'board-cell',
         `kind-${field.kind}`,
         field.suit ? `suit-${field.suit}` : '',
-        field.kind === 'victory' ? 'suit-points' : '',
+        field.kind === 'victory' ? 'kind-victory' : '',
         hasOwner || personalOnly ? `owner-${ownerKey}` : 'owner-none',
         selected ? 'selected' : '',
         target ? 'is-target' : '',
         produced ? 'just-produced' : '',
         dualStack ? 'has-dual-stack' : '',
-        isMarket && marketIns.length > 1 ? 'has-multi-input' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -307,10 +285,6 @@ export function BoardCell({
           if (node?.closest('.factory-input')) onClick(e, 'input', idx)
           else if (node?.closest('.factory-output')) onClick(e, 'output', idx)
           else onClick(e, 'output', idx)
-          return
-        }
-        if (field.kind === 'victory') {
-          onClick(e, undefined, idx)
           return
         }
         onClick(e)
@@ -360,20 +334,6 @@ export function BoardCell({
           />
         )}
 
-        {isMarket && field.suit && (
-          <div className="recipe recipe-open">
-            <span className={`recipe-pip pip-${field.suit} filled`}>
-              {suitSymbol(field.suit)}
-            </span>
-            <span className="recipe-arrow" aria-hidden>
-              →
-            </span>
-            <span className="recipe-pip pip-points filled">
-              {suitSymbol('points')}
-            </span>
-          </div>
-        )}
-
         {isSource && field.suit && (
           <div className="recipe recipe-open">
             <span className={`recipe-pip pip-${field.suit} filled`}>
@@ -393,126 +353,59 @@ export function BoardCell({
         )}
 
         {field.kind === 'victory' ? (
-          <div className="victory-columns">
-            {Array.from({ length: VICTORY_COLUMN_COUNT }, (_, ci) => {
-              const col = field.inputs?.[ci] ?? []
-              const hidden = Math.max(0, col.length - INPUT_VISIBLE)
-              const visible = col.slice(hidden)
-              const colSelected = selected && selectedStackIndex === ci
-              const complete = isVictoryColumnComplete(col)
-              return (
-                <div
-                  key={`vp-${ci}`}
-                  className={[
-                    'factory-input',
-                    'victory-column',
-                    colSelected ? 'lane-selected' : '',
-                    complete ? 'victory-column-complete' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  data-stack-index={ci}
-                >
-                  <span className="stack-lane-label">
-                    Spalte {ci + 1}
-                    {complete ? ' ✓' : ''}
-                  </span>
-                  <div className="cell-stack input-stack">
-                    {visible.map((card, i) => {
-                      const fromTop = visible.length - 1 - i
-                      const inSelection =
-                        colSelected && fromTop < selectedCount
-                      return (
-                        <PlayingCard
-                          key={card.id}
-                          card={card}
-                          compact
-                          stacked={i > 0}
-                          stackIndex={i}
-                          highlight={inSelection}
-                          dimmed={!inSelection && fromTop > 0 && colSelected}
-                        />
-                      )
-                    })}
-                    {col.length === 0 && (
-                      <span className="stack-empty-hint">★</span>
-                    )}
-                    {col.length > 1 && (
-                      <span
-                        className="stack-count stack-count-input"
-                        title={`${col.length}/6 · absteigend bis 2`}
-                      >
-                        {col.length}
-                      </span>
-                    )}
-                  </div>
+          (() => {
+            const col = field.stack
+            const hidden = Math.max(0, col.length - INPUT_VISIBLE)
+            const visible = col.slice(hidden)
+            const complete = isVictoryColumnComplete(col)
+            return (
+              <div
+                className={[
+                  'factory-input',
+                  'victory-column',
+                  selected ? 'lane-selected' : '',
+                  complete ? 'victory-column-complete' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <span className="stack-lane-label">
+                  Ernte{complete ? ' ✓' : ''}
+                </span>
+                <div className="cell-stack input-stack">
+                  {visible.map((card, i) => {
+                    const fromTop = visible.length - 1 - i
+                    const inSelection = selected && fromTop < selectedCount
+                    return (
+                      <PlayingCard
+                        key={card.id}
+                        card={card}
+                        compact
+                        stacked={i > 0}
+                        stackIndex={i}
+                        highlight={inSelection}
+                        dimmed={!inSelection && fromTop > 0 && selected}
+                      />
+                    )
+                  })}
+                  {col.length === 0 && (
+                    <span className="stack-empty-hint">ablegen</span>
+                  )}
+                  {col.length > 1 && (
+                    <span
+                      className="stack-count stack-count-input"
+                      title={`${col.length} Karten`}
+                    >
+                      {col.length}
+                    </span>
+                  )}
                 </div>
-              )
-            })}
-          </div>
+              </div>
+            )
+          })()
         ) : dualStack ? (
           <div className="factory-stacks">
-            {isMarket ? (
-              <div className="market-inputs">
-                {(marketIns.length ? marketIns : [[]]).map((input, ii) => {
-                  const hidden = Math.max(0, input.length - INPUT_VISIBLE)
-                  const visible = input.slice(hidden)
-                  const inputSelected =
-                    selected &&
-                    selectedLane === 'input' &&
-                    selectedStackIndex === ii
-                  return (
-                    <div
-                      key={`in-${ii}`}
-                      className={[
-                        'factory-input',
-                        'market-input',
-                        inputSelected ? 'lane-selected' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      data-stack-index={ii}
-                    >
-                      <span className="stack-lane-label">
-                        {marketIns.length > 1 ? `Eingang ${ii + 1}` : 'Eingang'}
-                      </span>
-                      <div className="cell-stack input-stack">
-                        {visible.map((card, i) => {
-                          const fromTop = visible.length - 1 - i
-                          const inSelection =
-                            inputSelected && fromTop < selectedCount
-                          return (
-                            <PlayingCard
-                              key={card.id}
-                              card={card}
-                              compact
-                              stacked={i > 0}
-                              stackIndex={i}
-                              highlight={inSelection}
-                              dimmed={
-                                !inSelection && fromTop > 0 && inputSelected
-                              }
-                            />
-                          )
-                        })}
-                        {input.length === 0 && (
-                          <span className="stack-empty-hint">ablegen</span>
-                        )}
-                        {input.length > 1 && (
-                          <span
-                            className="stack-count stack-count-input"
-                            title={`${input.length} Karten im Eingang`}
-                          >
-                            {input.length}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div
+            <div
                 className={[
                   'factory-input',
                   selected && selectedLane === 'input' ? 'lane-selected' : '',
@@ -559,7 +452,6 @@ export function BoardCell({
                   )}
                 </div>
               </div>
-            )}
             <div className="factory-outputs">
               {(outputs.length ? outputs : [[]]).map((output, oi) => {
                 const outHidden = Math.max(0, output.length - OUTPUT_VISIBLE)
@@ -569,13 +461,8 @@ export function BoardCell({
                   selected &&
                   selectedLane === 'output' &&
                   selectedStackIndex === oi
-                const outLabel = isMarket
-                  ? outputs.length > 1
-                    ? `Siegpunkte ${oi + 1}`
-                    : 'Siegpunkte'
-                  : outputs.length > 1
-                    ? `Ausgabe ${oi + 1}`
-                    : 'Ausgabe'
+                const outLabel =
+                  outputs.length > 1 ? `Ausgabe ${oi + 1}` : 'Ausgabe'
                 return (
                   <div
                     key={`out-${oi}`}
@@ -671,19 +558,12 @@ export function BoardCell({
           </div>
         )}
 
-        {field.kind === 'victory' && (
-          <div className="recipe recipe-open">
-            <span className="recipe-pip pip-points filled">★</span>
-            <span className="source-caption">3 Spalten · 7→2</span>
-          </div>
-        )}
-
         {target && (
           <div className="target-badge">
             {target.cost > 0 ? `−${target.cost}¤` : 'frei'}
-            {(target.kind === 'deliver' || target.kind === 'feed') &&
+            {target.kind === 'feed' &&
               target.income > 0 && <strong> +{target.income}¤</strong>}
-            {target.kind === 'claim' && <strong> ★</strong>}
+            {target.kind === 'claim' && <strong> Ernte</strong>}
           </div>
         )}
       </div>

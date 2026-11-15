@@ -49,7 +49,7 @@ export interface SimRunMetrics {
   productsDelivered: number
   /** Markt-Kollapse (Bedarfsmesser unter −8). */
   marketCollapses: number
-  /** Quellen-Kollapse (am Zugende noch mehr als 8 Karten). */
+  /** @deprecated Quellen kollabieren nicht mehr. */
   sourceCollapses: number
   /** Gekaufte Feldkopien / gespte Märkte. */
   marketsSpawned: number

@@ -18,19 +18,14 @@ import type {
 import {
   hasOwnership,
   isSeedBed,
-  POINTS_SUIT,
   SEED_BED_RECIPE,
   SUITS,
+  VICTORY_COLUMN_COUNT,
+  victoryFieldId,
 } from '../types'
 import { createRng, shuffle } from './rng'
 
 const RANKS: Rank[] = [7, 6, 5, 4, 3, 2]
-const CARDS_PER_RANK = 6
-/** Zusätzlich je Sorte (gleichmäßig über die Ränge). */
-const EXTRA_CARDS_PER_DECK = 40
-/** Siegpunkt-Deck: endlich, gekaufte Karten kommen nicht zurück. */
-const POINTS_CARDS_PER_RANK = 8
-const POINTS_EXTRA_CARDS = 36
 
 /** Eindeutige ID-Präfixe (suit[0] kollidiert bei spades/steel). */
 const SUIT_ID_PREFIX: Record<Suit, string> = {
@@ -40,24 +35,26 @@ const SUIT_ID_PREFIX: Record<Suit, string> = {
   diamonds: 'd',
   clubs: 'c',
   steel: 't',
-  points: 'p',
 }
 
 const START_CARDS_PER_SOURCE = 2
-/** Küchen-Ausgabe: hoher Startvorrat der Produktfarbe. */
-export const FACTORY_OUTPUT_SIZE = 24
+/** Küchen-/Saatstand-Ausgabe: Start- und Nachfüllgröße. */
+export const FACTORY_OUTPUT_SIZE = 10
 const START_MONEY = 5
 /** Große Bank — leere Bank beendet die Partie nicht. */
 const BANK_START = 2000
 
-function buildDeck(suit: Suit, rng: () => number): Card[] {
+/** Decks: `total` Karten gleichmäßig über die Ränge 7…2. */
+function buildDeck(suit: Suit, total: number, rng: () => number): Card[] {
   const cards: Card[] = []
   let n = 0
   const prefix = SUIT_ID_PREFIX[suit]
-  const perRank = suit === POINTS_SUIT ? POINTS_CARDS_PER_RANK : CARDS_PER_RANK
-  const extra = suit === POINTS_SUIT ? POINTS_EXTRA_CARDS : EXTRA_CARDS_PER_DECK
+  const base = Math.floor(total / RANKS.length)
+  let rem = total % RANKS.length
   for (const rank of RANKS) {
-    for (let i = 0; i < perRank; i++) {
+    const count = base + (rem > 0 ? 1 : 0)
+    if (rem > 0) rem -= 1
+    for (let i = 0; i < count; i++) {
       n += 1
       cards.push({
         id: `${prefix}${n}`,
@@ -65,14 +62,6 @@ function buildDeck(suit: Suit, rng: () => number): Card[] {
         rank,
       })
     }
-  }
-  for (let i = 0; i < extra; i++) {
-    n += 1
-    cards.push({
-      id: `${prefix}${n}`,
-      suit,
-      rank: RANKS[i % RANKS.length]!,
-    })
   }
   return shuffle(cards, rng)
 }
@@ -101,7 +90,10 @@ export function createGame(
 
   const decks = {} as Record<Suit, DeckState>
   for (const suit of SUITS) {
-    decks[suit] = { draw: buildDeck(suit, rng), discard: [] }
+    decks[suit] = {
+      draw: buildDeck(suit, scenario.cardsPerSuit, rng),
+      discard: [],
+    }
   }
 
   const fields: Record<string, FieldState> = {}
@@ -117,13 +109,6 @@ export function createGame(
       row: f.row,
       fee: 0,
       stack: [],
-    }
-    if (f.kind === 'market') {
-      field.demand = 0
-      field.inputs = [[]]
-      const out = takeOutputCards(decks, POINTS_SUIT, FACTORY_OUTPUT_SIZE)
-      field.outputs = [out]
-      field.outputsRevealed = [out.length > 0 ? 1 : 0]
     }
     if (f.kind === 'factory' && f.suit) {
       field.demand = 0
@@ -151,30 +136,30 @@ export function createGame(
 
   const multi = playerIds.length > 1
   for (const playerId of playerIds) {
-    for (let i = 1; i <= scenario.beetsPerPlayer; i++) {
-      const id = `lager-${playerId}-${i}`
+    const id = `lager-${playerId}-1`
+    fields[id] = {
+      id,
+      kind: 'storage',
+      label: personalBeetLabel(playerId, undefined, multi),
+      row: ROW.storage,
+      owner: playerId,
+      fee: 0,
+      stack: [],
+    }
+    for (let i = 0; i < VICTORY_COLUMN_COUNT; i++) {
+      const base =
+        VICTORY_COLUMN_COUNT > 1 ? `Ernte ${i + 1}` : 'Ernte'
+      const label = multi ? `${PLAYER_META[playerId].short}·${base}` : base
+      const id = victoryFieldId(playerId, i)
       fields[id] = {
         id,
-        kind: 'storage',
-        label: personalBeetLabel(playerId, i, multi),
-        row: ROW.storage,
+        kind: 'victory',
+        label,
+        row: ROW.victory,
         owner: playerId,
         fee: 0,
         stack: [],
       }
-    }
-    const vpName = multi
-      ? `Siegpunkte ${PLAYER_META[playerId].short}`
-      : 'Siegpunkte'
-    fields[`sieg-${playerId}`] = {
-      id: `sieg-${playerId}`,
-      kind: 'victory',
-      label: vpName,
-      row: ROW.victory,
-      owner: playerId,
-      fee: 0,
-      stack: [],
-      inputs: [[], [], []],
     }
   }
 
@@ -189,8 +174,8 @@ export function createGame(
   const startPlayerIndex = Math.floor(rng() * players.length)
   const single =
     players.length === 1
-      ? 'Einspieler — Startguthaben 5¤, eigene Schuppen.'
-      : `${players.length} Spieler · Startguthaben 5¤ · jeder hat eigene Schuppen (ohne Gebühren).`
+      ? 'Einspieler — Startguthaben 5¤, ein eigener Schuppen.'
+      : `${players.length} Spieler · Startguthaben 5¤ · jeder hat einen Schuppen (ohne Gebühren).`
 
   return {
     scenarioId,
@@ -236,7 +221,6 @@ export function createGame(
     winnerText: null,
     rngSeed: seed,
     marketSpawnSeq: 0,
-    marketsToWin: scenario.marketsToWin,
     beetsPerPlayer: scenario.beetsPerPlayer,
   }
 }

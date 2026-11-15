@@ -7,12 +7,7 @@ import type {
   ScenarioId,
   Suit,
 } from '../types'
-import {
-  factoryLabel,
-  marketLabel,
-  sourceLabel,
-  storageLabel,
-} from '../types'
+import { factoryLabel, sourceLabel, storageLabel } from '../types'
 
 export const PLAYER_META: Record<
   PlayerId,
@@ -25,15 +20,14 @@ export const PLAYER_META: Record<
 }
 
 /**
- * Brettzeilen: Felder|Regen → Küchen|Infrastruktur → Marktstände.
- * Quelle (row 0): Saatstand/Getreide und Regen als zwei Spalten; Küche|Infrastruktur (row 1).
+ * Brettzeilen: Felder|Regen → Küchen|Infrastruktur → Ernte.
+ * Quelle (row 0): Saatstand/Getreide und Regen; Küche|Infrastruktur (row 1); Ernte (row 2).
  */
 export const ROW = {
   source: 0,
   factory: 1,
   storage: 1,
-  victory: 1,
-  market: 2,
+  victory: 2,
 } as const
 
 export function rowForKind(kind: FieldKind): number {
@@ -132,24 +126,10 @@ function factories(
   return out
 }
 
-function market(suit: Suit): ScenarioField {
-  return {
-    id: `markt-${suit}`,
-    kind: 'market',
-    suit,
-    label: marketLabel(suit),
-    row: ROW.market,
-  }
-}
-
-const MARKT_HERZ = () => market('hearts')
-const MARKT_PIK = () => market('spades')
-const MARKT_KREUZ = () => market('clubs')
-
 /** Persönliches Schuppen-Label (mit Spielerkürzel bei mehreren Spielern). */
 export function personalBeetLabel(
   playerId: PlayerId,
-  index: number,
+  index: number | undefined,
   multi: boolean,
 ): string {
   const base = storageLabel(undefined, index)
@@ -162,59 +142,40 @@ export const SCENARIOS: ScenarioDef[] = [
     name: 'Allein im Garten',
     players: ['white'],
     description:
-      '1 Spieler · Saatstand + Regen, Beet + Obststand, 1 Schuppen. Ziel: 2 Märkte mit Versorgung > 0 am Zugende. Getreidefeld, Mehlmühle, Konfitürenküche, Mehl- und Konfitürenstand käuflich (+).',
+      '1 Spieler · 30 Karten/Sorte · Saatstand + Regen, Beet, 1 Schuppen. Ziel: eine Reihe aus Mehl, Obst und Konfitüre. Getreidefeld, Mehlmühle und Konfitürenküche käuflich (+).',
     beetsPerPlayer: 1,
-    marketsToWin: 2,
-    fields: [
-      ...sources({ hearts: 1, energy: 1 }),
-      MARKT_KREUZ(),
-      ...factories(0, 1),
-    ],
+    cardsPerSuit: 30,
+    fields: [...sources({ hearts: 1, energy: 1 }), ...factories(0, 1)],
   },
   {
     id: 'B',
     name: 'Nachbarschaftsmarkt',
     players: ['white', 'black'],
     description:
-      '2 Spieler · Saatstand, 2 Regen, Beet, Obststand; je 1 Schuppen. Ziel: 3 Märkte mit Versorgung > 0 am Zugende. Getreidefeld, Mehlmühle, Konfitürenküche, Mehl- und Konfitürenstand käuflich (+).',
+      '2 Spieler · 60 Karten/Sorte · Saatstand, 2 Regen, Beet; je 1 Schuppen. Ziel: eine Reihe aus Mehl, Obst und Konfitüre. Getreidefeld, Mehlmühle und Konfitürenküche käuflich (+).',
     beetsPerPlayer: 1,
-    marketsToWin: 3,
-    fields: [
-      ...sources({ hearts: 1, energy: 2 }),
-      MARKT_KREUZ(),
-      ...factories(0, 1),
-    ],
+    cardsPerSuit: 60,
+    fields: [...sources({ hearts: 1, energy: 2 }), ...factories(0, 1)],
   },
   {
     id: 'C',
     name: 'Erntefest',
     players: ['white', 'black', 'red'],
     description:
-      '3 Spieler · je 3 Saatstände/Regen/Beete, Saat-/Obststand, je 3 Schuppen. Ziel: 3 Märkte mit Versorgung > 0 am Zugende. Getreidefeld, Mehlmühle, Konfitürenküche, Mehl- und Konfitürenstand käuflich (+).',
-    beetsPerPlayer: 3,
-    marketsToWin: 3,
-    fields: [
-      ...sources({ hearts: 3, energy: 3 }),
-      MARKT_HERZ(),
-      MARKT_KREUZ(),
-      ...factories(0, 3),
-    ],
+      '3 Spieler · 80 Karten/Sorte · je 3 Saatstände/Regen/Beete, je 1 Schuppen. Ziel: eine Reihe aus Mehl, Obst und Konfitüre. Getreidefeld, Mehlmühle und Konfitürenküche käuflich (+).',
+    beetsPerPlayer: 1,
+    cardsPerSuit: 80,
+    fields: [...sources({ hearts: 3, energy: 3 }), ...factories(0, 3)],
   },
   {
     id: 'D',
     name: 'Großer Wochenmarkt',
     players: ['white', 'black', 'red', 'green'],
     description:
-      '4 Spieler · je 4 Saatstände/Regen, 3 Beete, Saat-/Getreide-/Obststand, je 4 Schuppen. Ziel: 3 Märkte mit Versorgung > 0 am Zugende. Getreidefeld, Mehlmühle, Konfitürenküche, Mehl- und Konfitürenstand käuflich (+).',
-    beetsPerPlayer: 4,
-    marketsToWin: 3,
-    fields: [
-      ...sources({ hearts: 4, energy: 4 }),
-      MARKT_HERZ(),
-      MARKT_PIK(),
-      MARKT_KREUZ(),
-      ...factories(0, 3),
-    ],
+      '4 Spieler · 100 Karten/Sorte · je 4 Saatstände/Regen, 3 Beete, je 1 Schuppen. Ziel: eine Reihe aus Mehl, Obst und Konfitüre. Getreidefeld, Mehlmühle und Konfitürenküche käuflich (+).',
+    beetsPerPlayer: 1,
+    cardsPerSuit: 100,
+    fields: [...sources({ hearts: 4, energy: 4 }), ...factories(0, 3)],
   },
 ]
 
@@ -236,6 +197,12 @@ export function fieldLabel(scenarioId: ScenarioId, fieldId: string): string {
   if (beet) {
     const multi = getScenario(scenarioId).players.length > 1
     return personalBeetLabel(beet[1] as PlayerId, Number(beet[2]), multi)
+  }
+  const harvest = /^sieg-(white|black|red|green)-(\d+)$/.exec(fieldId)
+  if (harvest) {
+    const multi = getScenario(scenarioId).players.length > 1
+    const base = `Ernte ${harvest[2]}`
+    return multi ? `${PLAYER_META[harvest[1] as PlayerId].short}·${base}` : base
   }
   return fieldId
 }

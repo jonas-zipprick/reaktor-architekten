@@ -9,7 +9,6 @@ const suitRole: Record<Suit, string> = {
   diamonds: 'Ware',
   clubs: 'Ware',
   steel: 'Ware',
-  points: 'Siegpunkt',
 }
 
 export function PlayingCard({

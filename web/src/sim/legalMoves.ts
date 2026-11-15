@@ -1,7 +1,8 @@
 import type { Card, FieldId, FieldState, GameState, PlayerId } from '../types'
 import {
   beetFulfillments,
-  isPointsSuit,
+  jamFulfillments,
+  isProductSuit,
   isSeedBed,
   OVERSUPPLY_COLLAPSE,
   recipeFulfillments,
@@ -24,14 +25,14 @@ import {
   factoryOutputs,
   factoryProduct,
   hasOutputStack,
-  isVictoryColumnComplete,
-  marketInputs,
+  isPlayerHarvestComplete,
+  isVictoryFieldComplete,
   maxMovableRun,
   movableCard,
   movableStack,
   nextBuyInfraPrice,
+  playerVictoryFields,
   selectedPacket,
-  victoryColumns,
   type MoveCheck,
   type StackLane,
 } from '../state/rules'
@@ -40,9 +41,6 @@ import {
  * Weicher Bargeld-Puffer nur fürs Scoring — filtert keine legalen Aktionen.
  */
 const CASH_RESERVE = 4
-
-/** Quellen kollabieren am Zugende bei mehr als so vielen Karten (nach Nachziehen). */
-const SOURCE_STACK_LIMIT = 8
 
 /** Max. Geschenkbetrag pro Gift-Kandidat (Coverage + Anti-Spam). */
 const GIFT_AMOUNT_CAP = 5
@@ -79,21 +77,7 @@ export type TurnCandidate =
   | BuyInfraCandidate
   | GiftCandidate
 
-function marketPending(field: FieldState): number {
-  return marketInputs(field).reduce((s, inp) => s + inp.length, 0)
-}
-
 function fromStackIndices(field: FieldState, lane?: StackLane): number[] {
-  if (field.kind === 'victory') {
-    return victoryColumns(field).map((_, i) => i)
-  }
-  if (field.kind === 'market') {
-    if (lane === 'output') {
-      const n = Math.max(1, factoryOutputs(field).length)
-      return Array.from({ length: n }, (_, i) => i)
-    }
-    return marketInputs(field).map((_, i) => i)
-  }
   if (hasOutputStack(field) && lane === 'output') {
     const n = Math.max(1, factoryOutputs(field).length)
     return Array.from({ length: n }, (_, i) => i)
@@ -101,13 +85,7 @@ function fromStackIndices(field: FieldState, lane?: StackLane): number[] {
   return [0]
 }
 
-function toStackIndices(field: FieldState): number[] {
-  if (field.kind === 'victory') {
-    return victoryColumns(field).map((_, i) => i)
-  }
-  if (field.kind === 'market') {
-    return marketInputs(field).map((_, i) => i)
-  }
+function toStackIndices(_field: FieldState): number[] {
   return [0]
 }
 
@@ -155,10 +133,8 @@ export function listLegalMoves(state: GameState): MoveCandidate[] {
         for (let count = 1; count <= max; count++) {
           for (const to of ids) {
             const toField = state.fields[to]!
-            // VP-Feld: Umsortieren zwischen Spalten erlaubt.
-            if (to === from && field.kind !== 'victory') continue
+            if (to === from) continue
             for (const toStackIndex of toStackIndices(toField)) {
-              if (to === from && toStackIndex === stackIndex) continue
               const check = checkMove(state, from, to, count, lane, {
                 stackIndex,
                 toStackIndex,
@@ -257,66 +233,49 @@ function victoryColumnsNeed(state: GameState): number {
   return VICTORY_COLUMN_COUNT - completedVictoryColumns(state, id)
 }
 
-/** Nach Settle (+1 je Karte); kein automatisches Markt-−1 mehr. */
-function projectedMarketAfterSettle(
-  demand: number,
-  stackLen: number,
-  extraCards = 0,
-): number {
-  return demand + stackLen + extraCards
-}
-
 function ownVictoryField(state: GameState): FieldState | null {
   const id = state.players[state.currentPlayerIndex]!.id
-  const field = state.fields[`sieg-${id}`]
-  return field?.kind === 'victory' ? field : null
+  return playerVictoryFields(state, id)[0] ?? null
 }
 
-/** Wie stark verbessert das Ablegen die VP-Spalte (Richtung „endet auf 2“)? */
+/** Wie stark bringt das Ablegen eine sortierte Ernte näher? */
 function claimCompletionBonus(
+  state: GameState,
   to: FieldState,
-  toStackIndex: number,
   packet: Card[],
 ): number {
   if (to.kind !== 'victory') return 0
-  const col = victoryColumns(to)[Math.max(0, toStackIndex)] ?? []
-  const next = [...col, ...packet]
-  if (isVictoryColumnComplete(next)) return 70
-  const lead = packet[0]
-  const top = next[next.length - 1]
-  if (!top || !isPointsSuit(top.suit)) return 0
-  // Leere Spalte: mit 7 starten (nur so sind 6 Karten 7→2 erreichbar).
-  if (col.length === 0) {
-    const r = lead?.rank ?? 7
-    if (r === 7) return 24
-    if (r === 6) return 4
-    return 2 - r // hohe Fehlstarts vermeiden
+  if (!packet.every((c) => isProductSuit(c.suit))) return 0
+  const nextStack = [...to.stack, ...packet]
+  const lead = nextStack[0]?.suit
+  const mono =
+    lead != null &&
+    isProductSuit(lead) &&
+    nextStack.every((c) => c.suit === lead)
+  const mixed = nextStack.some((c) => c.suit !== packet[0]!.suit)
+  const playerId = state.players[state.currentPlayerIndex]!.id
+  // Temporär den Stapel setzen, um die Siegbedingung zu prüfen.
+  const saved = to.stack
+  to.stack = nextStack
+  const wouldWin = isPlayerHarvestComplete(state, playerId)
+  to.stack = saved
+  if (wouldWin) return 90
+  if (mono) return isVictoryFieldComplete({ ...to, stack: nextStack }) ? 36 : 24
+  if (mixed || to.stack.length === 0) {
+    // Leeres Feld mit einer Sorte starten: gut.
+    if (to.stack.length === 0 && packet.every((c) => c.suit === packet[0]!.suit)) {
+      return 18
+    }
   }
-  // Verlängern Richtung voller 7→2-Spalte.
-  if (top.rank === 3) return 28
-  if (top.rank === 4) return 16
-  if (top.rank === 5) return 10
-  if (top.rank === 6) return 6
-  return 2
+  return -16
 }
 
 function pendingSettlementCards(state: GameState): number {
   let n = 0
   for (const f of Object.values(state.fields)) {
-    if (f.kind === 'market') n += marketPending(f)
     if ((f.kind === 'factory' || isSeedBed(f)) && f.stack.length) {
       n += f.stack.length
     }
-  }
-  return n
-}
-
-function sourcesNearCollapse(state: GameState): number {
-  let n = 0
-  for (const f of Object.values(state.fields)) {
-    if (f.kind !== 'source' || isSeedBed(f)) continue
-    // Nachziehen +1 → Kollaps wenn length > SOURCE_STACK_LIMIT.
-    if (f.stack.length >= SOURCE_STACK_LIMIT) n += 1
   }
   return n
 }
@@ -344,6 +303,12 @@ function feedFulfillmentDelta(
       after: beetFulfillments(afterStack),
     }
   }
+  if (to.kind === 'factory' && to.suit === 'steel') {
+    return {
+      before: jamFulfillments(beforeStack),
+      after: jamFulfillments(afterStack),
+    }
+  }
   const recipe = to.recipe ?? (isSeedBed(to) ? SEED_BED_RECIPE : {})
   return {
     before: recipeFulfillments(beforeStack, recipe),
@@ -366,19 +331,13 @@ export function scoreEndTurn(state: GameState): number {
   // Neue ★ aufdecken / Ketten produzieren, solange Spalten offen sind.
   if (need > 0) score += 8
 
-  const collapsing = sourcesNearCollapse(state)
-  if (collapsing > 0) {
-    score -= 25 * collapsing
-  } else {
-    score += 4
-  }
-
+  score += 4
   return score
 }
 
 /**
  * Bewertung einer Kartenbewegung für den gierigen Bot.
- * Primärziel: VP-Spalten füllen (absteigend bis 2); Märkte liefern ★ und Einkommen.
+ * Primärziel: Mehl, Obst und Konfitüre in ihre Erntespalten bringen.
  */
 export function scoreMove(state: GameState, cand: MoveCandidate): number {
   const { check, move } = cand
@@ -390,82 +349,40 @@ export function scoreMove(state: GameState, cand: MoveCandidate): number {
   const count = check.count
   const need = victoryColumnsNeed(state)
   const fromStackIndex = move.stackIndex ?? 0
-  const toStackIndex = move.toStackIndex ?? 0
   let score = 0
-
-  // Markteingang vor Abrechnung leeren — vernichtet Einkommen.
-  if (from.kind === 'market' && move.lane === 'input') {
-    return -90 - count * 5
-  }
 
   const fromInput =
     (from.kind === 'factory' || isSeedBed(from)) && move.lane === 'input'
-  const fromMarketVp =
-    from.kind === 'market' && move.lane !== 'input'
   const fromFactoryOut =
     hasOutputStack(from) &&
-    from.kind !== 'market' &&
     move.lane !== 'input' &&
     Boolean(factoryProduct(from, fromStackIndex))
 
-  // Siegpunkte auf eigene Spalte legen / umsortieren.
+  // Endprodukt auf die Erntespalte legen oder zwischen Spalten sortieren.
   if (check.kind === 'claim') {
     const packet = movePacket(state, move, count)
-    const gain = claimCompletionBonus(to, toStackIndex, packet)
+    const gain = claimCompletionBonus(state, to, packet)
     score = 10 + count * 4 - check.cost * 3
     score += gain
-    if (need <= 1) score += 24
-    else if (need <= 2) score += 12
+    if (need > 0) score += 12
 
     if (from.kind === 'victory') {
-      const fromCol = victoryColumns(from)[fromStackIndex] ?? []
-      // Fertige Spalte nie anfassen.
-      if (isVictoryColumnComplete(fromCol)) return -140
-      // Umsortieren nur belohnen, wenn eine Spalte dadurch fertig wird.
-      if (gain < 70) score -= 45 + fromCol.length * 3
-      else score += 10
-    } else if (fromMarketVp) {
-      score += 12
-      const demand = from.demand ?? 0
-      if (demand <= -4 && check.cost > 0) score -= 16
+      if (isVictoryFieldComplete(from)) return -80
+      const fromSuit = from.stack[0]?.suit
+      const leavingSorted =
+        isVictoryFieldComplete(from) === false &&
+        fromSuit != null &&
+        from.stack.every((c) => c.suit === fromSuit) &&
+        packet.every((c) => c.suit === fromSuit)
+      if (leavingSorted && gain < 90) score -= 30
+      else if (gain >= 90) score += 10
     } else if (from.kind === 'storage') {
       score += 16
+    } else if (fromFactoryOut) {
+      score += 12
     }
 
-    // Siegzug: letzte Spalte vollmachen.
-    if (need === 1 && gain >= 70) score += 90
-
-    score += cashReserveMalus(player.money - check.cost)
-    return score
-  }
-
-  if (check.kind === 'deliver') {
-    score = 12 + card.rank - check.cost * 4
-    if (to.owner === player.id) score += 4
-
-    const demand = to.demand ?? 0
-    const pending = marketPending(to)
-    const after = projectedMarketAfterSettle(demand, pending, count)
-    const before = projectedMarketAfterSettle(demand, pending, 0)
-
-    if (after > OVERSUPPLY_COLLAPSE) score += 8
-
-    // Bedarf anheben (Lieferung) macht spätere ★-Züge günstiger.
-    if (demand < 0) {
-      let income = 0
-      let m = demand
-      for (let i = 0; i < pending + count; i++) {
-        if (m < 0) income += -m
-        m += 1
-      }
-      score += Math.min(40, income * 2.5)
-      // Stark negativ: Liefern wichtiger als weitere ★-Käufe.
-      if (demand <= -3) score += 14
-    } else if (after > before) {
-      score += 4
-    }
-
-    if (after > OVERSUPPLY_COLLAPSE) score += need > 0 ? 6 : 2
+    if (gain >= 90) score += 40
 
     score += cashReserveMalus(player.money - check.cost)
     return score
@@ -487,12 +404,15 @@ export function scoreMove(state: GameState, cand: MoveCandidate): number {
       score += 24 + delta * 8
     } else {
       const isBeet = to.kind === 'factory' && to.suit === 'clubs'
-      if (isBeet) {
+      const isJam = to.kind === 'factory' && to.suit === 'steel'
+      if (isBeet || isJam) {
         const suits = new Set([...to.stack, ...packet].map((c) => c.suit))
-        const hasEnergy = suits.has('energy')
-        const hasSeed = suits.has('hearts')
-        if (hasEnergy && hasSeed) score += 20
-        else if (hasEnergy || hasSeed) score += 10
+        const needA = isBeet ? 'energy' : 'clubs'
+        const needB = isBeet ? 'hearts' : 'energy'
+        const hasA = suits.has(needA)
+        const hasB = suits.has(needB)
+        if (hasA && hasB) score += 20
+        else if (hasA || hasB) score += 10
         else score -= 4
       } else {
         score += 4
@@ -515,30 +435,17 @@ export function scoreMove(state: GameState, cand: MoveCandidate): number {
   const relievingSource =
     from.kind === 'source' && !isSeedBed(from) && from.stack.length > 1
 
-  if (fromMarketVp) {
-    // ★ parken (nicht claimen): nur Zwischenlager, klar unter claim halten.
-    score = 6 + count * 2
-    if (to.kind === 'storage' && to.owner === player.id && isPointsSuit(card.suit)) {
-      // 2er lieber direkt claimen — Parken leicht dämpfen.
-      score += card.rank === 2 ? -8 : 8
-    }
-    const demand = from.demand ?? 0
-    if (demand <= -4 && check.cost > 0) score -= 15
-  } else if (fromFactoryOut) {
+  if (fromFactoryOut) {
     score = 14
   } else if (relievingSource) {
     const len = from.stack.length
     score = 6 + Math.max(0, len - 4) * 4
-    if (len >= SOURCE_STACK_LIMIT - 1) score += 28
-    if (len >= SOURCE_STACK_LIMIT) score += 20
   } else if (from.kind === 'victory') {
-    const fromCol = victoryColumns(from)[fromStackIndex] ?? []
-    if (isVictoryColumnComplete(fromCol)) return -140
-    // ★ vom VP-Feld auf Schuppen: fast nie.
-    score = to.kind === 'storage' ? -55 : -30
+    if (isVictoryFieldComplete(from)) return -80
+    score = to.kind === 'storage' ? -20 : -30
   } else if (from.kind === 'storage') {
-    if (isPointsSuit(card.suit) && ownVictoryField(state)) {
-      score = -30 // ★ gehören aufs VP-Feld (claim)
+    if (isProductSuit(card.suit) && ownVictoryField(state)) {
+      score = -18
     } else {
       score = -40
     }
@@ -546,7 +453,6 @@ export function scoreMove(state: GameState, cand: MoveCandidate): number {
 
   if (to.kind === 'source' && !isSeedBed(to)) {
     score -= 20
-    if (to.stack.length >= SOURCE_STACK_LIMIT - 1) score -= 25
   }
 
   if (to.kind === 'storage' && to.suit && card.suit === to.suit) score += 8
@@ -575,21 +481,9 @@ export function scoreBuyInfra(
     state,
     (f) => f.kind === 'factory' && f.suit === 'diamonds',
   )
-  const flourMarket = countFields(
-    state,
-    (f) => f.kind === 'market' && f.suit === 'diamonds',
-  )
   const jamKitchen = countFields(
     state,
     (f) => f.kind === 'factory' && f.suit === 'steel',
-  )
-  const jamMarket = countFields(
-    state,
-    (f) => f.kind === 'market' && f.suit === 'steel',
-  )
-  const fruitMarket = countFields(
-    state,
-    (f) => f.kind === 'market' && f.suit === 'clubs',
   )
   const beet = countFields(
     state,
@@ -605,46 +499,20 @@ export function scoreBuyInfra(
       if (mill === 0) score += grain > 0 ? 32 : 8
       else score -= 10
       break
-    case 'mehlstand':
-      if (flourMarket === 0) score += mill > 0 ? 30 : 10
-      else score += 8
-      break
     case 'konfituerenkueche':
       if (jamKitchen === 0) score += beet > 0 ? 26 : 8
       else score -= 10
       break
-    case 'konfituerenstand':
-      if (jamMarket === 0) score += jamKitchen > 0 ? 28 : 8
-      else score += 8
-      break
-    case 'schuppen': {
-      const sheds = countFields(
-        state,
-        (f) => f.kind === 'storage' && f.owner === player.id && !f.suit,
-      )
-      if (sheds <= 1) score += 14
-      else score -= 6 * (sheds - 1)
-      break
-    }
   }
 
   const need = victoryColumnsNeed(state)
-  // Märkte = zusätzliche ★-Ausgaben + Einkommen → VP-Ziel.
-  if (item === 'mehlstand' && mill > 0) score += need > 0 ? 36 : 12
-  else if (item === 'konfituerenstand' && jamKitchen > 0)
-    score += need > 0 ? 34 : 12
-  else if (need > 0 && (item === 'mehlstand' || item === 'konfituerenstand')) {
-    score += need <= 2 ? 18 : 10
-  }
-
-  // Kette zuerst, solange VP-Spalten noch offen sind.
+  // Kette zuerst, solange die Erntespalten noch offen sind.
   if (need > 0) {
     if (item === 'getreidefeld' && grain === 0) score += 18
     if (item === 'mehlmuehle' && mill === 0 && grain > 0) score += 22
     if (item === 'konfituerenkueche' && jamKitchen === 0 && beet > 0) score += 18
   }
 
-  if (item === 'mehlmuehle' && fruitMarket > 0 && grain === 0) score -= 10
   score += cashReserveMalus(player.money - price)
   return score
 }

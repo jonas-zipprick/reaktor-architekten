@@ -35,8 +35,7 @@ export function ScenarioPicker() {
           <h1>Ernte & Wochenmarkt</h1>
           <p className="menu-lead">
             Saat und Getreide ernten, zu Obst und Mehl veredeln, Konfitüre kochen
-            und an den Ständen verkaufen — Karten wandern frei zwischen Feldern,
-            Küchen, Schuppen und Marktständen.
+            und Mehl, Obst und Konfitüre auf die eigenen Erntefelder legen.
           </p>
         </header>
 
@@ -67,34 +66,29 @@ export function ScenarioPicker() {
             <div className="mode-brief">
               {single ? (
                 <p>
-                  Allein im Garten. Felder, Küchen und Stände sind
-                  gemeinschaftlich, bis jemand sie kauft. Schuppen gehören dir
-                  persönlich. Einziges Siegziel: {scenario.marketsToWin} Märkte
-                  mit Versorgung &gt; 0 am Zugende. Ohne Geld geht die Partie
-                  weiter.
+                  Allein im Garten. Felder und Küchen sind gemeinschaftlich, bis
+                  jemand sie kauft. Dein Schuppen und die Erntefelder gehören
+                  dir. Sieg, wenn Mehl, Obst und Konfitüre jeweils auf einem
+                  eigenen Erntefeld liegen. Ohne Geld geht die Partie weiter.
                 </p>
               ) : (
                 <p>
-                  Einziges Siegziel: {scenario.marketsToWin} Märkte mit
-                  Versorgung &gt; 0 am Zugende. Leere Kasse beendet nichts. Jeder
-                  hat eigene Schuppen; gekaufte Felder/Küchen/Stände gehören dem
-                  Käufer (Gebühr setzbar).
+                  Sieg, wenn Mehl, Obst und Konfitüre jeweils auf einem eigenen
+                  Erntefeld liegen. Leere Kasse beendet nichts. Jeder hat einen
+                  Schuppen und drei Erntefelder; gekaufte Felder und Küchen
+                  gehören dem Käufer (Gebühr setzbar).
                 </p>
               )}
               <ul className="scenario-facts">
                 {(
-                  ['source', 'factory', 'market'] as const
+                  ['source', 'factory'] as const
                 ).map((kind) => {
                     const list = scenario.fields.filter((f) => f.kind === kind)
                     if (!list.length) return null
                     return (
                       <li key={kind}>
                         <strong>
-                          {kind === 'source'
-                            ? 'Felder'
-                            : kind === 'factory'
-                              ? 'Küchen'
-                              : 'Stände'}
+                          {kind === 'source' ? 'Felder' : 'Küchen'}
                         </strong>
                         {list
                           .map((f) =>
@@ -109,11 +103,15 @@ export function ScenarioPicker() {
                 )}
                 <li>
                   <strong>Je Spieler</strong>
-                  {scenario.beetsPerPlayer} Schuppen
+                  1 Schuppen
+                </li>
+                <li>
+                  <strong>Karten</strong>
+                  {scenario.cardsPerSuit} je Sorte
                 </li>
                 <li>
                   <strong>Siegziel</strong>
-                  {scenario.marketsToWin}× Versorgung &gt; 0
+                  Mehl, Obst und Konfitüre je auf einem eigenen Erntefeld
                 </li>
               </ul>
             </div>
@@ -160,8 +158,8 @@ export function ScenarioPicker() {
                 beendet den Zug
               </li>
               <li>
-                + kauft Schuppen, Getreidefeld, Mehlmühle, Konfitürenküche,
-                Mehl- und Konfitürenstand (20¤, 40¤, 80¤, …)
+                + kauft Getreidefeld, Mehlmühle, Konfitürenküche (20¤, 40¤,
+                80¤, …)
               </li>
               <li>
                 Stapel: absteigend (7 → … → 2); Mehrfachklick wählt
@@ -175,14 +173,8 @@ export function ScenarioPicker() {
                 Zugende
               </li>
               <li>
-                Zugende: Regen/Getreide +1; Ausgaben +1 offen; Märkte &amp;
-                Eingänge abrechnen; &gt;+5 → Extra-Stapel
-                käuflich; über +5 oder unter −8 → Feld weg (kein Markt =
-                verloren)
-              </li>
-              <li>
-                Regen/Getreide am Zugende mehr als 8 Karten: Überernte (Stapel
-                weg)
+                Zugende: Regen/Getreide +1; Ausgaben +1 offen; Eingänge
+                abrechnen; &gt;+5 → Extra-Ausgabestapel; unter −8 → Feld weg
               </li>
               <li>Zeitstrahl: Züge scrubben, JSON exportieren/importieren</li>
             </ul>

@@ -50,6 +50,7 @@ import type { FieldId, GameState, PlayerId, ScenarioId } from '../types'
 import { createGame } from './factory'
 import {
   executeAuction,
+  executeBuyBeet,
   executeBuyFieldCopy,
   executeBuyInfra,
   buyableInfraLabel,
@@ -62,7 +63,7 @@ import {
 } from './rules'
 
 export const RECORD_FORMAT = 'va-record' as const
-export const RECORD_VERSION = 43 as const
+export const RECORD_VERSION = 51 as const
 
 export interface GameRecordSetup {
   scenarioId: ScenarioId
@@ -133,12 +134,9 @@ export type BuyFieldCopyAction = {
 }
 
 const BUYABLE_INFRA_IDS: BuyableInfra[] = [
-  'schuppen',
   'getreidefeld',
   'mehlmuehle',
   'konfituerenkueche',
-  'mehlstand',
-  'konfituerenstand',
 ]
 
 function isBuyableInfra(v: unknown): v is BuyableInfra {
@@ -261,7 +259,7 @@ export function applyAction(state: GameState, action: GameAction): GameState {
     case 'endTurn':
       return executeEndTurn(state)
     case 'buyBeet': {
-      const next = executeBuyInfra(state, 'schuppen')
+      const next = executeBuyBeet(state)
       if (next.actionError) {
         throw new Error(`Replay buyBeet failed: ${next.actionError}`)
       }
@@ -336,7 +334,7 @@ export function parseRecord(raw: string): GameRecord {
   }
   if (obj.version !== RECORD_VERSION) {
     throw new Error(
-      `Record-Version ${String(obj.version)} wird nicht unterstützt (erwartet ${RECORD_VERSION}, Regeln v8)`,
+      `Record-Version ${String(obj.version)} wird nicht unterstützt (erwartet ${RECORD_VERSION})`,
     )
   }
   const setup = obj.setup as Partial<GameRecordSetup> | undefined

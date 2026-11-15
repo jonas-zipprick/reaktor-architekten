@@ -6,6 +6,7 @@ import type {
   Owner,
   PlayerId,
   PlayerState,
+  ProductSuit,
   RawSuit,
   Recipe,
   Suit,
@@ -15,8 +16,6 @@ import {
   factoryLabel as factoryTitle,
   isProductSuit,
   isRawSuit,
-  isPointsSuit,
-  marketLabel as marketTitle,
   matchesRecipe,
   meterDeliveryPayout,
   meterOutputDrawCost,
@@ -24,6 +23,7 @@ import {
   recipeFulfillments,
   recipeLabel,
   beetFulfillments,
+  jamFulfillments,
   sourceLabel as sourceTitle,
   suitCounts,
   suitName,
@@ -31,27 +31,19 @@ import {
   hasOwnership,
   isSeedBed,
   outputRevealedCount,
-  withoutPoints,
   BOUGHT_FIELD_START_DEMAND,
   OVERSUPPLY_COLLAPSE,
-  POINTS_SUIT,
   SEED_BED_RECIPE,
+  VICTORY_COLUMN_COUNT,
+  VICTORY_COLUMN_SUITS,
   SUITS,
   TENSION_MIN,
-  VICTORY_COLUMN_COUNT,
   VICTORY_COLUMN_LENGTH,
+  victoryFieldId,
 } from '../types'
-import {
-  getScenario,
-  personalBeetLabel,
-  recipeForFactory,
-  ROW,
-} from '../data/scenarios'
+import { recipeForFactory, ROW } from '../data/scenarios'
 import { FACTORY_OUTPUT_SIZE } from './factory'
 import { createRng, shuffle } from './rng'
-
-/** Quelle kollabiert bei mehr als so vielen Karten. */
-const SOURCE_STACK_LIMIT = 8
 
 function cloneState(state: GameState): GameState {
   return structuredClone(state)
@@ -117,18 +109,13 @@ function setFieldMeter(field: FieldState, value: number): void {
   field.demand = value
 }
 
-/** Feld mit Ausgabestapel (Küche, Saatstand oder Markt-Siegpunkte). */
+/** Feld mit Ausgabestapel (Küche oder Saatstand). */
 export function hasOutputStack(field: FieldState): boolean {
-  return (
-    field.kind === 'factory' ||
-    isSeedBed(field) ||
-    field.kind === 'market'
-  )
+  return field.kind === 'factory' || isSeedBed(field)
 }
 
-/** Farbe der Ausgabe: Markt → Siegpunkte, sonst Feld-Sorte. */
+/** Farbe der Ausgabe. */
 export function outputSuit(field: FieldState): Suit | undefined {
-  if (field.kind === 'market') return POINTS_SUIT
   return field.suit
 }
 
@@ -157,17 +144,6 @@ export function factoryOutputs(field: FieldState): Card[][] {
   return field.outputs
 }
 
-/** Markteingänge (migriert Legacy-`stack` bei Bedarf). */
-export function marketInputs(field: FieldState): Card[][] {
-  if (field.kind !== 'market') return []
-  if (!field.inputs) {
-    field.inputs = [field.stack.length ? field.stack : []]
-    field.stack = []
-  }
-  if (field.inputs.length === 0) field.inputs.push([])
-  return field.inputs
-}
-
 /** Küche/Saatstand hat noch Karten auf irgendeinem Ausgabestapel. */
 export function factoryHasOutput(field: FieldState): boolean {
   if (!hasOutputStack(field)) return false
@@ -191,7 +167,6 @@ export function factoryProduct(
  * Saatstand: nur Obst.
  */
 export function canFeedFactory(card: Card, field: FieldState): boolean {
-  if (isPointsSuit(card.suit)) return false
   if (isSeedBed(field)) {
     return card.suit === 'clubs'
   }
@@ -246,9 +221,8 @@ function refillFactoryOutput(
   }
 }
 
-/** Neuen vollen Ausgabestapel anlegen (Überversorgung; nicht Markt). */
+/** Neuen vollen Ausgabestapel anlegen (Überversorgung). */
 function addFactoryOutputStack(state: GameState, field: FieldState): void {
-  if (field.kind === 'market') return
   const suit = outputSuit(field)
   if (!hasOutputStack(field) || !suit) return
   const outs = factoryOutputs(field)
@@ -261,11 +235,6 @@ function addFactoryOutputStack(state: GameState, field: FieldState): void {
   outs.push(next)
   if (!field.outputsRevealed) field.outputsRevealed = []
   field.outputsRevealed.push(next.length > 0 ? 1 : 0)
-}
-
-/** Neuen leeren Markteingang anlegen (Überversorgung). */
-function addMarketInput(field: FieldState): void {
-  marketInputs(field).push([])
 }
 
 /**
@@ -300,40 +269,65 @@ export function resolveLane(
   return lane === 'input' ? 'input' : 'output'
 }
 
-/** Die drei Siegpunkte-Spalten (migriert bei Bedarf). */
+/** Erntefelder eines Spielers. */
+export function playerVictoryFields(
+  state: GameState,
+  playerId: PlayerId,
+): FieldState[] {
+  const out: FieldState[] = []
+  for (let i = 0; i < VICTORY_COLUMN_COUNT; i++) {
+    const field = state.fields[victoryFieldId(playerId, i)]
+    if (field?.kind === 'victory') out.push(field)
+  }
+  return out
+}
+
+/** Einzelstapel eines Erntefeldes (migriert Legacy-`inputs`). */
 export function victoryColumns(field: FieldState): Card[][] {
   if (field.kind !== 'victory') return []
-  if (!field.inputs || field.inputs.length === 0) {
-    field.inputs = Array.from({ length: VICTORY_COLUMN_COUNT }, () => [])
+  if (field.inputs && field.inputs.length > 0 && field.stack.length === 0) {
+    field.stack = field.inputs.flat()
+    field.inputs = undefined
   }
-  while (field.inputs.length < VICTORY_COLUMN_COUNT) field.inputs.push([])
-  return field.inputs
+  return [field.stack]
 }
 
 /** @deprecated Alias — bitte victoryColumns nutzen. */
 export const victoryRows = victoryColumns
 
 /**
- * Spalte vollständig: genau 6 ★-Karten absteigend 7→2.
- * (Haken / Sieg erst bei voller Spalte, nicht schon bei einzelner 2.)
+ * Stapel ist sortiert: mindestens eine Karte, alle dieselbe Endprodukt-Sorte.
+ * Gemischte Stapel sind erlaubt, zählen aber nicht als fertig.
  */
-export function isVictoryColumnComplete(stack: Card[]): boolean {
-  if (stack.length !== VICTORY_COLUMN_LENGTH) return false
-  for (let i = 0; i < VICTORY_COLUMN_LENGTH; i++) {
-    const card = stack[i]!
-    if (!isPointsSuit(card.suit)) return false
-    if (card.rank !== ((7 - i) as Card['rank'])) return false
-  }
-  return true
+export function isVictoryColumnComplete(
+  stack: Card[],
+  _home?: ProductSuit | number,
+): boolean {
+  if (stack.length === 0) return false
+  const suit = stack[0]!.suit
+  if (!isProductSuit(suit)) return false
+  return stack.every((c) => c.suit === suit)
 }
 
 /** @deprecated Alias — bitte isVictoryColumnComplete nutzen. */
 export const isVictoryRowComplete = isVictoryColumnComplete
 
-/** Alle drei Spalten voll → Spieler hat gewonnen. */
+/** Ein Erntefeld ist fertig (nur eine Endprodukt-Sorte). */
 export function isVictoryFieldComplete(field: FieldState): boolean {
   if (field.kind !== 'victory') return false
-  return victoryColumns(field).every(isVictoryColumnComplete)
+  return isVictoryColumnComplete(field.stack)
+}
+
+/** Sieg: drei Erntefelder, je eine andere der drei Endprodukt-Sorten. */
+export function isPlayerHarvestComplete(
+  state: GameState,
+  playerId: PlayerId,
+): boolean {
+  const fields = playerVictoryFields(state, playerId)
+  if (fields.length !== VICTORY_COLUMN_COUNT) return false
+  if (!fields.every(isVictoryFieldComplete)) return false
+  const suits = new Set(fields.map((f) => f.stack[0]!.suit))
+  return VICTORY_COLUMN_SUITS.every((suit) => suits.has(suit))
 }
 
 /** Stapel für die gewählte Spur / den gewählten Index. */
@@ -343,17 +337,7 @@ export function movableStack(
   stackIndex = 0,
 ): Card[] {
   if (field.kind === 'victory') {
-    return (
-      victoryColumns(field)[Math.max(0, stackIndex)] ??
-      victoryColumns(field)[0]!
-    )
-  }
-  if (field.kind === 'market') {
-    const resolved = resolveLane(field, lane)
-    if (resolved === 'output') return factoryOutputStack(field, stackIndex)
-    return (
-      marketInputs(field)[Math.max(0, stackIndex)] ?? marketInputs(field)[0]!
-    )
+    return field.stack
   }
   const resolved = resolveLane(field, lane)
   if (resolved === 'output') return factoryOutputStack(field, stackIndex)
@@ -371,9 +355,6 @@ export function maxMovableRun(
   }
   const resolved = resolveLane(field, lane)
   if (resolved === 'output') return maxRevealedOutputRun(field, stackIndex)
-  if (field.kind === 'market' && resolved === 'input') {
-    return maxRunFromTop(movableStack(field, 'input', stackIndex))
-  }
   return maxRunFromTop(movableStack(field, lane, stackIndex))
 }
 
@@ -391,19 +372,9 @@ export function movableCard(
     return stack[stack.length - 1] ?? null
   }
   if (hasOutputStack(field)) {
-    if (lane === 'input') {
-      if (field.kind === 'market') {
-        const stack = movableStack(field, 'input', stackIndex)
-        return stack[stack.length - 1] ?? null
-      }
-      return topCard(field) ?? null
-    }
+    if (lane === 'input') return topCard(field) ?? null
     if (lane === 'output') return factoryProduct(field, stackIndex)
-    return factoryProduct(field, stackIndex) ?? (
-      field.kind === 'market'
-        ? (movableStack(field, 'input', stackIndex).at(-1) ?? null)
-        : (topCard(field) ?? null)
-    )
+    return factoryProduct(field, stackIndex) ?? topCard(field) ?? null
   }
   return topCard(field) ?? null
 }
@@ -513,20 +484,12 @@ function fitsOnCards(card: Card, stack: Card[]): boolean {
 function fitsOnStack(
   card: Card,
   field: FieldState,
-  toStackIndex = 0,
+  _toStackIndex = 0,
 ): boolean {
   if (field.kind === 'victory') {
-    const cols = victoryColumns(field)
-    const stack = cols[Math.max(0, toStackIndex)] ?? cols[0]!
-    if (stack.length >= VICTORY_COLUMN_LENGTH) return false
-    // Leere Spalte: beliebiger Start; sonst absteigend.
-    if (stack.length === 0) return true
-    return fitsOnCards(card, stack)
-  }
-  if (field.kind === 'market') {
-    const inputs = marketInputs(field)
-    const stack = inputs[Math.max(0, toStackIndex)] ?? inputs[0]!
-    return fitsOnCards(card, stack)
+    if (field.stack.length >= VICTORY_COLUMN_LENGTH) return false
+    if (field.stack.length === 0) return true
+    return fitsOnCards(card, field.stack)
   }
   if (hasOutputStack(field)) {
     // Ziel ist immer der Rezept-/Markt-Eingang, nie eine Ausgabe.
@@ -545,13 +508,11 @@ export type MoveKind =
   | 'supply'
   /** Rohstoff von Fabrik/Lager zu Fabrik (oder Rohstoff vom Lager auf eine Fabrik). */
   | 'shift'
-  /** Fertigprodukt auf einen Marktstand. */
-  | 'deliver'
-  /** Zutat auf den Küchen-Eingang (Bedarf ↑, Einkommen wie Markt). */
+  /** Zutat auf den Küchen-Eingang (Bedarf ↑, Einkommen am Zugende). */
   | 'feed'
   /** Beliebige Karte auf einen Schuppen (Umsortieren). */
   | 'park'
-  /** Siegpunkte auf eine VP-Spalte (absteigend, bis 2). */
+  /** Endprodukt auf eine Erntespalte (jede Spalte nimmt alle drei Sorten). */
   | 'claim'
 
 export interface MoveCheck {
@@ -612,11 +573,8 @@ export function checkMove(
       ? (state.selection.stackIndex ?? 0)
       : 0)
   const toStackIndex = opts.toStackIndex ?? 0
-  // Umsortieren innerhalb des Siegpunktefeldes (andere Spalte).
   if (fromId === toId) {
-    if (from.kind !== 'victory' || fromStackIndex === toStackIndex) {
-      return fail('Gleiches Feld')
-    }
+    return fail('Gleiches Feld')
   }
   const resolved =
     from.kind === 'victory' ? 'main' : resolveLane(from, fromLane)
@@ -645,7 +603,6 @@ export function checkMove(
 
   const allRaw = packet.every((c) => isRawSuit(c.suit))
   const allProduct = packet.every((c) => isProductSuit(c.suit))
-  const allPoints = packet.every((c) => isPointsSuit(c.suit))
 
   // Ausgabe: Bedarfspreis → Bank, Eigentümergebühr → Inhaber; Messer −1.
   // Vom Eingang zurücknehmen ist kostenlos und ändert den Bedarf nicht.
@@ -665,13 +622,11 @@ export function checkMove(
   if (to.kind === 'victory') {
     const toInfraBlock = infraOwnerRejected(to, mover.id)
     if (toInfraBlock) return fail(toInfraBlock, { count: n })
-    if (!allPoints) {
-      return fail('Nur Siegpunkte auf das Siegpunktefeld', { count: n })
+    if (!allProduct) {
+      return fail('Nur Mehl, Obst oder Konfitüre auf ein Erntefeld', { count: n })
     }
-    // Gesamter Teilstapel muss auf die Spalte passen (absteigend).
-    const col = victoryColumns(to)[Math.max(0, toStackIndex)] ?? []
-    if (col.length + n > VICTORY_COLUMN_LENGTH) {
-      return fail('Spalte ist voll (max. 6 Karten)', { count: n })
+    if (to.stack.length + n > VICTORY_COLUMN_LENGTH) {
+      return fail('Erntefeld ist voll (max. 6 Karten)', { count: n })
     }
     kind = 'claim'
     payments = mergePayments(takeFees)
@@ -700,35 +655,16 @@ export function checkMove(
   } else if (to.kind === 'source') {
     const parkFail = sourceParkRejected(to, packet)
     if (parkFail) return fail(parkFail, { count: n })
-    if (packet.some((c) => isPointsSuit(c.suit))) {
-      return fail('Siegpunkte gehören nicht auf Felder', { count: n })
-    }
     kind = 'park'
     payments = mergePayments([...takeFees, usageFee(to, mover.id)])
-  } else if (to.kind === 'market') {
-    if (!to.suit) return fail('Markt ohne Farbe', { count: n })
-    if (packet.some((c) => isPointsSuit(c.suit))) {
-      return fail('Siegpunkte gehören nicht auf den Markteingang', { count: n })
-    }
-    if (!packet.every((c) => c.suit === to.suit)) {
-      return fail(`Nur ${suitName(to.suit)}-Karten`, { count: n })
-    }
-    // Ablegen: Eigentümergebühr jetzt; Einkommen/Bedarf am Zugende.
-    kind = 'deliver'
-    payments = mergePayments([...takeFees, usageFee(to, mover.id)])
-  } else if (allPoints) {
-    return fail(
-      'Siegpunkte gehören auf das Siegpunktefeld oder einen Schuppen',
-      { count: n },
-    )
   } else if (allRaw) {
     return fail(
-      'Zutaten gehören in eine Küche, ein Beet, einen Schuppen oder an den passenden Stand',
+      'Zutaten gehören in eine Küche, ein Beet oder einen Schuppen',
       { count: n },
     )
   } else if (allProduct) {
     return fail(
-      'Fertigprodukte gehören auf einen Marktstand, Beet, Schuppen oder in die Weiterverarbeitung',
+      'Mehl, Obst und Konfitüre gehören auf ein Erntefeld, einen Schuppen oder in die Weiterverarbeitung',
       { count: n },
     )
   } else {
@@ -748,7 +684,7 @@ export function checkMove(
     fromMeterAfter,
   }
   // Einkommen zuerst (Bargeld aus der Bank), Gebühren danach.
-  const earns = kind === 'deliver' || kind === 'feed'
+  const earns = kind === 'feed'
   const cashAfterIncome = earns
     ? mover.money + Math.min(income, state.bank)
     : mover.money
@@ -892,10 +828,7 @@ export function selectField(
   const selLane: StackLane | undefined =
     resolved === 'main' ? undefined : resolved
   if (resolved === 'input') {
-    const inStack =
-      field.kind === 'market'
-        ? movableStack(field, 'input', idx)
-        : field.stack
+    const inStack = field.stack
     if (inStack.length === 0) {
       clearSelection(next)
       return next
@@ -943,16 +876,14 @@ function applyEndOfTurnDemand(state: GameState): void {
   resolveDemandExtremes(state)
 }
 
-/** Felder mit Bedarfsmesser (Markt, Küche, Saatstand). */
+/** Felder mit Bedarfsmesser (Küche, Saatstand). */
 function demandFields(state: GameState): FieldState[] {
-  return Object.values(state.fields).filter(
-    (f) => f.kind === 'market' || hasOutputStack(f),
-  )
+  return Object.values(state.fields).filter((f) => hasOutputStack(f))
 }
 
 /**
  * Unter −8: Feld entfernen.
- * Über +5: Extra-Ausgabestapel bzw. Markteingang, Bedarf → 0.
+ * Über +5: Extra-Ausgabestapel (Küche, Saatstand), Bedarf → 0.
  */
 function resolveDemandExtremes(state: GameState): void {
   const snapshot = demandFields(state)
@@ -971,23 +902,9 @@ function resolveDemandExtremes(state: GameState): void {
   checkEndConditions(state)
 }
 
-/** Überversorgung: neuen Stapel/Eingang, Bedarf auf 0. */
+/** Überversorgung: neuen Ausgabestapel, Bedarf auf 0. */
 function expandOversupply(state: GameState, field: FieldState): void {
   const before = meterLabel(fieldMeter(field))
-  if (field.kind === 'market') {
-    addMarketInput(field)
-    setFieldMeter(field, 0)
-    state.planetLimitSeq += 1
-    state.planetLimitFlash = `${field.label}: neuer Eingang`
-    state.planetLimitId = field.id
-    state.stats.marketsSpawned += 1
-    log(
-      state,
-      `${field.label}: Bedarf ${before} — neuer Eingang, Bedarf 0.`,
-      'tension',
-    )
-    return
-  }
   if (hasOutputStack(field)) {
     addFactoryOutputStack(state, field)
     setFieldMeter(field, 0)
@@ -1011,10 +928,6 @@ function removeDemandField(state: GameState, field: FieldState): void {
   state.planetLimitId = field.id
   discard(state, field.stack)
   field.stack = []
-  if (field.kind === 'market') {
-    for (const input of marketInputs(field)) discard(state, input)
-    field.inputs = []
-  }
   if (hasOutputStack(field)) {
     for (const out of factoryOutputs(field)) discard(state, out)
     field.outputs = []
@@ -1116,42 +1029,6 @@ function insertFieldAfter(
 
 const START_CARDS_PER_SPAWNED_SOURCE = 2
 
-function nextMarketLabel(state: GameState, suit: Suit): string {
-  const n =
-    Object.values(state.fields).filter(
-      (f) => f.kind === 'market' && f.suit === suit,
-    ).length + 1
-  return marketTitle(suit, n)
-}
-
-function spawnMarketField(
-  state: GameState,
-  suit: Suit,
-  afterId: FieldId,
-): FieldState {
-  state.marketSpawnSeq += 1
-  const id = `markt-${suit}-${state.marketSpawnSeq}`
-  const spawned: FieldState = {
-    id,
-    kind: 'market',
-    suit,
-    label: nextMarketLabel(state, suit),
-    row: ROW.market,
-    stack: [],
-    inputs: [[]],
-    outputs: [[]],
-    outputsRevealed: [0],
-    fee: 0,
-    demand: 0,
-  }
-  refillFactoryOutput(state, spawned, 0)
-  if ((spawned.outputsRevealed?.[0] ?? 0) === 0 && (spawned.outputs?.[0]?.length ?? 0) > 0) {
-    spawned.outputsRevealed = [1]
-  }
-  insertFieldAfter(state, afterId, spawned)
-  return spawned
-}
-
 function spawnFactoryField(
   state: GameState,
   suit: Suit,
@@ -1196,94 +1073,42 @@ function spawnFactoryField(
   return spawned
 }
 
-/**
- * Quelle (Regen / Getreidefeld) mit mehr als 8 Karten: Feld vom Brett nehmen.
- * Nur am Zugende (nach dem Nachziehen), nicht sofort beim Ablegen.
- */
-
-function collapseSourceIfOverloaded(
-  state: GameState,
-  source: FieldState,
-): void {
-  if (source.kind !== 'source') return
-  if (source.stack.length <= SOURCE_STACK_LIMIT) return
-
-  const n = source.stack.length
-  const id = source.id
-  const label = source.label
-  state.planetLimitSeq += 1
-  state.planetLimitFlash = `${label}: ${n} Karten`
-  state.planetLimitId = id
-  discard(state, source.stack)
-  source.stack = []
-  if (hasOutputStack(source)) {
-    for (const out of factoryOutputs(source)) discard(state, out)
-    source.outputs = []
-    source.outputsRevealed = []
-  }
-  delete state.fields[id]
-  if (state.selection?.fieldId === id) clearSelection(state)
-  state.stats.sourceCollapses += 1
-  log(
-    state,
-    `${label}: ${n} Karten — Feld kollabiert und wird entfernt.`,
-    'tension',
-  )
-}
-
-function marketCount(state: GameState): number {
-  return Object.values(state.fields).filter((f) => f.kind === 'market').length
-}
-
-/** Märkte mit Bedarf &gt; 0 („Versorgung“ über 0). */
-export function suppliedMarketCount(state: GameState): number {
-  return Object.values(state.fields).filter(
-    (f) => f.kind === 'market' && fieldMeter(f) > 0,
-  ).length
-}
-
-/** Anzahl voller Siegpunkte-Spalten (absteigend, endet auf 2). */
+/** Anzahl fertiger Erntefelder (nur eine Sorte je Feld). */
 export function completedVictoryColumns(
   state: GameState,
   playerId: PlayerId,
 ): number {
-  const field = state.fields[`sieg-${playerId}`]
-  if (!field || field.kind !== 'victory') return 0
-  return victoryColumns(field).filter(isVictoryColumnComplete).length
+  return playerVictoryFields(state, playerId).filter(isVictoryFieldComplete)
+    .length
 }
 
 /** @deprecated Alias — bitte completedVictoryColumns nutzen. */
 export const completedVictoryRows = completedVictoryColumns
 
-/** Siegpunkte (Karten) auf dem Feld eines Spielers. */
+/** Karten auf den Erntefeldern eines Spielers. */
 export function victoryPointCount(
   state: GameState,
   playerId: PlayerId,
 ): number {
-  const field = state.fields[`sieg-${playerId}`]
-  if (!field || field.kind !== 'victory') return 0
-  return victoryColumns(field).reduce((s, col) => s + col.length, 0)
+  return playerVictoryFields(state, playerId).reduce(
+    (s, f) => s + f.stack.length,
+    0,
+  )
 }
 
 /**
- * Niederlage: keine Märkte.
- * Sieg: ein Spieler hat alle 3 Siegpunkte-Spalten voll (je 6 Karten, 7→2).
+ * Sieg: Mehl, Obst und Konfitüre liegen jeweils nur auf ihrem Erntefeld.
  */
 function checkEndConditions(
   state: GameState,
   _opts: { checkWin?: boolean } = {},
 ): void {
   if (state.ended) return
-  if (marketCount(state) === 0) {
-    endGame(state, 'Kein Marktstand mehr — Partie verloren.')
-    return
-  }
   for (const player of state.players) {
-    const field = state.fields[`sieg-${player.id}`]
-    if (field && isVictoryFieldComplete(field)) {
+    if (isPlayerHarvestComplete(state, player.id)) {
       endGame(
         state,
-        `${player.name} hat alle ${VICTORY_COLUMN_COUNT} Siegpunkte-Spalten voll (7→2).`,
+        `${player.name} hat Mehl, Obst und Konfitüre jeweils auf einem eigenen Erntefeld.`,
       )
       return
     }
@@ -1363,34 +1188,19 @@ export function executeMove(
     from.outputsRevealed = outsRev
   }
 
-  const destStack =
-    to.kind === 'victory'
-      ? victoryColumns(to)[Math.max(0, toStackIndex)] ??
-        victoryColumns(to)[0]!
-      : to.kind === 'market'
-        ? marketInputs(to)[Math.max(0, toStackIndex)] ?? marketInputs(to)[0]!
-        : to.stack
+  const destStack = to.stack
 
   const costNote = check.cost > 0 ? ` (−${check.cost}¤)` : ''
   const packetNote =
     n > 1 ? ` (${n} Karten: ${packet.map(describeCard).join(' ')})` : ''
   const fromLabel =
-    from.kind === 'victory'
-      ? `${from.label} (Spalte ${(fromStackIndex ?? 0) + 1})`
-      : resolved === 'input'
-        ? `${from.label} (Eingang)`
-        : resolved === 'output' && from.kind === 'market'
-          ? `${from.label} (Ausgabe)`
-          : from.label
-  const toLabel =
-    to.kind === 'victory'
-      ? `${to.label} (Spalte ${toStackIndex + 1})`
-      : to.label
+    resolved === 'input' ? `${from.label} (Eingang)` : from.label
+  const toLabel = to.label
 
-  if (check.kind === 'deliver' || check.kind === 'feed') {
+  if (check.kind === 'feed') {
     for (const card of packet) destStack.push(card)
     pay(next, check.payments)
-    const verb = check.kind === 'feed' ? 'legt' : 'liefert'
+    const verb = 'legt'
     log(
       next,
       `${player.name} ${verb}${packetNote || ` ${describeCard(packet[0]!)}`} von ${fromLabel} auf ${toLabel}${costNote} (Abrechnung am Zugende).`,
@@ -1461,54 +1271,36 @@ export function setFee(
 
 /** Käufliche Gemeinschafts-/Infrastrukturfelder (Plus-Button). */
 export type BuyableInfra =
-  | 'schuppen'
   | 'getreidefeld'
   | 'mehlmuehle'
   | 'konfituerenkueche'
-  | 'mehlstand'
-  | 'konfituerenstand'
 
 export const BUYABLE_INFRA: BuyableInfra[] = [
   'getreidefeld',
   'mehlmuehle',
   'konfituerenkueche',
-  'mehlstand',
-  'konfituerenstand',
-  'schuppen',
 ]
 
 export function buyableInfraLabel(item: BuyableInfra): string {
   switch (item) {
-    case 'schuppen':
-      return 'Schuppen'
     case 'getreidefeld':
       return 'Getreidefeld'
     case 'mehlmuehle':
       return 'Mehlmühle'
     case 'konfituerenkueche':
       return 'Konfitürenküche'
-    case 'mehlstand':
-      return 'Mehlstand'
-    case 'konfituerenstand':
-      return 'Konfitürenstand'
   }
 }
 
 /** Kurzname für den Plus-Button. */
 export function buyableInfraShort(item: BuyableInfra): string {
   switch (item) {
-    case 'schuppen':
-      return 'Schuppen'
     case 'getreidefeld':
       return 'Getreide'
     case 'mehlmuehle':
       return 'Mühle'
     case 'konfituerenkueche':
       return 'Küche'
-    case 'mehlstand':
-      return 'Mehlstand'
-    case 'konfituerenstand':
-      return 'Konfi-Stand'
   }
 }
 
@@ -1525,14 +1317,9 @@ export function personalBeetCount(
 function countBuyableInfra(
   state: GameState,
   item: BuyableInfra,
-  playerId?: PlayerId,
 ): number {
   const fields = Object.values(state.fields)
   switch (item) {
-    case 'schuppen':
-      return playerId
-        ? personalBeetCount(state, playerId)
-        : fields.filter((f) => f.kind === 'storage' && !f.suit).length
     case 'getreidefeld':
       return fields.filter((f) => f.kind === 'source' && f.suit === 'spades')
         .length
@@ -1542,87 +1329,28 @@ function countBuyableInfra(
     case 'konfituerenkueche':
       return fields.filter((f) => f.kind === 'factory' && f.suit === 'steel')
         .length
-    case 'mehlstand':
-      return fields.filter((f) => f.kind === 'market' && f.suit === 'diamonds')
-        .length
-    case 'konfituerenstand':
-      return fields.filter((f) => f.kind === 'market' && f.suit === 'steel')
-        .length
   }
 }
 
 /**
- * Preis: 20¤, 40¤, 80¤, … (jeweils verdoppelt).
- * Schuppen: nur nach bereits *gekauften* Extras pro Spieler
- * (Start-Schuppen zählen nicht — 1. Kauf immer 20¤).
- * Sonst: nach globaler Anzahl des Typs.
+ * Preis: 20¤, 40¤, 80¤, … (jeweils verdoppelt) nach globaler Anzahl des Typs.
  */
 export function nextBuyInfraPrice(
   state: GameState,
   item: BuyableInfra,
-  playerId: PlayerId,
+  _playerId: PlayerId,
 ): number {
-  if (item === 'schuppen') {
-    const owned = personalBeetCount(state, playerId)
-    const starts =
-      state.beetsPerPlayer ??
-      getScenario(state.scenarioId).beetsPerPlayer
-    const bought = Math.max(0, owned - starts)
-    return 20 * 2 ** bought
-  }
-  const k = countBuyableInfra(state, item, playerId)
+  const k = countBuyableInfra(state, item)
   if (k < 1) return 20
   return 20 * 2 ** (k - 1)
 }
 
-/** @deprecated Alias — nutze nextBuyInfraPrice(..., 'schuppen'). */
-export function nextBeetPrice(state: GameState, playerId: PlayerId): number {
-  return nextBuyInfraPrice(state, 'schuppen', playerId)
+/** @deprecated Schuppenkauf entfällt — jeder hat genau einen. */
+export function nextBeetPrice(_state: GameState, _playerId: PlayerId): number {
+  return 0
 }
 
-function nextPersonalBeetIndex(state: GameState, playerId: PlayerId): number {
-  let max = 0
-  const re = new RegExp(`^lager-${playerId}-(\\d+)$`)
-  for (const f of Object.values(state.fields)) {
-    const m = re.exec(f.id)
-    if (m) max = Math.max(max, Number(m[1]))
-  }
-  return max + 1
-}
-
-function spawnBoughtSchuppen(
-  state: GameState,
-  playerId: PlayerId,
-): FieldState | null {
-  const index = nextPersonalBeetIndex(state, playerId)
-  const multi = state.players.length > 1
-  const id = `lager-${playerId}-${index}`
-  if (state.fields[id]) return null
-  const spawned: FieldState = {
-    id,
-    kind: 'storage',
-    label: personalBeetLabel(playerId, index, multi),
-    row: ROW.storage,
-    owner: playerId,
-    fee: 0,
-    stack: [],
-  }
-  const anchor =
-    [...Object.keys(state.fields)]
-      .reverse()
-      .find((fid) => {
-        const f = state.fields[fid]!
-        return f.kind === 'storage' && f.owner === playerId && !f.suit
-      }) ??
-    [...Object.keys(state.fields)]
-      .reverse()
-      .find((fid) => state.fields[fid]!.kind === 'storage') ??
-    Object.keys(state.fields)[0]!
-  insertFieldAfter(state, anchor, spawned)
-  return spawned
-}
-
-/** Feld über Plus-Button kaufen (Schuppen persönlich, Rest gemeinschaftlich). */
+/** Feld über Plus-Button kaufen (Getreidefeld, Mehlmühle, Konfitürenküche). */
 export function executeBuyInfra(
   state: GameState,
   item: BuyableInfra,
@@ -1641,32 +1369,20 @@ export function executeBuyInfra(
   }
 
   let spawned: FieldState | null = null
-  if (item === 'schuppen') {
-    spawned = spawnBoughtSchuppen(next, player.id)
-  } else if (item === 'getreidefeld') {
+  if (item === 'getreidefeld') {
     spawned = spawnAdditionalSource(next, 'spades')
   } else if (item === 'mehlmuehle') {
     spawned = spawnFactoryField(next, 'diamonds')
   } else if (item === 'konfituerenkueche') {
     spawned = spawnFactoryField(next, 'steel')
-  } else if (item === 'mehlstand' || item === 'konfituerenstand') {
-    const suit = item === 'mehlstand' ? 'diamonds' : 'steel'
-    const anchor =
-      [...Object.keys(next.fields)]
-        .reverse()
-        .find((fid) => next.fields[fid]!.kind === 'market') ??
-      Object.keys(next.fields)[0]!
-    spawned = spawnMarketField(next, suit, anchor)
   }
 
   if (!spawned) {
     return failAction(next, `${buyableInfraLabel(item)} konnte nicht angelegt werden`)
   }
 
-  if (item !== 'schuppen') {
-    spawned.owner = player.id
-    spawned.fee = 0
-  }
+  spawned.owner = player.id
+  spawned.fee = 0
 
   player.money -= price
   next.bank += price
@@ -1683,9 +1399,10 @@ export function executeBuyInfra(
   return next
 }
 
-/** Neuen persönlichen Schuppen kaufen. */
+/** @deprecated Schuppenkauf entfällt. */
 export function executeBuyBeet(state: GameState): GameState {
-  return executeBuyInfra(state, 'schuppen')
+  const next = cloneState(state)
+  return failAction(next, 'Schuppen können nicht gekauft werden')
 }
 
 /** @deprecated Kopien entfallen — Überversorgung erzeugt Extra-Stapel. */
@@ -1708,7 +1425,7 @@ export function nextFieldCopyPrice(state: GameState, fieldId: FieldId): number {
 function countSimilarDemandFields(state: GameState, field: FieldState): number {
   return Object.values(state.fields).filter((f) => {
     if (f.kind !== field.kind) return false
-    if (field.kind === 'market' || field.kind === 'factory') {
+    if (field.kind === 'factory') {
       return f.suit === field.suit
     }
     if (isSeedBed(field)) return isSeedBed(f)
@@ -1852,64 +1569,7 @@ function advanceTurn(state: GameState): void {
 }
 
 /**
- * Markt-Lieferungen abrechnen (je Waren-Karte) und Eingänge leeren.
- * Siegpunkte auf Eingängen bleiben liegen und zählen nicht.
- * Einkommen geht an den aktiven Spieler.
- */
-function settleAndClearMarkets(state: GameState, player: PlayerState): void {
-  const notes: string[] = []
-  for (const field of Object.values(state.fields)) {
-    if (field.kind !== 'market') continue
-    const inputs = marketInputs(field)
-    let totalGoods = 0
-    for (const input of inputs) totalGoods += withoutPoints(input).length
-    const anyPoints = inputs.some((input) =>
-      input.some((c) => isPointsSuit(c.suit)),
-    )
-    if (totalGoods === 0) {
-      if (anyPoints) {
-        notes.push(`${field.label}: nur Siegpunkte — bleiben liegen`)
-      }
-      continue
-    }
-
-    let meter = fieldMeter(field)
-    let income = 0
-    for (const input of inputs) {
-      for (const c of withoutPoints(input)) {
-        void c
-        const payout = meterDeliveryPayout(meter)
-        income += payout.income
-        meter = payout.meterAfter
-      }
-    }
-    state.stats.productsDelivered += totalGoods
-    setFieldMeter(field, meter)
-    const paid = payFromBank(state, income)
-    for (const input of inputs) {
-      const goods = withoutPoints(input)
-      const kept = input.filter((c) => isPointsSuit(c.suit))
-      discard(state, goods)
-      input.length = 0
-      for (const c of kept) input.push(c)
-    }
-    const claim = income - paid
-    notes.push(
-      `${field.label} ${totalGoods}× → +${paid}¤${claim > 0 ? ` (+${claim} Forderung)` : ''} ${suitSymbol(field.suit!)}${meterLabel(meter)}`,
-    )
-  }
-  if (notes.length) {
-    log(
-      state,
-      `${player.name}: Markt-Abrechnung — ${notes.join('; ')}.`,
-      'money',
-    )
-  }
-}
-
-/**
  * Küchen-/Saatstand-Eingänge abrechnen (je Rezept-Erfüllung) und leeren.
- * Siegpunkte bleiben liegen und zählen nicht zum Rezept.
  * Beet: ohne mind. 1 Wasser + 1 Saat weder Erfüllung noch Abräumen.
  */
 function settleAndClearInputs(state: GameState, player: PlayerState): void {
@@ -1917,21 +1577,19 @@ function settleAndClearInputs(state: GameState, player: PlayerState): void {
   for (const field of Object.values(state.fields)) {
     if (!(field.kind === 'factory' || isSeedBed(field))) continue
     if (field.stack.length === 0) continue
-    const goods = withoutPoints(field.stack)
-    const keptPoints = field.stack.filter((c) => isPointsSuit(c.suit))
-    if (goods.length === 0) {
-      notes.push(`${field.label}: nur Siegpunkte — bleiben liegen`)
-      continue
-    }
+    const goods = field.stack
     const recipe = field.recipe ?? (isSeedBed(field) ? SEED_BED_RECIPE : {})
     const isBeetFactory = field.kind === 'factory' && field.suit === 'clubs'
-    // Beet: bei mind. 1 Wasser + 1 Saat zählt jede Waren-Karte; sonst Rezept.
+    const isJamKitchen = field.kind === 'factory' && field.suit === 'steel'
+    // Beet / Konfitürenküche: erst bei beiden Zutaten; sonst Rezept-Paare.
     const pairs = isBeetFactory
       ? beetFulfillments(goods)
-      : recipeFulfillments(goods, recipe)
+      : isJamKitchen
+        ? jamFulfillments(goods)
+        : recipeFulfillments(goods, recipe)
 
-    // Beet ohne beide Sorten: Waren bleiben (mit ggf. Siegpunkten).
-    if (isBeetFactory && pairs === 0) {
+    // Ohne notwendige Kombination: Waren bleiben liegen.
+    if ((isBeetFactory || isJamKitchen) && pairs === 0) {
       notes.push(`${field.label} unvollständig — bleibt liegen`)
       continue
     }
@@ -1946,7 +1604,7 @@ function settleAndClearInputs(state: GameState, player: PlayerState): void {
     setFieldMeter(field, meter)
     const paid = payFromBank(state, income)
     discard(state, goods)
-    field.stack = keptPoints
+    field.stack = []
     const claim = income - paid
     if (pairs > 0 || paid > 0) {
       notes.push(
@@ -1967,10 +1625,10 @@ function settleAndClearInputs(state: GameState, player: PlayerState): void {
 
 /**
  * Zugende „Karten ziehen und Produzieren“:
- * 1. Regen/Getreide ziehen nach; Überfüllung → Quellenkollaps (Saatstand nicht).
+ * 1. Regen/Getreide ziehen nach (Saatstand nicht).
  * 2. Jeder Ausgabestapel erhält eine offene Karte obenauf.
- * 3. Märkte und Küchen-/Saatstand-Eingänge abrechnen und leeren.
- * 4. Unter −8 Feld weg; über +5 Extra-Stapel (kein Markt-−1).
+ * 3. Küchen-/Saatstand-Eingänge abrechnen und ggf. leeren.
+ * 4. Unter −8 Feld weg; über +5 Extra-Ausgabestapel.
  */
 
 export function executeEndTurn(state: GameState): GameState {
@@ -1991,12 +1649,6 @@ export function executeEndTurn(state: GameState): GameState {
     source.stack.push(card)
     drawn.push(describeCard(card))
   }
-  for (const source of fields) {
-    if (source.kind === 'source' && !isSeedBed(source)) {
-      collapseSourceIfOverloaded(next, source)
-    }
-  }
-
   const producedIds: FieldId[] = []
   const outputDrawn: string[] = []
   for (const field of fields) {
@@ -2031,13 +1683,12 @@ export function executeEndTurn(state: GameState): GameState {
     'info',
   )
 
-  // Zuerst ablegen abrechnen, dann Über-/Unterversorgung.
-  settleAndClearMarkets(next, player)
+  // Eingänge abrechnen, dann Über-/Unterversorgung.
   settleAndClearInputs(next, player)
 
   applyEndOfTurnDemand(next)
 
-  // Sieg: VP-Vorrat leer (auch hier nach Nachziehen/Kollaps prüfen).
+  // Sieg: jede Endprodukt-Sorte in ihrer Spalte.
   checkEndConditions(next, { checkWin: true })
 
   advanceTurn(next)

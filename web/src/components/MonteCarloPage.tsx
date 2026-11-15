@@ -69,7 +69,7 @@ const COLUMNS: { key: SortKey; label: string; tip: string }[] = [
   {
     key: 'sourceCollapses',
     label: 'Q-Kol.',
-    tip: 'Quellen-Kollapse (am Zugende noch mehr als 8 Karten auf dem Stapel).',
+    tip: 'Quellen-Kollapse (entfällt — immer 0).',
   },
   {
     key: 'marketsSpawned',

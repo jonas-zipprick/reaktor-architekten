@@ -62,6 +62,11 @@
   align-items: stretch;
 }
 
+/* Ernte unten als eigene Zeile. */
+.board-harvest {
+  width: 100%;
+}
+
 .board-cell-with-buy {
   display: flex;
   flex-direction: row;

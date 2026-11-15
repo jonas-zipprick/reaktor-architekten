@@ -21,6 +21,7 @@ import {
 import {
   auctionInfo,
   executeAuction,
+  executeBuyBeet,
   executeBuyFieldCopy,
   executeBuyInfra,
   type BuyableInfra,
@@ -68,8 +69,8 @@ function topCards(
   const field = state.fields[fieldId]
   if (!field) return []
   let stack: Card[]
-  if (field.kind === 'market') {
-    stack = field.inputs?.[stackIndex] ?? field.inputs?.[0] ?? field.stack
+  if (field.kind === 'victory') {
+    stack = field.stack
   } else if (hasOutputStack(field) && lane !== 'input') {
     stack = field.outputs?.[stackIndex] ?? field.outputs?.[0] ?? []
   } else {
@@ -110,11 +111,11 @@ interface GameStore {
   gift: (to: PlayerId, amount: number) => void
   /** „Karten ziehen und Produzieren“ — beendet den Zug. */
   endTurn: () => void
-  /** Infrastruktur kaufen (Schuppen, Getreidefeld, Mehlmühle, …). */
+  /** Infrastruktur kaufen (Getreidefeld, Mehlmühle, Konfitürenküche). */
   buyInfra: (item: BuyableInfra) => void
   /** Kopie eines Feldes mit positivem Bedarf kaufen. */
   buyFieldCopy: (fieldId: FieldId) => void
-  /** @deprecated nutze buyInfra('schuppen') */
+  /** @deprecated Schuppenkauf entfällt. */
   buyBeet: () => void
   openAuction: (fieldId: FieldId) => void
   /** Gebot abgeben; muss das Höchstgebot um mindestens 1 übertreffen. */
@@ -357,7 +358,9 @@ export const useGameStore = create<GameStore>((set, get) => {
       appendAction(get, set, { type: 'buyFieldCopy', player, at: fieldId }, next)
     },
     buyBeet: () => {
-      get().buyInfra('schuppen')
+      const game = idleGame()
+      if (!game) return
+      set({ game: executeBuyBeet(game) })
     },
 
     openAuction: (fieldId) => {

@@ -5,10 +5,9 @@ export type Suit =
   | 'diamonds'
   | 'clubs'
   | 'steel'
-  | 'points'
 /** Rohstoffe (gameRules §2.2). */
 export type RawSuit = 'hearts' | 'spades' | 'energy'
-/** Fertigprodukte. Obst braucht Saat; Konfitüre braucht Obst. */
+/** Endprodukte: Mehl, Obst, Konfitüre. Obst braucht Saat; Konfitüre braucht Obst. */
 export type ProductSuit = 'diamonds' | 'clubs' | 'steel'
 export type Rank = 7 | 6 | 5 | 4 | 3 | 2
 
@@ -19,12 +18,9 @@ export const SUITS: Suit[] = [
   'diamonds',
   'clubs',
   'steel',
-  'points',
 ]
 export const RAW_SUITS: RawSuit[] = ['energy', 'hearts', 'spades']
 export const PRODUCT_SUITS: ProductSuit[] = ['diamonds', 'clubs', 'steel']
-/** Siegpunkte — Markt-Ausgabe; permanent nur auf dem VP-Stapel. */
-export const POINTS_SUIT: Suit = 'points'
 
 export type PlayerId = 'white' | 'black' | 'red' | 'green'
 /** Szenario legt die Spielerzahl fest (A = 1, sonst ≥ 2). */
@@ -34,8 +30,7 @@ export type FieldKind =
   | 'source'
   | 'factory'
   | 'storage'
-  | 'market'
-  /** Persönliches Siegpunktefeld: 3 absteigende Spalten (Start bel., bis 2). */
+  /** Persönliches Erntefeld (eine Sorte als Ziel; nimmt alle drei Endprodukte). */
   | 'victory'
 export type FieldId = string
 /** Betriebe gehören dem Staat oder einem Spieler. */
@@ -55,7 +50,7 @@ export interface ScenarioField {
   kind: FieldKind
   label: string
   /**
-   * Quelle/Markt: Farbe.
+   * Quelle: Farbe.
    * Fabrik: Produktfarbe.
    * Persönlicher Schuppen: wenn gesetzt → spezialisiert (nur diese Sorte).
    */
@@ -64,7 +59,7 @@ export interface ScenarioField {
   recipe?: Recipe
   /** Abweichende staatliche Startgebühr (Standard 1). */
   fee?: number
-  /** Zeile: 0 Quellen, 1 Fabriken|Infrastruktur, 2 Märkte. */
+  /** Zeile: 0 Quellen, 1 Fabriken|Infrastruktur. */
   row: number
 }
 
@@ -74,12 +69,10 @@ export interface ScenarioDef {
   players: PlayerId[]
   description: string
   fields: ScenarioField[]
-  /** Persönliche Schuppen je Spieler (nur dem Spieler). */
+  /** Persönliche Schuppen je Spieler (immer 1). */
   beetsPerPlayer: number
-  /**
-   * @deprecated Früheres Siegziel; Sieg = 3 volle VP-Spalten (7→2).
-   */
-  marketsToWin: number
+  /** Karten je Sorte im Nachziehstapel (Start). */
+  cardsPerSuit: number
 }
 
 export interface FieldState {
@@ -87,7 +80,7 @@ export interface FieldState {
   kind: FieldKind
   label: string
   /**
-   * Quelle/Markt/Fabrik: Farbe.
+   * Quelle/Fabrik: Farbe.
    * Schuppen mit suit: nur diese Sorte (Fass, Silo, …).
    * Schuppen ohne suit: allgemeine Ablage.
    */
@@ -95,8 +88,8 @@ export interface FieldState {
   recipe?: Recipe
   row: number
   /**
-   * Eigentümer (nach Kauf). Schuppen immer persönlich; gekaufte Felder/Küchen/Stände
-   * ebenfalls. Herrenlos = gemeinschaftlich, Gebühr 0.
+   * Eigentümer (nach Kauf). Schuppen und Erntefeld immer persönlich; gekaufte
+   * Felder und Küchen ebenfalls. Herrenlos = gemeinschaftlich, Gebühr 0.
    */
   owner?: Owner
   /** Nutzungsgebühr (nur bei Eigentümer). Geht an den Inhaber, nicht an die Bank. */
@@ -106,14 +99,12 @@ export interface FieldState {
    * Quelle: Vorrat.
    * Fabrik/Saatstand: Rezept-Eingang (Zutaten).
    * Persönlicher Schuppen: Umsortieren (ggf. nur eine Sorte).
-   * Markt: ungenutzt (Eingänge liegen in `inputs`).
    */
   stack: Card[]
   /**
    * Küche/Saatstand: Produkt-/Saat-Ausgabe.
-   * Markt: Siegpunkt-Ausgabe (`points`).
-   * Am Zugende erhält jeder Stapel eine offene Karte (Markt: aus dem VP-Deck).
-   * Überversorgung (>+5): Küche/Saat → Extra-Ausgabe; Markt → Extra-Eingang.
+   * Am Zugende erhält jeder Stapel eine offene Karte.
+   * Überversorgung (>+5): Extra-Ausgabe, Bedarf → 0.
    */
   outputs?: Card[][]
   /**
@@ -121,13 +112,12 @@ export interface FieldState {
    */
   outputsRevealed?: number[]
   /**
-   * Markt: ein oder mehrere Eingangsstapel (gleiche Sorte).
-   * Überversorgung (>+5) fügt einen weiteren Eingang hinzu.
+   * @deprecated Früheres Mehrspalten-Erntefeld; Erntefelder nutzen `stack`.
    */
   inputs?: Card[][]
   /**
-   * Markt, Küche und Saatstand: Bedarfsmesser.
-   * Szenario-Start sowie gekaufte Küchen/Märkte: 0.
+   * Küche und Saatstand: Bedarfsmesser.
+   * Szenario-Start sowie gekaufte Küchen: 0.
    * Lieferung/Eingang hebt und zahlt max(0, −Bedarf); Ausgabe senkt und kostet
    * max(0, −Bedarf). Am Zugende: unter −8 → Feld weg; über +5 → Extra-Stapel, Bedarf 0.
    */
@@ -155,7 +145,7 @@ export interface GameLogEntry {
 
 export interface GameStats {
   productions: number
-  /** Lieferungen auf Märkte. */
+  /** @deprecated Frühere Markt-Lieferungen. */
   productsDelivered: number
   /** Felder mit Bedarfsmesser entfernt (unter −8). */
   marketCollapses: number
@@ -163,7 +153,7 @@ export interface GameStats {
   /** Durch Überversorgung (> +5) erzeugte Extra-Stapel / Extra-Eingänge. */
   marketsSpawned: number
   stacksClearedByAce: number
-  /** Einkommen aus Markt-Lieferungen. */
+  /** Einkommen aus der Bank (Küchen- und Saatstand-Abrechnung). */
   marketIncome: number
   feesPaidToPlayers: number
   feesPaidToBank: number
@@ -183,7 +173,7 @@ export interface GameState {
   /**
    * Aktuelle Kartenauswahl.
    * Bei Küche/Saatstand: `lane` wählt Eingang oder Ausgabe (Standard Ausgabe).
-   * `stackIndex` wählt welchen Ausgabe- bzw. Markteingangs-Stapel (Default 0).
+   * `stackIndex` wählt welchen Ausgabe- bzw. Erntespalten-Stapel (Default 0).
    */
   selection: {
     fieldId: FieldId
@@ -209,29 +199,38 @@ export interface GameState {
   rngSeed: number
   /** Laufende Nummer für gespawnte Feld-IDs. */
   marketSpawnSeq: number
-  /**
-   * @deprecated Früheres Siegziel (Märkte mit Versorgung &gt; 0).
-   * Aktuell: Sieg mit 3 vollen Siegpunkte-Spalten (7→2).
-   */
-  marketsToWin: number
-  /** Start-Schuppen je Spieler (für Kaufpreis: nur Extra-Käufe zählen). */
+  /** Start-Schuppen je Spieler (immer 1). */
   beetsPerPlayer: number
 }
 
-/** Schuppen und Siegpunktefeld sind persönlich (nur Eigentümer nutzt sie). */
+/** Schuppen und Erntefelder sind persönlich (nur Eigentümer nutzt sie). */
 export function hasOwnership(kind: FieldKind): boolean {
   return kind === 'storage' || kind === 'victory'
 }
 
-export function isPointsSuit(suit: Suit): boolean {
-  return suit === 'points'
+/** Drei neutrale Erntefelder je Spieler. */
+export const VICTORY_COLUMN_COUNT = 3
+/**
+ * Endprodukte, die zum Sieg auf den Erntefeldern sortiert sein müssen.
+ * Die Felder selbst haben keine feste Sorte.
+ */
+export const VICTORY_COLUMN_SUITS: readonly ProductSuit[] = [
+  'diamonds',
+  'clubs',
+  'steel',
+]
+
+export function victoryFieldId(playerId: PlayerId, index: number): FieldId {
+  return `sieg-${playerId}-${index + 1}`
 }
 
-/** Drei Spalten im Siegpunktefeld. */
-export const VICTORY_COLUMN_COUNT = 3
+export function victoryColumnSuit(index: number): ProductSuit {
+  return VICTORY_COLUMN_SUITS[index] ?? 'diamonds'
+}
+
 /** @deprecated Alias — bitte VICTORY_COLUMN_COUNT nutzen. */
 export const VICTORY_ROW_COUNT = VICTORY_COLUMN_COUNT
-/** Volle Spalte: absteigend 7…2 (6 Karten). */
+/** Maximale Stapelhöhe auf einem Erntefeld. */
 export const VICTORY_COLUMN_LENGTH = 6
 /** @deprecated Alias — bitte VICTORY_COLUMN_LENGTH nutzen. */
 export const VICTORY_ROW_LENGTH = VICTORY_COLUMN_LENGTH
@@ -268,8 +267,6 @@ export function suitSymbol(suit: Suit): string {
       return '🍎'
     case 'steel':
       return '🍯'
-    case 'points':
-      return '★'
   }
 }
 
@@ -287,8 +284,6 @@ export function suitName(suit: Suit): string {
       return 'Obst'
     case 'steel':
       return 'Konfitüre'
-    case 'points':
-      return 'Siegpunkt'
   }
 }
 
@@ -345,12 +340,6 @@ export function factoryLabel(suit: Suit, letter?: string): string {
           ? 'Konfitürenküche'
           : `${suitName(suit)}küche`
   return letter ? `${base} ${letter}` : base
-}
-
-/** Marktstand-Bezeichnung. */
-export function marketLabel(suit: Suit, index?: number): string {
-  const base = `${suitName(suit)}stand`
-  return index != null && index > 1 ? `${base} ${index}` : base
 }
 
 /**
@@ -412,20 +401,9 @@ export function suitCounts(cards: Card[]): Record<Suit, number> {
     diamonds: 0,
     clubs: 0,
     steel: 0,
-    points: 0,
   }
   for (const c of cards) counts[c.suit] += 1
   return counts
-}
-
-/** Waren/Zutaten ohne Siegpunkte (für Abrechnung). */
-export function withoutPoints(cards: Card[]): Card[] {
-  return cards.filter((c) => c.suit !== 'points')
-}
-
-/** Nur Siegpunkte. */
-export function onlyPoints(cards: Card[]): Card[] {
-  return cards.filter((c) => c.suit === 'points')
 }
 
 export function recipeFulfillments(cards: Card[], recipe: Recipe): number {
@@ -443,13 +421,27 @@ export function recipeFulfillments(cards: Card[], recipe: Recipe): number {
 }
 
 /**
- * Beet (Obstküche): sobald mind. 1 Wasser und 1 Saat liegen, zählt jede Karte
+ * Zwei-Zutaten-Küche: sobald beide Sorten mind. 1× liegen, zählt jede Karte
  * auf dem Eingang als eine Bedarfserfüllung; sonst 0 (Stapel bleibt liegen).
  */
-export function beetFulfillments(cards: Card[]): number {
+export function dualIngredientFulfillments(
+  cards: Card[],
+  a: Suit,
+  b: Suit,
+): number {
   const counts = suitCounts(cards)
-  if (counts.energy < 1 || counts.hearts < 1) return 0
+  if (counts[a] < 1 || counts[b] < 1) return 0
   return cards.length
+}
+
+/** Beet: Wasser + Saat. */
+export function beetFulfillments(cards: Card[]): number {
+  return dualIngredientFulfillments(cards, 'energy', 'hearts')
+}
+
+/** Konfitürenküche: Obst + Wasser. */
+export function jamFulfillments(cards: Card[]): number {
+  return dualIngredientFulfillments(cards, 'clubs', 'energy')
 }
 
 export function matchesRecipe(cards: Card[], recipe: Recipe): boolean {

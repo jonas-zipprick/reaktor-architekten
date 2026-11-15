@@ -14,7 +14,7 @@ import {
   pickTurnAction,
 } from './legalMoves'
 import { simulateGame } from './simulate'
-import { factoryOutputs, marketInputs } from '../state/rules'
+import { factoryOutputs } from '../state/rules'
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) throw new Error(msg)
@@ -37,43 +37,40 @@ function main(): void {
   assert(planAuction(state, 1, () => 0) === null, 'Auktion muss tot sein')
   assert(planLagerOffer(state, 1, () => 0) === null, 'LagerOffer muss tot sein')
 
-  // Fee: bei Besitz und offenen VP-Spalten → auf 0 setzen.
+  // Fee: bei Besitz und offenen Erntespalten → auf 0 setzen.
   const owned = createGame('B', 42)
   const ownerId = owned.players[owned.currentPlayerIndex]!.id
-  const market = Object.values(owned.fields).find((f) => f.kind === 'market')
-  assert(market, 'Markt erwartet')
-  market!.owner = ownerId
-  market!.fee = 2
+  const kitchen = Object.values(owned.fields).find((f) => f.kind === 'factory')
+  assert(kitchen, 'Küche erwartet')
+  kitchen!.owner = ownerId
+  kitchen!.fee = 2
   const fee = planFeeChange(owned, 1, () => 0)
-  assert(fee && fee.fee === 0, `bei offenen VP Fee 0 erwartet, got ${fee?.fee}`)
+  assert(fee && fee.fee === 0, `bei offener Ernte Fee 0 erwartet, got ${fee?.fee}`)
 
-  // Multi-stack: Märkte inputs+VP-Ausgabe, Küchen outputs, Victory 3 Spalten.
-  let sawMarketVpMove = false
+  let sawHarvestMove = false
   let sawVictoryField = false
   for (const f of Object.values(state.fields)) {
-    if (f.kind === 'market') {
-      assert(marketInputs(f).length >= 1, `${f.id} braucht inputs`)
-      assert(factoryOutputs(f).length >= 1, `${f.id} braucht VP-Ausgabe`)
-    }
     if (f.kind === 'victory') {
       sawVictoryField = true
-      assert((f.inputs?.length ?? 0) >= 3, `${f.id} braucht 3 Spalten`)
+      assert(f.label.includes('Ernte'), `${f.id} sollte Ernte heißen`)
     }
-    if (f.kind === 'factory' || f.suit === 'hearts') {
-      if (f.kind === 'factory' || (f.kind === 'source' && f.suit === 'hearts')) {
-        assert(factoryOutputs(f).length >= 1, `${f.id} braucht outputs`)
-      }
+    if (f.kind === 'factory' || (f.kind === 'source' && f.suit === 'hearts')) {
+      assert(factoryOutputs(f).length >= 1, `${f.id} braucht outputs`)
     }
   }
-  assert(sawVictoryField, 'Siegpunktefeld erwartet')
+  assert(sawVictoryField, 'Erntefelder erwartet')
+  const harvestCount = Object.values(state.fields).filter(
+    (f) => f.kind === 'victory',
+  ).length
+  assert(harvestCount === state.players.length * 3, '3 Erntefelder je Spieler')
   for (const m of moves) {
-    const from = state.fields[m.move.from]
-    if (from?.kind === 'market' && m.move.lane !== 'input') {
-      sawMarketVpMove = true
+    const to = state.fields[m.move.to]
+    if (to?.kind === 'victory') {
+      sawHarvestMove = true
       break
     }
   }
-  assert(sawMarketVpMove, 'Erwarte legale Züge von Markt-VP-Ausgabe')
+  assert(sawHarvestMove, 'Erwarte legale Züge auf ein Erntefeld')
 
   assert(Number.isFinite(endScore), 'scoreEndTurn endlich')
 

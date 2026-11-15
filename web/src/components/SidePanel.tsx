@@ -118,9 +118,9 @@ export function SidePanel({ game }: { game: GameState }) {
       <section className="stat-grid">
         <div
           className="stat"
-          title="Volle Siegpunkte-Spalten (je 6 Karten, 7→2) / Siegziel"
+          title="Sortierte Erntefelder (je eine Endprodukt-Sorte, alle drei vorhanden)"
         >
-          <span>Siegpunkte</span>
+          <span>Ernte</span>
           <strong>
             {completedVictoryColumns(game, current.id)}
             <em> / {VICTORY_COLUMN_COUNT}</em>

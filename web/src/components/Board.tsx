@@ -25,14 +25,14 @@ import { BoardCell } from './BoardCell'
 import { PlayingCard } from './PlayingCard'
 import './Board.css'
 
-const ROW_LABELS = ['Felder', 'Küchen & Infrastruktur', 'Marktstände']
+const ROW_LABELS = ['Felder', 'Küchen & Infrastruktur', 'Ernte']
 
 function isFactoryColumn(field: FieldState): boolean {
   return field.kind === 'factory'
 }
 
 function isStorageColumn(field: FieldState): boolean {
-  return field.kind === 'storage' || field.kind === 'victory'
+  return field.kind === 'storage'
 }
 
 /** Saatstand / Getreide — ohne Regen (eigener Bereich). */
@@ -141,25 +141,15 @@ export function Board({ game }: { game: GameState }) {
     if (!game.selection) return map
     const fromOpts = { stackIndex: game.selection.stackIndex ?? 0 }
     for (const id of Object.keys(game.fields)) {
-      const field = game.fields[id]!
-      const inputCount =
-        field.kind === 'market' || field.kind === 'victory'
-          ? (field.inputs?.length ?? (field.kind === 'victory' ? 3 : 1))
-          : 1
-      for (let toIdx = 0; toIdx < inputCount; toIdx++) {
-        const check = checkMove(
-          game,
-          game.selection.fieldId,
-          id,
-          game.selection.count,
-          game.selection.lane,
-          { ...fromOpts, toStackIndex: toIdx },
-        )
-        if (check.ok) {
-          map.set(id, check)
-          break
-        }
-      }
+      const check = checkMove(
+        game,
+        game.selection.fieldId,
+        id,
+        game.selection.count,
+        game.selection.lane,
+        fromOpts,
+      )
+      if (check.ok) map.set(id, check)
     }
     return map
   }, [game])
@@ -196,46 +186,20 @@ export function Board({ game }: { game: GameState }) {
         select(field.id, clickLane, idx)
         return
       }
-      // Siegpunkte: andere Spalte → Umsortieren wenn legal, sonst Auswahl wechseln.
-      if (sameField && field.kind === 'victory' && !sameStack) {
-        const reorder = checkMove(
-          game,
-          field.id,
-          field.id,
-          game.selection.count,
-          undefined,
-          {
-            stackIndex: game.selection.stackIndex ?? 0,
-            toStackIndex: idx,
-          },
-        )
-        if (reorder.ok) {
-          moveTo(field.id, idx)
-          return
-        }
-        select(field.id, undefined, idx)
-        return
-      }
       // Andere Spur / anderer Stapel desselben Feldes: Auswahl wechseln.
-      if (sameField && (clickLane || field.kind === 'market')) {
+      if (sameField && clickLane) {
         select(field.id, clickLane, idx)
         return
       }
       if (targets.has(field.id)) {
-        moveTo(
-          field.id,
-          field.kind === 'market' || field.kind === 'victory' ? idx : 0,
-        )
+        moveTo(field.id, 0)
         return
       }
       // Kein legales Ziel: stattdessen diese Karte auswählen, sonst Grund zeigen.
       if (movableCard(game, field.id, clickLane, idx)) {
         select(field.id, clickLane, idx)
       } else {
-        moveTo(
-          field.id,
-          field.kind === 'market' || field.kind === 'victory' ? idx : 0,
-        )
+        moveTo(field.id, 0)
       }
       return
     }
@@ -426,35 +390,7 @@ export function Board({ game }: { game: GameState }) {
                   <div className="board-row-col">
                     <p className="board-row-label">Infrastruktur</p>
                     <div className="board-row">
-                      {(() => {
-                        const currentId =
-                          game.players[game.currentPlayerIndex]!.id
-                        const sheds = storages.filter((f) => f.kind === 'storage')
-                        const victory = storages.filter((f) => f.kind === 'victory')
-                        // +Schuppen nur am eigenen letzten Schuppen — Preis ist
-                        // spielerspezifisch (sonst wirkt fremder Kauf wie teurer).
-                        const mine = sheds.filter((f) => f.owner === currentId)
-                        const buyAtId = mine[mine.length - 1]?.id
-                        return (
-                          <>
-                            {sheds.map((field) =>
-                              renderCell(
-                                field,
-                                field.id === buyAtId ? ['schuppen'] : [],
-                              ),
-                            )}
-                            {mine.length === 0 && (
-                              <BuyInfraButton
-                                item="schuppen"
-                                game={game}
-                                disabled={buyLocked}
-                                onBuy={buyInfra}
-                              />
-                            )}
-                            {victory.map((field) => renderCell(field))}
-                          </>
-                        )
-                      })()}
+                      {storages.map((field) => renderCell(field))}
                     </div>
                   </div>
                   {rest.length > 0 && (
@@ -501,37 +437,25 @@ export function Board({ game }: { game: GameState }) {
               )
             }
 
-            const marketFields = fields
+            if (row === ROW.victory) {
+              return (
+                <div key={row} className="board-row-col board-harvest">
+                  <p className="board-row-label">Ernte</p>
+                  <div className="board-row">
+                    {[...fields]
+                      .filter((f) => f.kind === 'victory')
+                      .sort((a, b) => a.id.localeCompare(b.id))
+                      .map((field) => renderCell(field))}
+                  </div>
+                </div>
+              )
+            }
+
             return (
               <div key={row}>
                 <p className="board-row-label">{ROW_LABELS[row] ?? ''}</p>
                 <div className="board-row">
-                  {row === ROW.market &&
-                    marketFields.map((field, i) =>
-                      renderCell(
-                        field,
-                        i === marketFields.length - 1
-                          ? ['mehlstand', 'konfituerenstand']
-                          : [],
-                      ),
-                    )}
-                  {row !== ROW.market && fields.map((f) => renderCell(f))}
-                  {row === ROW.market && marketFields.length === 0 && (
-                    <div className="buy-btn-stack">
-                      <BuyInfraButton
-                        item="mehlstand"
-                        game={game}
-                        disabled={buyLocked}
-                        onBuy={buyInfra}
-                      />
-                      <BuyInfraButton
-                        item="konfituerenstand"
-                        game={game}
-                        disabled={buyLocked}
-                        onBuy={buyInfra}
-                      />
-                    </div>
-                  )}
+                  {fields.map((f) => renderCell(f))}
                 </div>
               </div>
             )
