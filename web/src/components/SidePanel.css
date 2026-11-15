@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 14px 12px 14px;
+  font-size: 0.9rem;
   background: var(--bg);
   border-left: 1px solid var(--line-strong);
   min-height: 0;
@@ -27,13 +28,13 @@
 
 .header-actions .ghost-btn {
   padding: 5px 10px;
-  font-size: 0.82rem;
+  font-size: 0.82em;
 }
 
 .side-header h2 {
   margin: 0;
   font-family: var(--display);
-  font-size: 1.4rem;
+  font-size: 1.4em;
   line-height: 1.15;
   display: flex;
   align-items: center;
@@ -42,7 +43,7 @@
 
 .eyebrow {
   margin: 0 0 2px;
-  font-size: 0.72rem;
+  font-size: 0.72em;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -99,7 +100,7 @@
   align-items: center;
   gap: 5px;
   color: var(--text-dim);
-  font-size: 0.72rem;
+  font-size: 0.72em;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -115,7 +116,7 @@
 }
 
 .balance-money {
-  font-size: 1.1rem;
+  font-size: 1.1em;
   font-family: var(--display);
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
@@ -124,12 +125,12 @@
 
 .balance-card.active .balance-money {
   color: var(--brand-strong);
-  font-size: 1.25rem;
+  font-size: 1.25em;
 }
 
 .balance-card em {
   font-style: normal;
-  font-size: 0.7rem;
+  font-size: 0.7em;
   color: var(--text-mute);
   white-space: nowrap;
   overflow: hidden;
@@ -155,21 +156,21 @@
 
 .stat span {
   color: var(--text-dim);
-  font-size: 0.72rem;
+  font-size: 0.72em;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
 .stat strong {
-  font-size: 1.15rem;
+  font-size: 1.15em;
   font-family: var(--display);
   font-variant-numeric: tabular-nums;
 }
 
 .stat em {
   font-style: normal;
-  font-size: 0.72rem;
+  font-size: 0.72em;
   color: var(--text-mute);
 }
 
@@ -207,7 +208,7 @@
 .end-box h3 {
   margin: 0 0 8px;
   font-family: var(--display);
-  font-size: 1rem;
+  font-size: 1em;
   line-height: 1.2;
   color: var(--text);
 }
@@ -224,6 +225,10 @@
 
 .action-box .primary-btn {
   padding: 10px 12px;
+}
+
+.side-panel .primary-btn .btn-sub {
+  font-size: 0.72em;
 }
 
 .market-box {
@@ -270,7 +275,7 @@
 
 .market-row .ghost-btn {
   padding: 5px 9px;
-  font-size: 0.9rem;
+  font-size: 0.9em;
 }
 
 .fee-list {
@@ -286,7 +291,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.86rem;
+  font-size: 0.86em;
 }
 
 .fee-row span:first-child {
@@ -314,7 +319,7 @@
 .hint {
   margin: 0;
   color: var(--text-dim);
-  font-size: 0.86rem;
+  font-size: 0.86em;
 }
 
 .action-error {
@@ -324,7 +329,7 @@
   border: 1px solid rgba(179, 38, 30, 0.4);
   background: var(--danger-soft);
   color: #8a1c16;
-  font-size: 0.86rem;
+  font-size: 0.86em;
   font-weight: 700;
 }
 
@@ -346,7 +351,7 @@
 
 .sel-cards-row p {
   margin: 0;
-  font-size: 0.86rem;
+  font-size: 0.86em;
   font-weight: 600;
 }
 
@@ -368,7 +373,7 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
-  font-size: 0.88rem;
+  font-size: 0.88em;
 }
 
 .toll-row input {
@@ -411,7 +416,7 @@
 
 /* Jeder Eintrag trägt links einen Farbstrich für seine Art. */
 .log-box li {
-  font-size: 0.8rem;
+  font-size: 0.8em;
   line-height: 1.4;
   color: var(--text-dim);
   padding: 0 0 5px 8px;
