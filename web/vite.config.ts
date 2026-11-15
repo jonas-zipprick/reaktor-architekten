@@ -7,6 +7,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registrierung läuft über virtual:pwa-register in main.tsx (Reload bei Update).
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Ernte & Wochenmarkt',
@@ -45,6 +47,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
         navigateFallback: 'index.html',
+        cleanupOutdatedCaches: true,
       },
       devOptions: {
         enabled: false,
