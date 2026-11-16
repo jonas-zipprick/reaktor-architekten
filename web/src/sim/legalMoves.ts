@@ -1,4 +1,4 @@
-import type { Card, FieldId, FieldState, GameState, PlayerId } from '../types'
+import type { Card, FieldState, GameState, PlayerId } from '../types'
 import {
   beetFulfillments,
   CROP_SUITS,

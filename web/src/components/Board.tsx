@@ -29,7 +29,6 @@ import {
 } from '../state/rules'
 import {
   BoardCell,
-  DemandMeter,
   MarketStallMeter,
   MarketZeroMeter,
 } from './BoardCell'

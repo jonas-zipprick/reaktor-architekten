@@ -186,9 +186,12 @@ function main(): void {
   const marketTargets = moves.filter((m) =>
     isMarketField(state.fields[m.move.to]!),
   )
-  const productMoves = moves.filter((m) =>
-    ['clubs', 'berry', 'veg', 'herb'].includes(m.check.card.suit),
-  )
+  const productMoves = moves.filter((m) => {
+    const suit = m.check.card?.suit
+    return (
+      suit != null && ['clubs', 'berry', 'veg', 'herb'].includes(suit)
+    )
+  })
   if (productMoves.length > 0) {
     assert(marketTargets.length > 0, 'mit Ernte-Karten muss Markt erreichbar sein')
   }

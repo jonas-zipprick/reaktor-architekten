@@ -8,12 +8,10 @@ import type {
   PlayerId,
   PlayerState,
   ProductSuit,
-  RawSuit,
   Suit,
 } from '../types'
 import {
   canStackOn,
-  factoryLabel as factoryTitle,
   isCropSuit,
   isMarketTradableSuit,
   isProductSuit,
@@ -27,7 +25,6 @@ import {
   rankLabel,
   recipeFulfillments,
   recipeLabel,
-  sourceLabel as sourceTitle,
   suitCounts,
   suitName,
   suitSymbol,
@@ -50,7 +47,6 @@ import {
   victoryFieldId,
   WATER_TRADE_RECIPE,
 } from '../types'
-import { recipeForFactory, ROW } from '../data/scenarios'
 import { FACTORY_OUTPUT_SIZE } from './factory'
 import { createRng, shuffle } from './rng'
 
@@ -1101,60 +1097,6 @@ function diceHasMarket(dice: (typeof END_TURN_DICE_FACES)[number]): boolean {
   return dice === 'market' || dice === 'both'
 }
 
-/**
- * Zusätzliche Quelle spawnen (auch wenn schon eine gleicher Farbe existiert).
- */
-function spawnAdditionalSource(state: GameState, suit: RawSuit): FieldState {
-  state.marketSpawnSeq += 1
-  const n =
-    Object.values(state.fields).filter(
-      (f) => f.kind === 'source' && f.suit === suit,
-    ).length + 1
-  const id = `quelle-${suit}-${state.marketSpawnSeq}`
-  const label = sourceTitle(suit, n)
-  const stack: Card[] = []
-  let outputs: Card[][] | undefined
-  let outputsRevealed: number[] | undefined
-  let demand: number | undefined
-  let recipe: typeof SEED_BED_RECIPE | undefined
-  if (suit === 'hearts') {
-    demand = 0
-    recipe = SEED_BED_RECIPE
-    const out: Card[] = []
-    for (let i = 0; i < FACTORY_OUTPUT_SIZE; i++) {
-      const card = drawCard(state, suit)
-      if (!card) break
-      out.push(card)
-    }
-    outputs = [out]
-    outputsRevealed = [out.length > 0 ? 1 : 0]
-  } else {
-    for (let i = 0; i < START_CARDS_PER_SPAWNED_SOURCE; i++) {
-      const card = drawCard(state, suit)
-      if (card) stack.push(card)
-    }
-  }
-  const spawned: FieldState = {
-    id,
-    kind: 'source',
-    suit,
-    label,
-    row: ROW.source,
-    stack,
-    fee: 0,
-    ...(outputs
-      ? { outputs, outputsRevealed, demand, recipe }
-      : {}),
-  }
-  const anchor =
-    [...Object.keys(state.fields)]
-      .reverse()
-      .find((fid) => state.fields[fid]!.kind === 'source') ??
-    Object.keys(state.fields)[0]!
-  insertFieldAfter(state, anchor, spawned)
-  return spawned
-}
-
 /** @deprecated Exp-10-Angebot entfällt. */
 export function resolveLagerOffer(
   state: GameState,
@@ -1164,71 +1106,6 @@ export function resolveLagerOffer(
 ): GameState {
   const next = cloneState(state)
   return failAction(next, 'Lager-Angebot entfällt')
-}
-
-/** Feld direkt hinter `afterId` in die Field-Map einfügen. */
-function insertFieldAfter(
-  state: GameState,
-  afterId: FieldId,
-  field: FieldState,
-): void {
-  const next: Record<string, FieldState> = {}
-  let placed = false
-  for (const [fid, existing] of Object.entries(state.fields)) {
-    next[fid] = existing
-    if (fid === afterId) {
-      next[field.id] = field
-      placed = true
-    }
-  }
-  if (!placed) next[field.id] = field
-  state.fields = next
-}
-
-const START_CARDS_PER_SPAWNED_SOURCE = 2
-
-function spawnFactoryField(
-  state: GameState,
-  suit: Suit,
-): FieldState | null {
-  if (!isProductSuit(suit)) return null
-  const recipe = recipeForFactory(suit)
-  if (!recipe) return null
-  state.marketSpawnSeq += 1
-  const factoryN =
-    Object.values(state.fields).filter(
-      (f) => f.kind === 'factory' && f.suit === suit,
-    ).length + 1
-  const letter = String.fromCharCode(64 + factoryN)
-  const id = `fabrik-${suit}-${state.marketSpawnSeq}`
-  const spawned: FieldState = {
-    id,
-    kind: 'factory',
-    suit,
-    label: factoryTitle(suit, letter),
-    recipe,
-    row: ROW.factory,
-    stack: [],
-    outputs: [[]],
-    outputsRevealed: [0],
-    // Gekaufte Küchen starten neutral (wie Szenario-Felder).
-    demand: 0,
-    fee: 0,
-  }
-  refillFactoryOutput(state, spawned, 0)
-  const anchor =
-    [...Object.keys(state.fields)]
-      .reverse()
-      .find((fid) => {
-        const f = state.fields[fid]!
-        return f.kind === 'factory' && f.suit === suit
-      }) ??
-    [...Object.keys(state.fields)]
-      .reverse()
-      .find((fid) => state.fields[fid]!.kind === 'factory') ??
-    Object.keys(state.fields)[0]!
-  insertFieldAfter(state, anchor, spawned)
-  return spawned
 }
 
 /** Anzahl fertiger Erntefelder (volle Folge 7→2 je Feld). */
