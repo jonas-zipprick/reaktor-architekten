@@ -6,42 +6,39 @@ import {
   useState,
   type MouseEvent,
 } from 'react'
-import type { FieldState, GameState, Suit } from '../types'
-import { isSeedBed, SUITS, suitName, suitSymbol } from '../types'
-import { useGameStore } from '../state/gameStore'
-import { ROW } from '../data/scenarios'
+import type { FieldState, GameState, PlayerId, Suit } from '../types'
 import {
-  buyableInfraLabel,
-  buyableInfraShort,
+  isOwnerOnlyField,
+  isRegen,
+  isSeedBed,
+  isWaterTrade,
+  MARKET_PRICES,
+  marketFieldId,
+  SUITS,
+  suitName,
+  suitSymbol,
+} from '../types'
+import { PLAYER_META } from '../data/scenarios'
+import { useGameStore } from '../state/gameStore'
+import {
   checkMove,
   hasOutputStack,
   movableCard,
-  nextBuyInfraPrice,
-  type BuyableInfra,
   type MoveCheck,
   type StackLane,
 } from '../state/rules'
-import { BoardCell } from './BoardCell'
+import {
+  BoardCell,
+  DemandMeter,
+  MarketStallMeter,
+  MarketZeroMeter,
+} from './BoardCell'
 import { PlayingCard } from './PlayingCard'
 import './Board.css'
 
-const ROW_LABELS = ['Felder', 'Küchen & Infrastruktur', 'Ernte']
-
-function isFactoryColumn(field: FieldState): boolean {
-  return field.kind === 'factory'
-}
-
-function isStorageColumn(field: FieldState): boolean {
-  return field.kind === 'storage'
-}
-
-/** Saatstand / Getreide — ohne Regen (eigener Bereich). */
-function isFeldColumn(field: FieldState): boolean {
-  return field.kind === 'source' && field.suit !== 'energy'
-}
-
-function isRegenColumn(field: FieldState): boolean {
-  return field.kind === 'source' && field.suit === 'energy'
+/** Nur Eigentümer: Regen, Beet, Schuppen, Ernte. */
+function isPrivateField(field: FieldState): boolean {
+  return isOwnerOnlyField(field)
 }
 
 /** Nachzieh- und Ablagestapel einer Kartenfarbe. */
@@ -75,65 +72,43 @@ function DeckPanel({ game, suit }: { game: GameState; suit: Suit }) {
   )
 }
 
-function BuyInfraButton({
-  item,
-  game,
-  disabled,
-  onBuy,
-}: {
-  item: BuyableInfra
-  game: GameState
-  disabled: boolean
-  onBuy: (item: BuyableInfra) => void
-}) {
-  const current = game.players[game.currentPlayerIndex]!
-  const price = nextBuyInfraPrice(game, item, current.id)
-  const canBuy = !disabled && price >= 20 && current.money >= price
-  const label = buyableInfraLabel(item)
-  return (
-    <button
-      type="button"
-      className="buy-beet-btn"
-      disabled={!canBuy}
-      title={
-        canBuy
-          ? `${label} für ${current.name}: ${price}¤`
-          : `${label} für ${current.name}: ${price}¤ (Bargeld ${current.money}¤)`
-      }
-      aria-label={`${label} für ${current.name} kaufen, ${price} Geld`}
-      onClick={(e) => {
-        e.stopPropagation()
-        onBuy(item)
-      }}
-    >
-      <span className="buy-beet-plus" aria-hidden>
-        +
-      </span>
-      <span className="buy-beet-name">{buyableInfraShort(item)}</span>
-      <span className="buy-beet-price">{price}¤</span>
-    </button>
-  )
-}
-
 export function Board({ game }: { game: GameState }) {
   const select = useGameStore((s) => s.select)
   const moveTo = useGameStore((s) => s.moveTo)
   const clearSelection = useGameStore((s) => s.clearSelection)
   const endTurn = useGameStore((s) => s.endTurn)
-  const buyInfra = useGameStore((s) => s.buyInfra)
   const moveAnim = useGameStore((s) => s.moveAnim)
   const auction = useGameStore((s) => s.auction)
-  const buyLocked = game.ended || !!moveAnim || !!auction
 
-  const rows = useMemo(() => {
-    const byRow = new Map<number, FieldState[]>()
-    for (const field of Object.values(game.fields)) {
-      const list = byRow.get(field.row) ?? []
-      list.push(field)
-      byRow.set(field.row, list)
+  const { communal, byPlayer } = useMemo(() => {
+    const all = Object.values(game.fields)
+    const communal = all.filter((f) => !isPrivateField(f))
+    const byPlayer = new Map<PlayerId, FieldState[]>()
+    for (const p of game.players) byPlayer.set(p.id, [])
+    for (const f of all) {
+      if (!isPrivateField(f)) continue
+      const owner = f.owner
+      if (!owner || owner === 'state') continue
+      const list = byPlayer.get(owner)
+      if (list) list.push(f)
     }
-    return [...byRow.entries()].sort((a, b) => a[0] - b[0])
-  }, [game.fields])
+    for (const list of byPlayer.values()) {
+      list.sort((a, b) => {
+        const rank = (f: FieldState) =>
+          isRegen(f) ? 0 : f.kind === 'factory' ? 1 : f.kind === 'storage' ? 2 : 3
+        const d = rank(a) - rank(b)
+        return d !== 0 ? d : a.id.localeCompare(b.id)
+      })
+    }
+    return { communal, byPlayer }
+  }, [game.fields, game.players])
+
+  const seedBeds = communal.filter((f) => isSeedBed(f))
+  const waterTrades = communal.filter((f) => isWaterTrade(f))
+  const markets = communal.filter((f) => f.kind === 'market')
+  const communalRest = communal.filter(
+    (f) => !isSeedBed(f) && !isWaterTrade(f) && f.kind !== 'market',
+  )
 
   /** Legale Ziele der aktuellen Auswahl inkl. Gebühren und Einkommen. */
   const targets = useMemo(() => {
@@ -141,28 +116,15 @@ export function Board({ game }: { game: GameState }) {
     if (!game.selection) return map
     const fromOpts = { stackIndex: game.selection.stackIndex ?? 0 }
     for (const id of Object.keys(game.fields)) {
-      const toField = game.fields[id]!
-      const toIndices =
-        toField.kind === 'market'
-          ? Array.from(
-              { length: Math.max(1, toField.inputs?.length ?? 1) },
-              (_, i) => i,
-            )
-          : [0]
-      for (const toStackIndex of toIndices) {
-        const check = checkMove(
-          game,
-          game.selection.fieldId,
-          id,
-          game.selection.count,
-          game.selection.lane,
-          { ...fromOpts, toStackIndex },
-        )
-        if (check.ok) {
-          map.set(id, check)
-          break
-        }
-      }
+      const check = checkMove(
+        game,
+        game.selection.fieldId,
+        id,
+        game.selection.count,
+        game.selection.lane,
+        fromOpts,
+      )
+      if (check.ok) map.set(id, check)
     }
     return map
   }, [game])
@@ -170,6 +132,13 @@ export function Board({ game }: { game: GameState }) {
   const demandFlashIds = useMemo(
     () => new Set(game.demandRollIds),
     [game.demandRollIds],
+  )
+  const marketFlash = useMemo(
+    () =>
+      game.demandRollIds.some(
+        (id) => game.fields[id]?.kind === 'market' || id.startsWith('markt-'),
+      ) || game.planetLimitId?.startsWith('markt-') === true,
+    [game.demandRollIds, game.fields, game.planetLimitId],
   )
   const producedIds = useMemo(
     () => new Set(game.producedIds),
@@ -194,25 +163,22 @@ export function Board({ game }: { game: GameState }) {
       const sameLane =
         (game.selection.lane ?? 'output') === (clickLane ?? 'output')
       const sameStack = (game.selection.stackIndex ?? 0) === idx
-      // Erneuter Klick auf denselben Stapel: Teilstapelhöhe erhöhen.
       if (sameField && sameLane && sameStack) {
         select(field.id, clickLane, idx)
         return
       }
-      // Andere Spur / anderer Stapel desselben Feldes: Auswahl wechseln.
       if (sameField && (clickLane || field.kind === 'market')) {
         select(field.id, clickLane, idx)
         return
       }
       if (targets.has(field.id)) {
-        moveTo(field.id, field.kind === 'market' ? idx : 0)
+        moveTo(field.id, 0)
         return
       }
-      // Kein legales Ziel: stattdessen diese Karte auswählen, sonst Grund zeigen.
       if (movableCard(game, field.id, clickLane, idx)) {
         select(field.id, clickLane, idx)
       } else {
-        moveTo(field.id, field.kind === 'market' ? idx : 0)
+        moveTo(field.id, 0)
       }
       return
     }
@@ -227,7 +193,6 @@ export function Board({ game }: { game: GameState }) {
     if (game.selection) clearSelection()
   }
 
-  // Leertaste: Mindestens 1 s Abstand, sonst springt man versehentlich viele Züge weiter.
   const lastSpaceEndTurnAt = useRef(0)
 
   useEffect(() => {
@@ -274,7 +239,6 @@ export function Board({ game }: { game: GameState }) {
     if (!viewport || !shell) return
 
     const measure = () => {
-      // Natürliche Größe ohne Transform messen (Layout bleibt unverändert).
       const sw = shell.offsetWidth
       const sh = shell.offsetHeight
       const vw = viewport.clientWidth
@@ -294,6 +258,37 @@ export function Board({ game }: { game: GameState }) {
     }
   }, [fieldCount])
 
+  const renderCell = (field: FieldState) => (
+    <div key={field.id}>
+      <BoardCell
+        field={field}
+        selected={game.selection?.fieldId === field.id}
+        selectedLane={
+          game.selection?.fieldId === field.id
+            ? (game.selection.lane ?? 'output')
+            : null
+        }
+        selectedStackIndex={
+          game.selection?.fieldId === field.id
+            ? (game.selection.stackIndex ?? 0)
+            : 0
+        }
+        selectedCount={
+          game.selection?.fieldId === field.id ? game.selection.count : 0
+        }
+        target={targets.get(field.id) ?? null}
+        demandFlash={demandFlashIds.has(field.id)}
+        demandFlashKey={game.demandRollSeq}
+        limitFlash={game.planetLimitId === field.id}
+        limitFlashKey={game.planetLimitSeq}
+        produced={producedIds.has(field.id)}
+        onClick={(e, lane, stackIndex) =>
+          onFieldClick(field, e, lane, stackIndex)
+        }
+      />
+    </div>
+  )
+
   return (
     <div className="board-viewport" ref={viewportRef}>
       <div
@@ -303,189 +298,105 @@ export function Board({ game }: { game: GameState }) {
         style={{ transform: `translate(-50%, -50%) scale(${scale})` }}
       >
         <div className="board-grid">
-          {rows.map(([row, fields]) => {
-            const factories = fields.filter(isFactoryColumn)
-            const storages = fields.filter(isStorageColumn)
-            const midRow = row === ROW.factory
-            const rest = midRow
-              ? fields.filter(
-                  (f) => !isFactoryColumn(f) && !isStorageColumn(f),
-                )
-              : fields
-
-            const renderCell = (
-              field: FieldState,
-              extraBuys: BuyableInfra[] = [],
-            ) => {
-              const cell = (
-                <BoardCell
-                  field={field}
-                  selected={game.selection?.fieldId === field.id}
-                  selectedLane={
-                    game.selection?.fieldId === field.id
-                      ? (game.selection.lane ?? 'output')
-                      : null
-                  }
-                  selectedStackIndex={
-                    game.selection?.fieldId === field.id
-                      ? (game.selection.stackIndex ?? 0)
-                      : 0
-                  }
-                  selectedCount={
-                    game.selection?.fieldId === field.id
-                      ? game.selection.count
-                      : 0
-                  }
-                  target={targets.get(field.id) ?? null}
-                  demandFlash={demandFlashIds.has(field.id)}
-                  demandFlashKey={game.demandRollSeq}
-                  limitFlash={game.planetLimitId === field.id}
-                  limitFlashKey={game.planetLimitSeq}
-                  produced={producedIds.has(field.id)}
-                  onClick={(e, lane, stackIndex) =>
-                    onFieldClick(field, e, lane, stackIndex)
-                  }
-                />
-              )
-              if (extraBuys.length === 0) {
-                return <div key={field.id}>{cell}</div>
-              }
-              return (
-                <div key={field.id} className="board-cell-with-buy">
-                  {cell}
-                  <div className="buy-btn-stack">
-                    {extraBuys.map((item) => (
-                      <BuyInfraButton
-                        key={item}
-                        item={item}
-                        game={game}
-                        disabled={buyLocked}
-                        onBuy={buyInfra}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )
-            }
-
-            if (midRow) {
-              return (
-                <div key={row} className="board-row-split">
-                  <div className="board-row-col">
-                    <p className="board-row-label">Küchen</p>
-                    <div className="board-row">
-                      {factories.map((field, i) =>
-                        renderCell(
-                          field,
-                          i === factories.length - 1
-                            ? ['mehlmuehle', 'konfituerenkueche']
-                            : [],
-                        ),
-                      )}
-                      {factories.length === 0 && (
-                        <div className="buy-btn-stack">
-                          <BuyInfraButton
-                            item="mehlmuehle"
-                            game={game}
-                            disabled={buyLocked}
-                            onBuy={buyInfra}
-                          />
-                          <BuyInfraButton
-                            item="konfituerenkueche"
-                            game={game}
-                            disabled={buyLocked}
-                            onBuy={buyInfra}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="board-row-col">
-                    <p className="board-row-label">Infrastruktur</p>
-                    <div className="board-row">
-                      {storages.map((field) => renderCell(field))}
-                    </div>
-                  </div>
-                  {rest.length > 0 && (
-                    <div className="board-row">{rest.map((f) => renderCell(f))}</div>
-                  )}
-                </div>
-              )
-            }
-
-            if (row === ROW.source) {
-              const felder = fields.filter(isFeldColumn)
-              const regen = fields.filter(isRegenColumn)
-              const seedBeds = felder.filter((f) => isSeedBed(f))
-              const grains = felder.filter((f) => f.suit === 'spades')
-              return (
-                <div key={row} className="board-row-split">
-                  <div className="board-row-col">
-                    <p className="board-row-label">Felder</p>
-                    <div className="board-row">
-                      {seedBeds.map((field, i) =>
-                        renderCell(
-                          field,
-                          i === seedBeds.length - 1 ? ['getreidefeld'] : [],
-                        ),
-                      )}
-                      {grains.map((field) => renderCell(field))}
-                      {seedBeds.length === 0 && (
-                        <BuyInfraButton
-                          item="getreidefeld"
-                          game={game}
-                          disabled={buyLocked}
-                          onBuy={buyInfra}
-                        />
-                      )}
-                    </div>
-                  </div>
-                  <div className="board-row-col">
-                    <p className="board-row-label">Regen</p>
-                    <div className="board-row">
-                      {regen.map((field) => renderCell(field))}
-                    </div>
-                  </div>
-                </div>
-              )
-            }
-
-            if (row === ROW.victory) {
-              const harvest = [...fields]
-                .filter((f) => f.kind === 'victory')
-                .sort((a, b) => a.id.localeCompare(b.id))
-              const markets = [...fields]
-                .filter((f) => f.kind === 'market')
-                .sort((a, b) => a.id.localeCompare(b.id))
-              return (
-                <div key={row} className="board-row-split">
-                  <div className="board-row-col board-harvest">
-                    <p className="board-row-label">Ernte</p>
-                    <div className="board-row">
-                      {harvest.map((field) => renderCell(field))}
-                    </div>
-                  </div>
-                  {markets.length > 0 && (
-                    <div className="board-row-col">
-                      <p className="board-row-label">Markt</p>
-                      <div className="board-row">
-                        {markets.map((field) => renderCell(field))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            }
-
-            return (
-              <div key={row}>
-                <p className="board-row-label">{ROW_LABELS[row] ?? ''}</p>
+          <section className="board-zone board-zone-communal">
+            <p className="board-zone-label">Gemeinschaft</p>
+            <div className="board-row-split">
+              <div className="board-row-col">
+                <p className="board-row-label">Saatstand</p>
                 <div className="board-row">
-                  {fields.map((f) => renderCell(f))}
+                  {seedBeds.map((field) => renderCell(field))}
                 </div>
               </div>
-            )
-          })}
+              {waterTrades.length > 0 && (
+                <div className="board-row-col">
+                  <p className="board-row-label">Wasserhandel</p>
+                  <div className="board-row">
+                    {waterTrades.map((field) => renderCell(field))}
+                  </div>
+                </div>
+              )}
+              {markets.length > 0 && (
+                <div className="board-row-col board-market-col">
+                  <p className="board-row-label">Markt</p>
+                  <div className="board-market-stalls">
+                    <div className="board-market-zero">
+                      <MarketZeroMeter
+                        value={game.marketDemand}
+                        flash={marketFlash}
+                        flashKey={
+                          game.demandRollSeq + game.planetLimitSeq * 1000
+                        }
+                        limitPulse={
+                          game.planetLimitId?.startsWith('markt-') === true
+                        }
+                      />
+                    </div>
+                    {MARKET_PRICES.map((price) => {
+                      const field = game.fields[marketFieldId(price)]
+                      return (
+                        <div key={price} className="board-market-stall">
+                          <MarketStallMeter
+                            price={price}
+                            value={game.marketDemand}
+                            flash={marketFlash}
+                            flashKey={
+                              game.demandRollSeq + game.planetLimitSeq * 1000
+                            }
+                            limitPulse={
+                              game.planetLimitId?.startsWith('markt-') === true
+                            }
+                          />
+                          {field ? renderCell(field) : null}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+              {communalRest.length > 0 && (
+                <div className="board-row-col">
+                  <div className="board-row">
+                    {communalRest.map((field) => renderCell(field))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="board-zone board-zone-private">
+            <p className="board-zone-label">Privat</p>
+            <div className="board-player-groups">
+              {game.players.map((player) => {
+                const fields = byPlayer.get(player.id) ?? []
+                const rains = fields.filter((f) => isRegen(f))
+                const beets = fields.filter((f) => f.kind === 'factory')
+                const storages = fields.filter((f) => f.kind === 'storage')
+                const harvest = fields.filter((f) => f.kind === 'victory')
+                const meta = PLAYER_META[player.id]
+                return (
+                  <div
+                    key={player.id}
+                    className={`board-player-group owner-${player.id}`}
+                  >
+                    <p className="board-player-label">
+                      <i style={{ background: meta.color }} aria-hidden />
+                      {player.name}
+                    </p>
+                    <div className="board-player-stack">
+                      <div className="board-row">
+                        {rains.map((field) => renderCell(field))}
+                        {beets.map((field) => renderCell(field))}
+                        {storages.map((field) => renderCell(field))}
+                      </div>
+                      <div className="board-row board-player-harvest">
+                        {harvest.map((field) => renderCell(field))}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
         </div>
 
         <div className="board-discards" aria-label="Nachzieh- und Ablagestapel">

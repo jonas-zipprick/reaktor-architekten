@@ -2,13 +2,18 @@ import type { ScenarioId } from '../types'
 import type { GameRecord } from '../state/recordFormat'
 
 /**
- * finished = 3 Siegpunkte-Spalten voll (je 6 Karten, 7→2) — Sieg
- * lost     = alle Marktstände weg (Niederlage)
- * stalled  = Stillstand: mehrere Runden lang nur noch Zugenden
+ * finished = Sieg (drei Erntefelder je Folge 7→2)
  * aborted  = Aktionslimit erreicht
- * stuck    = Bot konnte keine gültige Aktion ausführen
+ * stuck    = Bot ohne gültige Aktion
+ * stalled  = @deprecated (früher Idle-Abbruch; wird zu aborted normalisiert)
+ * lost     = @deprecated (früher Markt-Niederlage; wird zu aborted normalisiert)
  */
-export type SimOutcome = 'finished' | 'lost' | 'stalled' | 'aborted' | 'stuck'
+export type SimOutcome =
+  | 'finished'
+  | 'aborted'
+  | 'stuck'
+  | 'stalled'
+  | 'lost'
 
 export interface SimConfig {
   scenarioId: ScenarioId
@@ -19,54 +24,44 @@ export interface SimConfig {
   /** Worker count; 0 = hardwareConcurrency. */
   workers: number
   /**
-   * 0 = uniform random among legal actions (moves, buys, gifts, endTurn).
-   * 1 = greedy: best score among moves/buys/gifts/endTurn (projected market
-   *     supply, recipe progress, source pressure, chain buys).
-   * In between: with probability h pick greedy, else random (endTurn always
-   *     in the explore pool).
+   * 0 = uniform random among legal actions.
+   * 1 = greedy best score.
+   * In between: with probability h pick greedy, else random.
    */
   heuristic: number
 }
 
+/**
+ * Kennzahlen einer Monte-Carlo-Partie (aktuelle Garten-Regeln).
+ * Alte IDB-Zeilen werden in `normalizeSimMetrics` gemappt.
+ */
 export interface SimRunMetrics {
   seed: number
   outcome: SimOutcome
   actions: number
-  /** Runde am Ende (steigt, wenn wieder der Startspieler dran ist). */
+  /** Runde am Ende. */
   turns: number
-  /** Name(n) der Spieler mit dem höchsten Gesamtvermögen. */
-  leader: string
-  /** Höchstes Gesamtvermögen (Bargeld + Bankforderungen). */
+  /** Siegername bei finished, sonst leer. */
+  winner: string
+  /** Karten auf allen Erntefeldern (Fortschritt). */
+  harvestCards: number
+  /** Fertige Folgen 7→2 über alle Spieler. */
+  harvestDone: number
+  /** Höchstes Gesamtvermögen (Bargeld + Forderungen). */
   wealthMax: number
-  /** Niedrigstes Gesamtvermögen. */
-  wealthMin: number
   /** Summe aller Bankforderungen. */
   bankClaims: number
   bankLeft: number
-  /** Karten, die am Zugende auf Ausgabestapel gelegt wurden. */
+  /** Ausgabekarten erzeugt (Beete / Depot-Nachziehen). */
   productions: number
-  /** Produktkarten, die auf Marktstände geliefert wurden. */
-  productsDelivered: number
-  /** Markt-Kollapse (Bedarfsmesser unter −8). */
-  marketCollapses: number
-  /** @deprecated Quellen kollabieren nicht mehr. */
-  sourceCollapses: number
-  /** Gekaufte Feldkopien / gespte Märkte. */
-  marketsSpawned: number
-  /** Einkommen aus Markt-Lieferungen. */
-  marketIncome: number
-  /** Summe Gebühren an andere Spieler. */
-  feesPaidToPlayers: number
-  /** Summe Gebühren und Kaufpreise an die Bank. */
-  feesPaidToBank: number
-  /** Auktionen mit Zuschlag. */
-  auctionsSold: number
-  /** Summe aller Zuschlagspreise. */
-  auctionVolume: number
-  /** Betriebe in Privatbesitz am Ende. */
-  privateBusinesses: number
-  /** Anzahl Käufe (Infrastruktur + Feldkopien) während der Partie. */
-  fieldsBought: number
+  /** Marktkarten, die am Zugende aufgekauft wurden. */
+  marketBuys: number
+  /** Auszahlungen aus der Bank (Depot-Abrechnung, Markt-Zugende). */
+  bankIncome: number
+  /** Spieler→Spieler (Markt-Entnahme an Ernte-Spieler). */
+  playerTransfers: number
+  /** Zahlungen an die Bank (z. B. Depot-Ausgabe bei Bedarf &lt; 0). */
+  bankPaid: number
   durationMs: number
 }
 
@@ -96,3 +91,58 @@ export type WorkerRequest = {
 export type WorkerResponse =
   | { type: 'result'; jobId: number; result: SimRunResult }
   | { type: 'error'; jobId: number; seed: number; message: string }
+
+/** Alte/teilweise Summaries auf das aktuelle Schema bringen. */
+export function normalizeSimMetrics(
+  raw: Partial<SimRunMetrics> & Record<string, unknown>,
+): SimRunMetrics {
+  const outcomeRaw = String(raw.outcome ?? 'aborted')
+  const outcome: SimOutcome =
+    outcomeRaw === 'finished' ||
+    outcomeRaw === 'stalled' ||
+    outcomeRaw === 'aborted' ||
+    outcomeRaw === 'stuck' ||
+    outcomeRaw === 'lost'
+      ? outcomeRaw
+      : 'aborted'
+
+  const winnerText =
+    typeof raw.winnerText === 'string' ? raw.winnerText : null
+  const normalizedOutcome: SimOutcome =
+    outcome === 'lost' || outcome === 'stalled' ? 'aborted' : outcome
+  let winner = typeof raw.winner === 'string' ? raw.winner : ''
+  if (normalizedOutcome === 'finished') {
+    if (!winner && winnerText) {
+      const m = /^Sieg:\s*(.+?)\s+hat\b/.exec(winnerText)
+      winner = m?.[1] ?? winnerText.replace(/^Sieg:\s*/, '')
+    }
+  } else {
+    winner = ''
+  }
+
+  const num = (v: unknown, fallback = 0): number =>
+    typeof v === 'number' && Number.isFinite(v) ? v : fallback
+
+  return {
+    seed: num(raw.seed),
+    outcome: normalizedOutcome,
+    actions: num(raw.actions),
+    turns: num(raw.turns),
+    winner,
+    harvestCards: num(raw.harvestCards),
+    harvestDone: num(raw.harvestDone),
+    wealthMax: num(raw.wealthMax),
+    bankClaims: num(raw.bankClaims),
+    bankLeft: num(raw.bankLeft),
+    productions: num(raw.productions),
+    marketBuys: num(
+      raw.marketBuys ?? raw.productsDelivered,
+    ),
+    bankIncome: num(raw.bankIncome ?? raw.marketIncome),
+    playerTransfers: num(
+      raw.playerTransfers ?? raw.feesPaidToPlayers,
+    ),
+    bankPaid: num(raw.bankPaid ?? raw.feesPaidToBank),
+    durationMs: num(raw.durationMs),
+  }
+}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { GameState } from '../types'
 import './PlanetLimitFlash.css'
 
+/** Flash für seltene Bedarfsmesser-Ereignisse (aktuell ungenutzt). */
 export function PlanetLimitFlash({ game }: { game: GameState }) {
   const [visible, setVisible] = useState(false)
   const [text, setText] = useState<string | null>(null)
@@ -18,24 +19,10 @@ export function PlanetLimitFlash({ game }: { game: GameState }) {
 
   if (!visible || !text) return null
 
-  const isExpand =
-    text.includes('neuer Ausgabestapel') || text.includes('neuer Eingang')
-
   return (
     <div className="planet-limit-flash" role="status" aria-live="polite">
-      <p className="planet-limit-flash-title">
-        {isExpand
-          ? text.includes('Eingang')
-            ? 'Neuer Eingang'
-            : 'Neuer Ausgabestapel'
-          : 'Feld kollabiert'}
-      </p>
+      <p className="planet-limit-flash-title">Bedarf</p>
       <p className="planet-limit-flash-body">{text}</p>
-      <p className="planet-limit-flash-note">
-        {isExpand
-          ? 'Überversorgung > +5 · Bedarf auf 0'
-          : 'Bedarf unter −8'}
-      </p>
     </div>
   )
 }

@@ -390,14 +390,6 @@
   color: var(--ok);
 }
 
-.mc-table tr.outcome-lost td:nth-child(2) {
-  color: var(--danger);
-}
-
-.mc-table tr.outcome-stalled td:nth-child(2) {
-  color: var(--honey);
-}
-
 .mc-table tr.outcome-aborted td:nth-child(2),
 .mc-table tr.outcome-stuck td:nth-child(2) {
   color: var(--text-mute);

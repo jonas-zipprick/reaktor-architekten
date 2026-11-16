@@ -6,14 +6,12 @@ import './AuctionDialog.css'
 /**
  * Offene Auktion am Tisch: Startgebot 1¤, jedes Gebot mindestens 1¤ höher,
  * geboten wird nur mit Bargeld. Der Zuschlag beendet die Auktion.
- * Exp-10-Schuppen: ohne Gebot fällt er an den Staat (Gebühr 1).
  */
 export function AuctionDialog({ game }: { game: GameState }) {
   const auction = useGameStore((s) => s.auction)
   const placeBid = useGameStore((s) => s.placeBid)
   const closeAuction = useGameStore((s) => s.closeAuction)
   const [amounts, setAmounts] = useState<Record<string, number>>({})
-  const [fee, setFee] = useState<number | null>(null)
 
   if (!auction) return null
   const field = game.fields[auction.fieldId]
@@ -103,24 +101,10 @@ export function AuctionDialog({ game }: { game: GameState }) {
           })}
         </ul>
 
-        {leader && (
-          <label className="auction-fee">
-            Neue Gebühr von {leader.name}
-            <input
-              type="number"
-              min={0}
-              value={fee ?? field.fee}
-              onChange={(e) =>
-                setFee(Math.max(0, Math.floor(Number(e.target.value)) || 0))
-              }
-            />
-          </label>
-        )}
-
         <button
           type="button"
           className="primary-btn"
-          onClick={() => closeAuction(leader ? (fee ?? field.fee) : undefined)}
+          onClick={() => closeAuction()}
         >
           {leader
             ? `Zuschlag: ${leader.name} für ${auction.highBid}¤`

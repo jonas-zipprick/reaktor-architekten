@@ -11,8 +11,7 @@
  *   "setup": { "scenarioId": "A", "seed": 1234567890 },
  *   "actions": [
  *     { "type": "move", "player": "white", "from": "herz-1", "to": "karo-a" },
- *     { "type": "auction", "player": "white", "at": "pik-1", "winner": "black", "price": 4, "fee": 3 },
- *     { "type": "setFee", "player": "white", "at": "karo-a", "fee": 1 },
+ *     { "type": "auction", "player": "white", "at": "pik-1", "winner": "black", "price": 4 },
  *     { "type": "gift", "player": "white", "to": "black", "amount": 2 },
  *     { "type": "endTurn", "player": "white" }
  *   ]
@@ -29,9 +28,8 @@
  * - `move` teleports the top card of `from` onto `to` (source/factory/storage
  *   ↔ factory/storage, or finished product → planet/storage).
  * - `auction` stores the outcome of one open auction: `winner` (or `null` when
- *   nobody bid), the final `price`, and optionally the `fee` the new owner sets
- *   right after the purchase.
- * - `setFee` sets the fee of the player's own business or planet.
+ *   nobody bid) and the final `price`.
+ * - `setFee` is ignored (legacy; Nutzungsgebühren entfallen).
  * - `gift` hands cash to another player.
  * - `endTurn` is the shared „Karten ziehen und Produzieren“ action; it ends the turn.
  * - `lagerOffer` resolves the Exp-10 warehouse offer spawned by a prior `endTurn`
@@ -59,11 +57,10 @@ import {
   executeGift,
   executeMove,
   resolveLagerOffer,
-  setFee,
 } from './rules'
 
 export const RECORD_FORMAT = 'va-record' as const
-export const RECORD_VERSION = 51 as const
+export const RECORD_VERSION = 52 as const
 
 export interface GameRecordSetup {
   scenarioId: ScenarioId
@@ -85,6 +82,7 @@ export type MoveAction = {
   toStackIndex?: number
 }
 
+/** @deprecated Legacy — wird beim Replay ignoriert. */
 export type SetFeeAction = {
   type: 'setFee'
   player: PlayerId
@@ -193,7 +191,7 @@ export function actionLabel(action: GameAction, scenarioId: ScenarioId): string 
         (action.count ?? 1) > 1 ? ` ×${action.count}` : ''
       }`
     case 'setFee':
-      return `${who}: Gebühr ${label(action.at)} = ${action.fee}`
+      return `${who}: Gebühr ${label(action.at)} (ignoriert)`
     case 'auction':
       return action.winner
         ? `${who}: Auktion ${label(action.at)} → ${playerName(action.winner)} für ${action.price}¤`
@@ -235,14 +233,14 @@ export function applyAction(state: GameState, action: GameAction): GameState {
       return next
     }
     case 'setFee':
-      return setFee(state, action.at, action.fee)
+      // Legacy: frei setzbare Gebühren entfallen.
+      return state
     case 'auction': {
       const next = executeAuction(
         state,
         action.at,
         action.winner,
         action.price,
-        action.fee,
       )
       if (next.actionError) {
         throw new Error(`Replay auction failed: ${next.actionError}`)

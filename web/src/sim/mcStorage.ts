@@ -1,5 +1,9 @@
 import { RECORD_VERSION, type GameRecord } from '../state/recordFormat'
-import type { SimRunMetrics, SimRunResult } from './types'
+import {
+  normalizeSimMetrics,
+  type SimRunMetrics,
+  type SimRunResult,
+} from './types'
 
 const DB_NAME = 'va-monte-carlo'
 /** v2: summaries getrennt von Vollrecords — getAll auf runs hat den Tab (SIGILL/OOM) gekillt. */
@@ -35,8 +39,11 @@ export function batchKeyOf(opts: {
 }
 
 export function summaryOf(run: SimRunResult): SimRunSummary {
-  const { record: _r, ...rest } = run
-  return rest
+  const { record: _r, winnerText, ...metrics } = run
+  return {
+    ...normalizeSimMetrics({ ...metrics, winnerText }),
+    winnerText,
+  }
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -91,12 +98,11 @@ function toStoredSummary(
   batchKey: string,
   result: SimRunResult,
 ): StoredSummary {
-  const { record: _r, ...rest } = result
+  const summary = summaryOf(result)
   return {
     id: runId(batchKey, result.seed),
     batchKey,
-    ...rest,
-    fieldsBought: rest.fieldsBought ?? 0,
+    ...summary,
     savedAt: Date.now(),
   }
 }
@@ -156,10 +162,16 @@ export async function listSummaries(
     req.onsuccess = () => {
       const all = (req.result as StoredSummary[]) ?? []
       resolve(
-        all.map(({ id: _i, batchKey: _b, savedAt: _s, ...m }) => ({
-          ...m,
-          fieldsBought: m.fieldsBought ?? 0,
-        })),
+        all.map(({ id: _i, batchKey: _b, savedAt: _s, ...m }) => {
+          const metrics = normalizeSimMetrics(m as Record<string, unknown>)
+          return {
+            ...metrics,
+            winnerText:
+              typeof m.winnerText === 'string' || m.winnerText === null
+                ? (m.winnerText as string | null)
+                : null,
+          }
+        }),
       )
     }
     req.onerror = () => reject(req.error ?? new Error('list failed'))

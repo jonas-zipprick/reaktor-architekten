@@ -1,4 +1,5 @@
 import type {
+  BeetKind,
   FieldKind,
   PlayerId,
   Recipe,
@@ -7,7 +8,7 @@ import type {
   ScenarioId,
   Suit,
 } from '../types'
-import { factoryLabel, sourceLabel, storageLabel } from '../types'
+import { BEET_DEFS, sourceLabel, storageLabel } from '../types'
 
 export const PLAYER_META: Record<
   PlayerId,
@@ -20,8 +21,8 @@ export const PLAYER_META: Record<
 }
 
 /**
- * Brettzeilen: Felder|Regen → Küchen|Infrastruktur → Ernte.
- * Quelle (row 0): Saatstand/Getreide und Regen; Küche|Infrastruktur (row 1); Ernte (row 2).
+ * Brettzeilen: Felder → Küchen|Infrastruktur → Ernte|Markt.
+ * Beet und Regen kommen persönlich je Spieler (nicht aus dem Katalog).
  */
 export const ROW = {
   source: 0,
@@ -35,93 +36,26 @@ export function rowForKind(kind: FieldKind): number {
   return ROW[kind]
 }
 
-const LETTERS = ['A', 'B', 'C', 'D']
-
-/** Mehlmühle: 1 Wasser + 1 Getreide → 1 Mehl */
-export const RECIPE_KARO: Recipe = { energy: 1, spades: 1 }
-/** Beet: 1 Wasser + 1 Saat → 1 Obst */
+/** Beet: 1 Wasser + 1 Saat → Beet-Ernte */
 export const RECIPE_KREUZ: Recipe = { energy: 1, hearts: 1 }
-/** Konfitürenküche: 1 Obst + 1 Wasser → 1 Konfitüre */
-export const RECIPE_STAHL: Recipe = { clubs: 1, energy: 1 }
 
 export function recipeForFactory(suit: Suit): Recipe | undefined {
-  if (suit === 'diamonds') return RECIPE_KARO
-  if (suit === 'clubs') return RECIPE_KREUZ
-  if (suit === 'steel') return RECIPE_STAHL
+  if (suit === 'clubs' || suit === 'berry' || suit === 'veg' || suit === 'herb') {
+    return RECIPE_KREUZ
+  }
   return undefined
 }
 
-/** Startquellen. Getreidefeld ist käuflich und startet nicht mit. */
-function sources(counts: {
-  hearts?: number
-  spades?: number
-  energy?: number
-}): ScenarioField[] {
+/** Gemeinschaftliche Startquellen (Saatstand). Regen persönlich. */
+function sources(heartsCount: number): ScenarioField[] {
   const out: ScenarioField[] = []
-  for (let i = 1; i <= (counts.hearts ?? 0); i++) {
+  for (let i = 1; i <= heartsCount; i++) {
     out.push({
       id: `herz-${i}`,
       kind: 'source',
       suit: 'hearts',
       label: sourceLabel('hearts', i),
       row: ROW.source,
-    })
-  }
-  for (let i = 1; i <= (counts.spades ?? 0); i++) {
-    out.push({
-      id: `pik-${i}`,
-      kind: 'source',
-      suit: 'spades',
-      label: sourceLabel('spades', i),
-      row: ROW.source,
-    })
-  }
-  for (let i = 1; i <= (counts.energy ?? 0); i++) {
-    out.push({
-      id: `energie-${i}`,
-      kind: 'source',
-      suit: 'energy',
-      label: sourceLabel('energy', i),
-      row: ROW.source,
-    })
-  }
-  return out
-}
-
-function factories(
-  karoCount: number,
-  kreuzCount: number,
-  stahlCount = 0,
-): ScenarioField[] {
-  const out: ScenarioField[] = []
-  for (let i = 0; i < karoCount; i++) {
-    out.push({
-      id: `karo-${LETTERS[i]!.toLowerCase()}`,
-      kind: 'factory',
-      suit: 'diamonds',
-      label: factoryLabel('diamonds', LETTERS[i]),
-      recipe: RECIPE_KARO,
-      row: ROW.factory,
-    })
-  }
-  for (let i = 0; i < kreuzCount; i++) {
-    out.push({
-      id: `kreuz-${LETTERS[i]!.toLowerCase()}`,
-      kind: 'factory',
-      suit: 'clubs',
-      label: factoryLabel('clubs', LETTERS[i]),
-      recipe: RECIPE_KREUZ,
-      row: ROW.factory,
-    })
-  }
-  for (let i = 0; i < stahlCount; i++) {
-    out.push({
-      id: `stahl-${LETTERS[i]!.toLowerCase()}`,
-      kind: 'factory',
-      suit: 'steel',
-      label: factoryLabel('steel', LETTERS[i]),
-      recipe: RECIPE_STAHL,
-      row: ROW.factory,
     })
   }
   return out
@@ -137,46 +71,63 @@ export function personalBeetLabel(
   return multi ? `${PLAYER_META[playerId].short}·${base}` : base
 }
 
+export function personalGardenBeetLabel(
+  playerId: PlayerId,
+  kind: BeetKind,
+  multi: boolean,
+): string {
+  const base = BEET_DEFS[kind].label
+  return multi ? `${PLAYER_META[playerId].short}·${base}` : base
+}
+
+export function personalRegenLabel(
+  playerId: PlayerId,
+  multi: boolean,
+): string {
+  const base = sourceLabel('energy')
+  return multi ? `${PLAYER_META[playerId].short}·${base}` : base
+}
+
 export const SCENARIOS: ScenarioDef[] = [
   {
     id: 'A',
     name: 'Allein im Garten',
     players: ['white'],
     description:
-      '1 Spieler · 30 Karten/Sorte · Saatstand + Regen, Beet, 1 Schuppen. Ziel: eine Reihe aus Mehl, Obst und Konfitüre. Getreidefeld, Mehlmühle und Konfitürenküche käuflich (+).',
+      '1 Spieler · 24 Karten/Sorte · 1 Saatstand, Regen, Apfelbeet, Schuppen, 3 Erntefelder. SP nach Zugende mit 3 vollen Stapeln.',
     beetsPerPlayer: 1,
-    cardsPerSuit: 30,
-    fields: [...sources({ hearts: 1, energy: 1 }), ...factories(0, 1)],
+    cardsPerSuit: 24,
+    fields: [...sources(1)],
   },
   {
     id: 'B',
     name: 'Nachbarschaftsmarkt',
     players: ['white', 'black'],
     description:
-      '2 Spieler · 60 Karten/Sorte · Saatstand, 2 Regen, Beet; je 1 Schuppen. Ziel: eine Reihe aus Mehl, Obst und Konfitüre. Getreidefeld, Mehlmühle und Konfitürenküche käuflich (+).',
+      '2 Spieler · 48 Karten/Sorte · 1 Saatstand; Weiß Apfelbeet, Schwarz Beerenbeet; je Regen/Schuppen/3 Erntefelder. SP nach Zugende mit 3 vollen Stapeln.',
     beetsPerPlayer: 1,
-    cardsPerSuit: 60,
-    fields: [...sources({ hearts: 1, energy: 2 }), ...factories(0, 1)],
+    cardsPerSuit: 48,
+    fields: [...sources(1)],
   },
   {
     id: 'C',
     name: 'Erntefest',
     players: ['white', 'black', 'red'],
     description:
-      '3 Spieler · 80 Karten/Sorte · je 3 Saatstände/Regen/Beete, je 1 Schuppen. Ziel: eine Reihe aus Mehl, Obst und Konfitüre. Getreidefeld, Mehlmühle und Konfitürenküche käuflich (+).',
+      '3 Spieler · 72 Karten/Sorte · 1 Saatstand; Beete Obst/Beeren/Gemüse; je Regen/Schuppen/3 Erntefelder. SP nach Zugende mit 3 vollen Stapeln.',
     beetsPerPlayer: 1,
-    cardsPerSuit: 80,
-    fields: [...sources({ hearts: 3, energy: 3 }), ...factories(0, 3)],
+    cardsPerSuit: 72,
+    fields: [...sources(1)],
   },
   {
     id: 'D',
     name: 'Großer Wochenmarkt',
     players: ['white', 'black', 'red', 'green'],
     description:
-      '4 Spieler · 100 Karten/Sorte · je 4 Saatstände/Regen, 3 Beete, je 1 Schuppen. Ziel: eine Reihe aus Mehl, Obst und Konfitüre. Getreidefeld, Mehlmühle und Konfitürenküche käuflich (+).',
+      '4 Spieler · 96 Karten/Sorte · 2 Saatstände; Beete aller vier Sorten; je Regen/Schuppen/3 Erntefelder. SP nach Zugende mit 3 vollen Stapeln.',
     beetsPerPlayer: 1,
-    cardsPerSuit: 100,
-    fields: [...sources({ hearts: 4, energy: 4 }), ...factories(0, 3)],
+    cardsPerSuit: 96,
+    fields: [...sources(2)],
   },
 ]
 
@@ -199,12 +150,33 @@ export function fieldLabel(scenarioId: ScenarioId, fieldId: string): string {
     const multi = getScenario(scenarioId).players.length > 1
     return personalBeetLabel(beet[1] as PlayerId, Number(beet[2]), multi)
   }
+  const garden =
+    /^beet-(apfel|beere|gemuese|kraut)-(white|black|red|green)$/.exec(fieldId)
+  if (garden) {
+    const multi = getScenario(scenarioId).players.length > 1
+    return personalGardenBeetLabel(
+      garden[2] as PlayerId,
+      garden[1] as BeetKind,
+      multi,
+    )
+  }
+  const regen = /^regen-(white|black|red|green)$/.exec(fieldId)
+  if (regen) {
+    const multi = getScenario(scenarioId).players.length > 1
+    return personalRegenLabel(regen[1] as PlayerId, multi)
+  }
   const harvest = /^sieg-(white|black|red|green)-(\d+)$/.exec(fieldId)
   if (harvest) {
     const multi = getScenario(scenarioId).players.length > 1
     const base = `Ernte ${harvest[2]}`
     return multi ? `${PLAYER_META[harvest[1] as PlayerId].short}·${base}` : base
   }
-  if (fieldId === 'markt-1' || fieldId.startsWith('markt-')) return 'Markt'
+  if (fieldId.startsWith('markt-')) {
+    const m = /^markt-(2|4|6)$/.exec(fieldId)
+    return m ? `${m[1]}¤` : 'Markt'
+  }
+  if (fieldId === 'wasserhandel-1' || fieldId.startsWith('wasserhandel-')) {
+    return 'Wasserhandel'
+  }
   return fieldId
 }

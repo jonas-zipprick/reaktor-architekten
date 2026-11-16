@@ -1,6 +1,8 @@
 import {
   getScenario,
   personalBeetLabel,
+  personalGardenBeetLabel,
+  personalRegenLabel,
   PLAYER_META,
   playersFor,
   ROW,
@@ -16,13 +18,23 @@ import type {
   Suit,
 } from '../types'
 import {
+  BEET_DEFS,
+  beetFieldId,
+  beetKindForSeat,
+  GARDEN_RECIPE,
   hasOwnership,
+  isPersonalGarden,
+  isRegen,
   isSeedBed,
-  MARKET_FIELD_ID,
+  MARKET_PRICES,
+  marketFieldId,
+  regenFieldId,
   SEED_BED_RECIPE,
   SUITS,
-  VICTORY_COLUMN_COUNT,
+  victoryColumnCount,
   victoryFieldId,
+  WATER_TRADE_FIELD_ID,
+  WATER_TRADE_RECIPE,
 } from '../types'
 import { createRng, shuffle } from './rng'
 
@@ -31,14 +43,16 @@ const RANKS: Rank[] = [7, 6, 5, 4, 3, 2]
 /** Eindeutige ID-Präfixe (suit[0] kollidiert bei spades/steel). */
 const SUIT_ID_PREFIX: Record<Suit, string> = {
   hearts: 'h',
-  spades: 's',
   energy: 'e',
-  diamonds: 'd',
   clubs: 'c',
-  steel: 't',
+  berry: 'b',
+  veg: 'v',
+  herb: 'k',
 }
 
 const START_CARDS_PER_SOURCE = 2
+/** Persönlicher Regen startet mit einer offenen Wasserkarte. */
+const START_CARDS_PER_REGEN = 1
 /** Küchen-/Saatstand-Ausgabe: Start- und Nachfüllgröße. */
 export const FACTORY_OUTPUT_SIZE = 10
 const START_MONEY = 5
@@ -101,6 +115,8 @@ export function createGame(
   for (const f of scenario.fields) {
     // Infrastruktur kommt persönlich je Spieler — nicht aus dem Szenario-Feldkatalog.
     if (hasOwnership(f.kind)) continue
+    // Beet und Regen kommen persönlich je Spieler (nicht aus dem Katalog).
+    if (isPersonalGarden(f) || isRegen(f)) continue
     const field: FieldState = {
       id: f.id,
       kind: f.kind,
@@ -119,7 +135,7 @@ export function createGame(
     }
     if (f.kind === 'source' && f.suit) {
       if (isSeedBed(f)) {
-        // Saatstand: endloser Saat-Ausgang, Obst-Eingang, Bedarfsmesser bei 0.
+        // Saatstand: gemeinschaftlich, Saat-Ausgabe, Ernte-Eingang, Bedarf 0.
         field.demand = 0
         field.recipe = SEED_BED_RECIPE
         const out = takeOutputCards(decks, f.suit, FACTORY_OUTPUT_SIZE)
@@ -136,7 +152,44 @@ export function createGame(
   }
 
   const multi = playerIds.length > 1
-  for (const playerId of playerIds) {
+  const harvestN = victoryColumnCount(playerIds.length)
+  for (let seat = 0; seat < playerIds.length; seat++) {
+    const playerId = playerIds[seat]!
+    const rainId = regenFieldId(playerId)
+    const rainStack: Card[] = []
+    for (let n = 0; n < START_CARDS_PER_REGEN; n++) {
+      const card = decks.energy!.draw.pop()
+      if (card) rainStack.push(card)
+    }
+    fields[rainId] = {
+      id: rainId,
+      kind: 'source',
+      suit: 'energy',
+      label: personalRegenLabel(playerId, multi),
+      row: ROW.source,
+      owner: playerId,
+      fee: 0,
+      stack: rainStack,
+    }
+
+    // Ein Beet je Spieler: Sitz 0 Obst, 1 Beeren, 2 Gemüse, 3 Kräuter.
+    const kind = beetKindForSeat(seat)
+    const def = BEET_DEFS[kind]
+    const gardenId = beetFieldId(playerId, kind)
+    fields[gardenId] = {
+      id: gardenId,
+      kind: 'factory',
+      suit: def.suit,
+      label: personalGardenBeetLabel(playerId, kind, multi),
+      recipe: GARDEN_RECIPE,
+      row: ROW.factory,
+      owner: playerId,
+      fee: 0,
+      stack: [],
+      outputs: [[]],
+      outputsRevealed: [0],
+    }
+
     const id = `lager-${playerId}-1`
     fields[id] = {
       id,
@@ -147,13 +200,12 @@ export function createGame(
       fee: 0,
       stack: [],
     }
-    for (let i = 0; i < VICTORY_COLUMN_COUNT; i++) {
-      const base =
-        VICTORY_COLUMN_COUNT > 1 ? `Ernte ${i + 1}` : 'Ernte'
+    for (let i = 0; i < harvestN; i++) {
+      const base = `Ernte ${i + 1}`
       const label = multi ? `${PLAYER_META[playerId].short}·${base}` : base
-      const id = victoryFieldId(playerId, i)
-      fields[id] = {
-        id,
+      const vid = victoryFieldId(playerId, i)
+      fields[vid] = {
+        id: vid,
         kind: 'victory',
         label,
         row: ROW.victory,
@@ -164,17 +216,36 @@ export function createGame(
     }
   }
 
-  // Ein gemeinsamer Markt neben den Erntefeldern (nur Eingang, Küchenware).
-  const marketInputs: FieldState['inputs'] = [[]]
-  fields[MARKET_FIELD_ID] = {
-    id: MARKET_FIELD_ID,
-    kind: 'market',
-    label: 'Markt',
-    row: ROW.market,
-    fee: 0,
-    stack: marketInputs[0]!,
-    inputs: marketInputs,
-    demand: 0,
+  // Gemeinschaftlicher Wasserhandel (Eingang + Ausgabe Wasser, Bedarf 0).
+  {
+    const out = takeOutputCards(decks, 'energy', FACTORY_OUTPUT_SIZE)
+    fields[WATER_TRADE_FIELD_ID] = {
+      id: WATER_TRADE_FIELD_ID,
+      kind: 'source',
+      suit: 'energy',
+      label: 'Wasserhandel',
+      recipe: WATER_TRADE_RECIPE,
+      row: ROW.source,
+      fee: 0,
+      stack: [],
+      demand: 0,
+      outputs: [out],
+      outputsRevealed: [out.length > 0 ? 1 : 0],
+    }
+  }
+
+  // Drei gemeinsame Marktstände (2¤ / 4¤ / 6¤); gemeinsamer Bedarfsmesser.
+  for (const price of MARKET_PRICES) {
+    const id = marketFieldId(price)
+    fields[id] = {
+      id,
+      kind: 'market',
+      label: `${price}¤`,
+      row: ROW.market,
+      fee: 0,
+      stack: [],
+      marketPrice: price,
+    }
   }
 
   const players: PlayerState[] = playerIds.map((id) => ({
@@ -188,8 +259,8 @@ export function createGame(
   const startPlayerIndex = Math.floor(rng() * players.length)
   const single =
     players.length === 1
-      ? 'Einspieler — Startguthaben 5¤, ein eigener Schuppen.'
-      : `${players.length} Spieler · Startguthaben 5¤ · jeder hat einen Schuppen (ohne Gebühren).`
+      ? 'Einspieler — Startguthaben 5¤, eigener Regen, Apfelbeet und Schuppen.'
+      : `${players.length} Spieler · Startguthaben 5¤ · jeder hat Regen, ein eigenes Beet und Schuppen.`
 
   return {
     scenarioId,
@@ -205,6 +276,8 @@ export function createGame(
     demandRollSeq: 0,
     demandRollFlash: null,
     demandRollIds: [],
+    endTurnDice: null,
+    endTurnDiceSeq: 0,
     planetLimitSeq: 0,
     planetLimitFlash: null,
     planetLimitId: null,
@@ -235,6 +308,7 @@ export function createGame(
     winnerText: null,
     rngSeed: seed,
     marketSpawnSeq: 0,
+    marketDemand: 0,
     beetsPerPlayer: scenario.beetsPerPlayer,
   }
 }

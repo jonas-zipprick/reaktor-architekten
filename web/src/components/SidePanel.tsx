@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import type { GameState, PlayerId } from '../types'
+import { victoryColumnCount } from '../types'
 import { useGameStore } from '../state/gameStore'
 import {
   checkMove,
   completedVictoryColumns,
   describeCard,
+  moneyVictoryScore,
+  playerHarvestScore,
+  playerVictoryScore,
   totalWealth,
 } from '../state/rules'
-import { VICTORY_COLUMN_COUNT } from '../types'
 import { PlayingCard } from './PlayingCard'
 import './SidePanel.css'
 
@@ -19,7 +22,6 @@ export function SidePanel({ game }: { game: GameState }) {
   const clearSelection = useGameStore((s) => s.clearSelection)
   const endTurn = useGameStore((s) => s.endTurn)
   const gift = useGameStore((s) => s.gift)
-  const setFee = useGameStore((s) => s.setFee)
   const backToMenu = useGameStore((s) => s.backToMenu)
   const goMonteCarlo = useGameStore((s) => s.goMonteCarlo)
   const restart = useGameStore((s) => s.restart)
@@ -78,10 +80,6 @@ export function SidePanel({ game }: { game: GameState }) {
     ? (giftTo as PlayerId)
     : others[0]?.id
 
-  const ownedBusinesses = Object.values(game.fields).filter(
-    (f) => f.owner === current.id && f.kind !== 'storage',
-  )
-
   return (
     <aside className={`side-panel ${collapsed ? 'collapsed' : ''}`}>
       <div className="side-toolbar">
@@ -106,15 +104,15 @@ export function SidePanel({ game }: { game: GameState }) {
             className="side-money"
             title={
               current.bankClaims > 0
-                ? `${current.money}¤ Bargeld + ${current.bankClaims} Bankforderungen`
-                : `${current.money}¤ Bargeld`
+                ? `${current.money}T Bargeld + ${current.bankClaims} Bankforderungen`
+                : `${current.money}T Bargeld`
             }
           >
             <span className="side-money-name">
               <i style={{ background: current.color }} />
               {current.name}
             </span>
-            <strong className="side-money-value">{current.money}¤</strong>
+            <strong className="side-money-value">{current.money}T</strong>
           </div>
 
           <button
@@ -180,15 +178,15 @@ export function SidePanel({ game }: { game: GameState }) {
                 className={`balance-card ${active ? 'active' : ''}`}
                 title={
                   p.bankClaims > 0
-                    ? `${p.money}¤ Bargeld + ${p.bankClaims} Bankforderungen`
-                    : `${p.money}¤ Bargeld`
+                    ? `${p.money}T Bargeld + ${p.bankClaims} Bankforderungen`
+                    : `${p.money}T Bargeld`
                 }
               >
                 <span className="balance-name">
                   <i style={{ background: p.color }} />
                   {p.name}
                 </span>
-                <strong className="balance-money">{p.money}¤</strong>
+                <strong className="balance-money">{p.money}T</strong>
                 <em>{totalWealth(p)} Ges.</em>
               </div>
             )
@@ -198,17 +196,24 @@ export function SidePanel({ game }: { game: GameState }) {
         <section className="stat-grid">
           <div
             className="stat"
-            title="Fertige Erntefelder (volle Folge 7→2 je Sorte, alle drei vorhanden)"
+            title="Fertige Erntefelder (volle Folge 7→2) — Spielende bei Zugende mit allen drei"
           >
             <span>Ernte</span>
             <strong>
               {completedVictoryColumns(game, current.id)}
-              <em> / {VICTORY_COLUMN_COUNT}</em>
+              <em> / {victoryColumnCount(game.players.length)}</em>
             </strong>
+          </div>
+          <div
+            className="stat"
+            title={`Ernte ${playerHarvestScore(game, current.id)} SP (Vielfalt) + Geld ${moneyVictoryScore(current.money)} SP (je angefangene 10T)`}
+          >
+            <span>SP</span>
+            <strong>{playerVictoryScore(game, current.id)}</strong>
           </div>
           <div className="stat bank-stat">
             <span>Bank</span>
-            <strong>{game.bank}¤</strong>
+            <strong>{game.bank}T</strong>
           </div>
         </section>
 
@@ -278,38 +283,6 @@ export function SidePanel({ game }: { game: GameState }) {
             </button>
           </div>
         </section>
-
-        {ownedBusinesses.length > 0 && !game.ended && (
-          <section className="market-box">
-            <h3>Meine Betriebe · Gebühr</h3>
-            <ul className="fee-list">
-              {ownedBusinesses.map((f) => (
-                <li key={f.id} className="fee-row">
-                  <span>{f.label}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    aria-label={`Gebühr ${f.label}`}
-                    value={f.fee}
-                    disabled={busy}
-                    onChange={(e) =>
-                      setFee(
-                        f.id,
-                        Math.max(0, Math.floor(Number(e.target.value)) || 0),
-                      )
-                    }
-                  />
-                  <span className="fee-unit">¤</span>
-                </li>
-              ))}
-            </ul>
-            <p className="hint">
-              Gebühr addiert sich zum Bedarfspreis; sie geht an dich, der
-              Bedarfspreis an die Bank.
-            </p>
-          </section>
-        )}
 
         {game.players.length > 1 &&
           !game.ended &&

@@ -61,6 +61,21 @@
   --konfituere-tint: #f8eef5;
   --konfituere-ink: #5a1f4e;
 
+  --beeren: #5b4bb0;
+  --beeren-soft: #d9d4f2;
+  --beeren-tint: #f1effa;
+  --beeren-ink: #2f2670;
+
+  --gemuese: #c45f1a;
+  --gemuese-soft: #f3d4b8;
+  --gemuese-tint: #fbf0e5;
+  --gemuese-ink: #7a3408;
+
+  --kraeuter: #3f7a45;
+  --kraeuter-soft: #cfe3cb;
+  --kraeuter-tint: #eef6ec;
+  --kraeuter-ink: #1f4a24;
+
   --siegpunkt: #c9a227;
   --siegpunkt-soft: #f3e6b0;
   --siegpunkt-tint: #fbf6e4;
@@ -187,6 +202,33 @@ input {
   --suit-soft: var(--konfituere-soft);
   --suit-tint: var(--konfituere-tint);
   --suit-ink: var(--konfituere-ink);
+}
+
+.suit-berry,
+.back-berry,
+.pip-berry {
+  --suit: var(--beeren);
+  --suit-soft: var(--beeren-soft);
+  --suit-tint: var(--beeren-tint);
+  --suit-ink: var(--beeren-ink);
+}
+
+.suit-veg,
+.back-veg,
+.pip-veg {
+  --suit: var(--gemuese);
+  --suit-soft: var(--gemuese-soft);
+  --suit-tint: var(--gemuese-tint);
+  --suit-ink: var(--gemuese-ink);
+}
+
+.suit-herb,
+.back-herb,
+.pip-herb {
+  --suit: var(--kraeuter);
+  --suit-soft: var(--kraeuter-soft);
+  --suit-tint: var(--kraeuter-tint);
+  --suit-ink: var(--kraeuter-ink);
 }
 
 .suit-points,

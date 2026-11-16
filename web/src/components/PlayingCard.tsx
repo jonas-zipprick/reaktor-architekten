@@ -1,14 +1,15 @@
 import type { Card, Suit } from '../types'
 import { rankLabel, suitName, suitSymbol } from '../types'
+import { PLAYER_META } from '../data/scenarios'
 import './PlayingCard.css'
 
 const suitRole: Record<Suit, string> = {
   hearts: 'Ernte',
-  spades: 'Ernte',
   energy: 'Rohstoff',
-  diamonds: 'Ware',
   clubs: 'Ware',
-  steel: 'Ware',
+  berry: 'Ware',
+  veg: 'Ware',
+  herb: 'Ware',
 }
 
 export function PlayingCard({
@@ -44,13 +45,23 @@ export function PlayingCard({
   }
 
   const name = `${suitName(card.suit)} ${rankLabel(card.rank)}`
+  const placer = card.marketPlacedBy
+    ? PLAYER_META[card.marketPlacedBy]
+    : null
+  const title = [
+    name,
+    suitRole[card.suit],
+    placer ? `Besitz: ${placer.name}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <div
       className={`pcard suit-${card.suit} ${sizeClass} ${highlight ? 'highlight' : ''} ${dimmed ? 'dimmed' : ''}`}
       style={{ zIndex: stackIndex }}
-      aria-label={name}
-      title={[name, suitRole[card.suit]].join(' · ')}
+      aria-label={placer ? `${name}, Besitz ${placer.name}` : name}
+      title={title}
     >
       <span className="pcard-edge">
         <span className="pcard-edge-rank">{rankLabel(card.rank)}</span>
@@ -59,6 +70,13 @@ export function PlayingCard({
         </span>
       </span>
       <span className="pcard-rank">{rankLabel(card.rank)}</span>
+      {placer && (
+        <span
+          className="pcard-owner"
+          style={{ background: placer.color }}
+          aria-hidden
+        />
+      )}
     </div>
   )
 }

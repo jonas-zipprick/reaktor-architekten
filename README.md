@@ -19,18 +19,16 @@ Die App ist eine Progressive Web App. Nach dem Deploy über **HTTPS** (oder loka
 ## Enthalten
 
 - Szenarien A–D (A = 1 Spieler, B–D = 2–4 Spieler)
-- Sechs Sorten: 🌱 Saat / 🌾 Getreide / 💧 Wasser · 🥖 Mehl / 🍎 Obst / 🍯 Konfitüre
-- Kette **Saat → Obst → Konfitüre** (Beet: Wasser+Saat; Konfitürenküche: Obst+Wasser)
-- Parallel: Getreide → Mehl
-- Felder (u. a. Regen), Küchen, ein persönlicher Schuppen und drei Erntefelder je Spieler
-- Gemeinsamer Markt (nur Eingang) für Mehl, Obst und Konfitüre
-- Sieg: Mehl, Obst und Konfitüre jeweils auf einem eigenen Erntefeld
-- Jeder Spieler hat genau einen Schuppen (ohne Gebühren, nicht auktionierbar)
+- Sorten: 🌱 Saat / 💧 Wasser · 🍎 Obst / 🫐 Beeren / 🥕 Gemüse / 🌿 Kräuter
+- Je Spieler ein privates Beet nach Sitz: Obst → Beeren → Gemüse → Kräuter (Wasser+Saat)
+- Je Spieler: Regen, ein Beet, Schuppen und **3 Erntefelder**
+- Gemeinsamer Saatstand und Markt
+- Spielende: Zugende mit 3 vollen Erntefeldern; Sieg nach SP (Ernte-Vielfalt + 1 SP je angefangene 10T)
 - Zeitstrahl mit Export/Import; Monte-Carlo-Dauerlauf mit Bots
 
 ## Steuern
 
-1. Stapel anklicken (ggf. mehrfach für größere absteigende Auswahl) — mögliche Ziele samt Gebühr und Einkommen werden markiert.
+1. Stapel anklicken (ggf. mehrfach für größere absteigende Auswahl) — mögliche Ziele samt Kosten/Einkommen werden markiert.
 2. Ziel anklicken. Tippen auf leere Fläche, Rechtsklick oder Esc hebt die Auswahl auf.
-3. Versus: im Seitenpanel Auktion starten, Geld schenken, Gebühren eigener Felder anpassen.
+3. Versus: im Seitenpanel Geld schenken.
 4. „Karten ziehen und Produzieren“ (Leertaste) beendet den Zug.

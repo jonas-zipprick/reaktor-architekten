@@ -34,8 +34,9 @@ export function ScenarioPicker() {
           <p className="menu-kicker">Playtest · Garten & Wochenmarkt</p>
           <h1>Ernte & Wochenmarkt</h1>
           <p className="menu-lead">
-            Saat und Getreide ernten, zu Obst und Mehl veredeln, Konfitüre kochen
-            und Mehl, Obst und Konfitüre auf die eigenen Erntefelder legen.
+            Jeder hat ein eigenes Beet, erntet und verkauft, füllt drei
+            Erntefelder (Sorten mischbar). Spielende bei Zugende mit drei
+            vollen Stapeln — Sieger nach Siegpunkten (Ernte + Taler).
           </p>
         </header>
 
@@ -66,17 +67,16 @@ export function ScenarioPicker() {
             <div className="mode-brief">
               {single ? (
                 <p>
-                  Allein im Garten. Felder und Küchen sind gemeinschaftlich, bis
-                  jemand sie kauft. Dein Schuppen und die Erntefelder gehören
-                  dir. Sieg, wenn Mehl, Obst und Konfitüre jeweils auf einem
-                  eigenen Erntefeld liegen. Ohne Geld geht die Partie weiter.
+                  Allein im Garten mit Apfelbeet. Mit drei vollen Erntefeldern
+                  den Zug beenden → Wertung (Ernte-SP + Taler). Saatstand und Markt
+                  sind gemeinschaftlich.
                 </p>
               ) : (
                 <p>
-                  Sieg, wenn Mehl, Obst und Konfitüre jeweils auf einem eigenen
-                  Erntefeld liegen. Leere Kasse beendet nichts. Jeder hat einen
-                  Schuppen und drei Erntefelder; gekaufte Felder und Küchen
-                  gehören dem Käufer (Gebühr setzbar).
+                  Jeder hat ein anderes Beet. Alle Beet-Ernten zählen auf den
+                  Erntefeldern (mischbar). Wer zuerst drei volle Stapel hat und
+                  den Zug beendet, löst die Wertung aus — gewinnen tut die
+                  höchste SP-Summe (Ernte + Taler). Private Felder sind tabu.
                 </p>
               )}
               <ul className="scenario-facts">
@@ -103,19 +103,19 @@ export function ScenarioPicker() {
                 )}
                 <li>
                   <strong>Je Spieler</strong>
-                  1 Schuppen · 3 Erntefelder
+                  1 Regen · 1 Beet · 1 Schuppen · 3 Erntefelder
                 </li>
                 <li>
                   <strong>Gemeinschaft</strong>
-                  1 Markt (nur Eingang, Küchenware)
+                  Saatstand · Markt (Ernte & Saat)
                 </li>
                 <li>
                   <strong>Karten</strong>
                   {scenario.cardsPerSuit} je Sorte
                 </li>
                 <li>
-                  <strong>Siegziel</strong>
-                  Mehl, Obst und Konfitüre je auf einem eigenen Erntefeld
+                  <strong>Sieg</strong>
+                  Ernte-SP (1–4 Sorten → 2–5) + 1 SP je angefangene 10T
                 </li>
               </ul>
             </div>
@@ -162,23 +162,25 @@ export function ScenarioPicker() {
                 beendet den Zug
               </li>
               <li>
-                + kauft Getreidefeld, Mehlmühle, Konfitürenküche (20¤, 40¤,
-                80¤, …)
-              </li>
-              <li>
                 Stapel: absteigend (7 → … → 2); Mehrfachklick wählt
                 Teilstapel
               </li>
               <li>
-                Küche & Saatstand: offene Ausgabekarten per Mehrfachklick
-                (Gebühr nur bei Bedarf &lt; 0; bei ≥ 0 Ziehen gratis, Abliefern
-                ohne Belohnung);
-                Eingänge (Küche, Saatstand, Markt) entnehmbar — Abrechnung am
-                Zugende
+                Je Spieler ein Beet nach Sitz (Obst/Beeren/Gemüse/Kräuter),
+                eigener Regen; Beete ohne Bedarf/Geld, Zugende
+                bei Wasser+Saat Eingang→Ausgabe
               </li>
               <li>
-                Zugende: Regen/Getreide +1; Ausgaben +1 offen; Eingänge
-                abrechnen; &gt;+5 → Extra-Ausgabestapel; unter −8 → Feld weg
+                Saatstand &amp; Wasserhandel: Bedarfsmesser; Ausgabe bei
+                Bedarf &lt; 0 kostenpflichtig; Eingänge abrechnen am Zugende
+              </li>
+              <li>
+                Markt: 3 Stände 2/4/6T, Preis 0…7; Auszahlung an Ableger;
+                Entnahme kostet Standpreis (auch Markt→Markt)
+              </li>
+              <li>
+                Zugende: Würfel 2× Regen / 2× Markt / 2× beides; Depot +1;
+                Beete; Preisanzeige Depot/Markt 0…7
               </li>
               <li>Zeitstrahl: Züge scrubben, JSON exportieren/importieren</li>
             </ul>

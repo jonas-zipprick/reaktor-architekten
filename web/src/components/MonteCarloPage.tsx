@@ -14,10 +14,10 @@ import './MonteCarloPage.css'
 
 const OUTCOME_LABEL: Record<SimOutcome, string> = {
   finished: 'Sieg',
-  lost: 'Niederlage',
-  stalled: 'Stillstand',
-  aborted: 'Abbruch',
+  aborted: 'Limit',
   stuck: 'Fehler',
+  stalled: 'Limit',
+  lost: 'Limit',
 }
 
 const COLUMNS: { key: SortKey; label: string; tip: string }[] = [
@@ -29,82 +29,62 @@ const COLUMNS: { key: SortKey; label: string; tip: string }[] = [
   {
     key: 'outcome',
     label: 'Ergebnis',
-    tip: 'Sieg = 3 Siegpunkte-Spalten voll (je 6 Karten, 7→2). Niederlage = kein Marktstand mehr. Stillstand = nur Zugenden. Abbruch = Aktionslimit. Fehler = Bot ohne gültige Aktion.',
+    tip: 'Sieg = höchste SP (Ernte-Vielfalt + 1 je angefangene 10T) nach Zugende mit 3 vollen Stapeln. Limit = Aktionslimit. Fehler = Bot ohne gültige Aktion.',
   },
   {
-    key: 'leader',
-    label: 'Führend',
-    tip: 'Spieler mit dem höchsten Gesamtvermögen am Ende (mehrere bei Gleichstand).',
+    key: 'winner',
+    label: 'Sieger',
+    tip: 'Name des Spielers bei Sieg; sonst leer.',
   },
   {
-    key: 'wealthMax',
-    label: 'Verm. max',
-    tip: 'Höchstes Gesamtvermögen: Bargeld + Bankforderungen.',
+    key: 'harvestDone',
+    label: 'Folgen',
+    tip: 'Fertige Ernte-Folgen 7→2 über alle Spieler.',
   },
   {
-    key: 'wealthMin',
-    label: 'Verm. min',
-    tip: 'Niedrigstes Gesamtvermögen — Abstand zu „Verm. max“ zeigt die Spreizung.',
-  },
-  {
-    key: 'bankClaims',
-    label: 'Forder.',
-    tip: 'Summe aller Bankforderungen: Einkommen, das die leere Bank schuldig blieb.',
+    key: 'harvestCards',
+    label: 'Ernte-K.',
+    tip: 'Karten auf allen Erntefeldern — Fortschritt Richtung Folge 7→2.',
   },
   {
     key: 'productions',
     label: 'Prod.',
-    tip: 'Karten, die am Zugende auf Ausgabestapel (Küchen/Saatstand) gelegt wurden.',
+    tip: 'Ausgabekarten erzeugt (Beete bei Wasser+Saat, Depot-Nachziehen).',
   },
   {
-    key: 'productsDelivered',
-    label: 'Lief.',
-    tip: 'Produktkarten, die auf Marktstände geliefert wurden.',
+    key: 'marketBuys',
+    label: 'Markt',
+    tip: 'Marktkarten, die am Zugende von der Preisanzeige aufgekauft wurden.',
   },
   {
-    key: 'marketCollapses',
-    label: 'M-Kol.',
-    tip: 'Felder mit Bedarfsmesser entfernt (unter −8 oder über +5).',
+    key: 'bankIncome',
+    label: 'Bank→',
+    tip: 'Auszahlungen aus der Bank (Depot-Abrechnung und Markt-Zugende).',
   },
   {
-    key: 'sourceCollapses',
-    label: 'Q-Kol.',
-    tip: 'Quellen-Kollapse (entfällt — immer 0).',
+    key: 'playerTransfers',
+    label: 'Sp→Sp',
+    tip: 'Spieler→Spieler: Markt-Entnahme (Standpreis an Ernte-Spieler).',
   },
   {
-    key: 'marketsSpawned',
-    label: 'Spawn',
-    tip: 'Extra-Stapel/Eingänge durch Überversorgung (>+5).',
+    key: 'bankPaid',
+    label: '→Bank',
+    tip: 'Zahlungen an die Bank (Depot-Ausgabe bei Preisanzeige > 0).',
   },
   {
-    key: 'marketIncome',
-    label: 'Eink.',
-    tip: 'Einkommen aus Markt-Lieferungen.',
+    key: 'bankClaims',
+    label: 'Ford.',
+    tip: 'Summe aller Bankforderungen (unbezahltes Einkommen).',
   },
   {
-    key: 'feesPaidToPlayers',
-    label: 'Geb.→Sp.',
-    tip: 'Summe aller Gebühren, die Spieler an andere Spieler gezahlt haben.',
-  },
-  {
-    key: 'feesPaidToBank',
-    label: 'Geb.→Bank',
-    tip: 'Summe Gebühren und Kaufpreise an die Bank.',
-  },
-  {
-    key: 'privateBusinesses',
-    label: 'Privat',
-    tip: 'Felder/Küchen/Stände/Schuppen in Privatbesitz am Ende.',
-  },
-  {
-    key: 'fieldsBought',
-    label: 'Käufe',
-    tip: 'Anzahl gekaufter Felder (Infrastruktur) während der Partie.',
+    key: 'wealthMax',
+    label: 'Verm.',
+    tip: 'Höchstes Gesamtvermögen (Taler + Forderungen). Taler zählen über 1 SP je angefangene 10T mit.',
   },
   {
     key: 'actions',
     label: 'Aktionen',
-    tip: 'Aufgezeichnete Aktionen (Kartenbewegungen, Käufe, Gebühren, Zugenden).',
+    tip: 'Aufgezeichnete Aktionen (Kartenbewegungen, Geschenke, Zugenden).',
   },
   {
     key: 'turns',
@@ -114,7 +94,7 @@ const COLUMNS: { key: SortKey; label: string; tip: string }[] = [
   {
     key: 'bankLeft',
     label: 'Bank',
-    tip: 'Verbleibendes Bankgeld am Ende (Start 2000¤; leere Bank beendet nicht).',
+    tip: 'Verbleibende Banktaler am Ende (leere Bank beendet nicht).',
   },
   {
     key: 'durationMs',
@@ -208,7 +188,7 @@ export function MonteCarloPage() {
   }
 
   const finished = results.filter((r) => r.outcome === 'finished').length
-  const lost = results.filter((r) => r.outcome === 'lost').length
+  const aborted = results.filter((r) => r.outcome === 'aborted').length
 
   return (
     <div className="mc-page">
@@ -261,7 +241,7 @@ export function MonteCarloPage() {
           </label>
 
           <label>
-            Max. Aktionen (Abbruch)
+            Max. Aktionen (Limit)
             <input
               type="number"
               min={10}
@@ -305,8 +285,8 @@ export function MonteCarloPage() {
               }
             />
             <span className="mc-hint">
-              0 = zufällig · 1 = beste Aktion (Liefern, Käufe, Feldkopien);
-              ohne klaren Nutzen → Zugende. Max. 12 Aktionen je Zug.
+              0 = zufällig · 1 = beste Aktion (Ernte, Markt, Depots, Beete);
+              ohne klaren Nutzen → Zugende. Max. 18 Züge je Spielerzug.
             </span>
           </label>
         </div>
@@ -344,7 +324,7 @@ export function MonteCarloPage() {
           <div className="mc-progress">
             <div
               className={`mc-bar ${progress.running ? 'mc-bar-live' : ''}`}
-              style={{ width: progress.running ? '100%' : '100%' }}
+              style={{ width: '100%' }}
             />
             <span>
               {progress.done} Läufe
@@ -354,7 +334,7 @@ export function MonteCarloPage() {
                   ? ` · pausiert · weiter ab ${progress.nextSeed}`
                   : ''}
               {results.length > 0 &&
-                ` · ${finished}× Sieg · ${lost}× Niederlage`}
+                ` · ${finished}× Sieg · ${aborted}× Limit`}
             </span>
           </div>
         )}
@@ -398,14 +378,14 @@ export function MonteCarloPage() {
               </div>
             </fieldset>
             <label>
-              min. Verm. max
+              min. Folgen
               <input
                 type="number"
                 placeholder="—"
-                value={filters.minWealth ?? ''}
+                value={filters.minHarvestDone ?? ''}
                 onChange={(e) =>
                   setFilters({
-                    minWealth:
+                    minHarvestDone:
                       e.target.value === '' ? null : Number(e.target.value),
                   })
                 }
@@ -459,20 +439,16 @@ export function MonteCarloPage() {
                 >
                   <td>{r.seed}</td>
                   <td>{OUTCOME_LABEL[r.outcome]}</td>
-                  <td>{r.leader}</td>
-                  <td>{r.wealthMax}</td>
-                  <td>{r.wealthMin}</td>
-                  <td>{r.bankClaims}</td>
+                  <td>{r.winner || '—'}</td>
+                  <td>{r.harvestDone}</td>
+                  <td>{r.harvestCards}</td>
                   <td>{r.productions}</td>
-                  <td>{r.productsDelivered}</td>
-                  <td>{r.marketCollapses}</td>
-                  <td>{r.sourceCollapses}</td>
-                  <td>{r.marketsSpawned}</td>
-                  <td>{r.marketIncome}</td>
-                  <td>{r.feesPaidToPlayers}</td>
-                  <td>{r.feesPaidToBank}</td>
-                  <td>{r.privateBusinesses}</td>
-                  <td>{r.fieldsBought ?? 0}</td>
+                  <td>{r.marketBuys}</td>
+                  <td>{r.bankIncome}</td>
+                  <td>{r.playerTransfers}</td>
+                  <td>{r.bankPaid}</td>
+                  <td>{r.bankClaims}</td>
+                  <td>{r.wealthMax}</td>
                   <td>{r.actions}</td>
                   <td>{r.turns}</td>
                   <td>{r.bankLeft}</td>

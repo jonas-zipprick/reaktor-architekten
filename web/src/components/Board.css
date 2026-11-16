@@ -26,7 +26,7 @@
 .board-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
   width: max-content;
   margin: 0;
   padding: 12px;
@@ -36,7 +36,77 @@
   box-shadow: var(--shadow);
 }
 
-/* Eine Zeile je Feldart; die Lage hat keine Regelwirkung. */
+/* Oben Gemeinschaft, unten Privat — nur Layout, keine Regelwirkung. */
+.board-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.board-zone-label {
+  margin: 0 2px;
+  font-family: var(--display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.board-zone-private {
+  padding-top: 10px;
+  border-top: 1px dashed var(--line-strong);
+}
+
+.board-player-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: stretch;
+}
+
+.board-player-group {
+  flex: 0 0 auto;
+  padding: 8px 10px 10px;
+  border-radius: 14px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--line);
+}
+
+.board-player-group.owner-white {
+  border-color: color-mix(in srgb, #c8bfa8 55%, var(--line));
+}
+.board-player-group.owner-black {
+  border-color: color-mix(in srgb, #3d4538 45%, var(--line));
+}
+.board-player-group.owner-red {
+  border-color: color-mix(in srgb, #d45c5c 45%, var(--line));
+}
+.board-player-group.owner-green {
+  border-color: color-mix(in srgb, #5a9e6f 45%, var(--line));
+}
+
+.board-player-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 2px 6px;
+  font-family: var(--display);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-dim);
+}
+
+.board-player-label i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  flex-shrink: 0;
+}
+
+/* Eine Zeile Felder; die Lage hat keine Regelwirkung. */
 .board-row {
   display: flex;
   justify-content: center;
@@ -44,7 +114,7 @@
   flex-wrap: wrap;
 }
 
-/* Küchen | Infrastruktur nebeneinander, Spalten nur so breit wie nötig. */
+/* Gemeinschaftsspalten nebeneinander, nur so breit wie nötig. */
 .board-row-split {
   display: flex;
   flex-wrap: wrap;
@@ -62,9 +132,20 @@
   align-items: stretch;
 }
 
-/* Ernte und Markt teilen sich die untere Zeile nebeneinander. */
-.board-harvest {
-  flex: 0 0 auto;
+.board-player-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.board-player-group .board-row {
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+.board-player-harvest {
+  /* Drei Erntefelder unter Regen / Beet / Schuppen — gleiche Breite, schmaler. */
+  max-width: 100%;
 }
 
 .board-cell-with-buy {
@@ -145,6 +226,30 @@
   font-weight: 700;
   line-height: 1.2;
   color: var(--text-dim);
+}
+
+.board-market-stalls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.board-market-zero {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-self: flex-start;
+  min-width: 0;
+  /* Höhe der Messleiste über den Ständen; kein Feld darunter. */
+  padding-top: 0;
+}
+
+.board-market-stall {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 /* Globaler Exp-Schieber links neben dem Brett (unten = 0, oben = 20). */

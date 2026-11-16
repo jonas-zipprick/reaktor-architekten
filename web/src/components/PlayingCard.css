@@ -92,6 +92,26 @@
   font-size: 1rem;
 }
 
+/* Besitzmarke auf dem Markt. */
+.pcard-owner {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  z-index: 2;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
+}
+
+.pcard.compact .pcard-owner {
+  width: 6px;
+  height: 6px;
+  right: 3px;
+  bottom: 3px;
+}
+
 /* Verdeckter Vorrat unter der obersten Karte tritt zurück, bleibt lesbar. */
 .pcard.dimmed {
   filter: saturate(0.72) brightness(0.96);
@@ -151,6 +171,30 @@
   --pcard-top: #964683;
   --pcard-bottom: #742c65;
   --pcard-edge: #521c47;
+}
+
+/* 🫐 Beeren */
+.pcard.suit-berry {
+  --pcard-ink: #fff;
+  --pcard-top: #6a5bc4;
+  --pcard-bottom: #4a3d98;
+  --pcard-edge: #2f2670;
+}
+
+/* 🥕 Gemüse */
+.pcard.suit-veg {
+  --pcard-ink: #fff;
+  --pcard-top: #d9782e;
+  --pcard-bottom: #b45a16;
+  --pcard-edge: #7a3408;
+}
+
+/* 🌿 Kräuter */
+.pcard.suit-herb {
+  --pcard-ink: #fff;
+  --pcard-top: #5a9a5f;
+  --pcard-bottom: #3f7a45;
+  --pcard-edge: #1f4a24;
 }
 
 /* ★ Siegpunkt */

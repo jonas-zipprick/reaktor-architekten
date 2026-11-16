@@ -30,7 +30,6 @@ import {
   executeMove,
   hasOutputStack,
   selectField,
-  setFee,
   type StackLane,
 } from './rules'
 
@@ -107,7 +106,6 @@ interface GameStore {
   clearSelection: () => void
   moveTo: (to: FieldId, toStackIndex?: number) => void
   finishMoveAnimation: () => void
-  setFee: (fieldId: FieldId, fee: number) => void
   gift: (to: PlayerId, amount: number) => void
   /** „Karten ziehen und Produzieren“ — beendet den Zug. */
   endTurn: () => void
@@ -121,7 +119,7 @@ interface GameStore {
   /** Gebot abgeben; muss das Höchstgebot um mindestens 1 übertreffen. */
   placeBid: (player: PlayerId, amount: number) => void
   /** Zuschlag an den Höchstbietenden (oder Ende ohne Gebot). */
-  closeAuction: (fee?: number) => void
+  closeAuction: () => void
   /** Jump to position after `index` actions (0…actions.length). */
   seek: (index: number) => void
   undo: () => void
@@ -294,27 +292,6 @@ export const useGameStore = create<GameStore>((set, get) => {
       })
     },
 
-    setFee: (fieldId, fee) => {
-      const game = idleGame()
-      if (!game) return
-      const field = game.fields[fieldId]
-      const nextFee = Math.max(0, Math.floor(fee))
-      if (!field || field.fee === nextFee) return
-      const player = game.players[game.currentPlayerIndex]!.id
-      if (field.owner !== player) return
-      const next = setFee(game, fieldId, nextFee)
-      if (next.actionError) {
-        set({ game: next })
-        return
-      }
-      appendAction(
-        get,
-        set,
-        { type: 'setFee', player, at: fieldId, fee: nextFee },
-        next,
-      )
-    },
-
     gift: (to, amount) => {
       const game = idleGame()
       if (!game) return
@@ -400,7 +377,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       set({ auction: { ...auction, highBid: bid, highBidder: player } })
     },
 
-    closeAuction: (fee) => {
+    closeAuction: () => {
       const { game, auction } = get()
       if (!game || !auction) return
       const player = game.players[game.currentPlayerIndex]!.id
@@ -409,7 +386,6 @@ export const useGameStore = create<GameStore>((set, get) => {
         auction.fieldId,
         auction.highBidder,
         auction.highBid,
-        auction.highBidder ? fee : undefined,
       )
       set({ auction: null })
       if (next.actionError) {
@@ -425,9 +401,6 @@ export const useGameStore = create<GameStore>((set, get) => {
           at: auction.fieldId,
           winner: auction.highBidder,
           price: auction.highBid,
-          ...(auction.highBidder && fee != null
-            ? { fee: Math.max(0, Math.floor(fee)) }
-            : {}),
         },
         next,
       )

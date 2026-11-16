@@ -22,10 +22,9 @@ import { serializeRecord } from './recordFormat'
 
 export type SortKey = keyof SimRunSummary
 
+/** Aktive Ergebniskategorien. */
 export const ALL_OUTCOMES: SimOutcome[] = [
   'finished',
-  'lost',
-  'stalled',
   'aborted',
   'stuck',
 ]
@@ -33,8 +32,8 @@ export const ALL_OUTCOMES: SimOutcome[] = [
 export interface MonteCarloFilters {
   /** Included outcomes; empty = none shown. Default: all. */
   outcomes: SimOutcome[]
-  /** Mindestwert für das höchste Gesamtvermögen. */
-  minWealth: number | null
+  /** Mindestzahl fertiger Ernte-Folgen 7→2. */
+  minHarvestDone: number | null
   querySeed: string
 }
 
@@ -101,7 +100,7 @@ const PERSIST_LOW = 16
 const PERSIST_TX_CHUNK = 24
 
 /** Aktionslimit je Lauf (Kartenbewegungen, Gebühren, Auktionen, Zugenden). */
-const MAX_ACTIONS_DEFAULT = 1500
+const MAX_ACTIONS_DEFAULT = 5000
 
 const defaultConfig = (): SimConfig => ({
   scenarioId: 'B',
@@ -280,11 +279,11 @@ export const useMonteCarloStore = create<MonteCarloStore>((set, get) => ({
   config: defaultConfig(),
   progress: { done: 0, nextSeed: 1, running: false, paused: false },
   results: [],
-  sortKey: 'wealthMax',
+  sortKey: 'harvestDone',
   sortDir: 'desc',
   filters: {
     outcomes: [...ALL_OUTCOMES],
-    minWealth: null,
+    minHarvestDone: null,
     querySeed: '',
   },
   error: null,
@@ -445,8 +444,8 @@ export function filterSortResults(state: {
     const allowed = new Set(filters.outcomes)
     rows = rows.filter((r) => allowed.has(r.outcome))
   }
-  if (filters.minWealth != null) {
-    rows = rows.filter((r) => r.wealthMax >= filters.minWealth!)
+  if (filters.minHarvestDone != null) {
+    rows = rows.filter((r) => r.harvestDone >= filters.minHarvestDone!)
   }
   if (filters.querySeed.trim()) {
     const q = filters.querySeed.trim()
