@@ -1734,7 +1734,7 @@ export function executeEndTurn(state: GameState): GameState {
   next.endTurnDiceSeq = (next.endTurnDiceSeq ?? 0) + 1
 
   let rainDrawn: string[] = []
-  if (rainRoll > 0) {
+  if (rainRoll === 1 || rainRoll === 2) {
     rainDrawn = refillRainFields(next, player, rainRoll)
   }
 
@@ -1778,7 +1778,7 @@ export function executeEndTurn(state: GameState): GameState {
   next.producedIds = producedIds
 
   settleAndClearInputs(next, player)
-  if (marketRoll > 0) {
+  if (marketRoll === 1 || marketRoll === 2) {
     settleMarkets(next, player, marketRoll)
   }
 
