@@ -126,7 +126,16 @@
 
 .tension-meter.market-zero-meter {
   width: auto;
-  max-width: 4.5rem;
+  min-width: 4.8rem;
+  max-width: 6.5rem;
+}
+
+.board-market-zero {
+  flex: 0 0 auto;
+}
+
+.board-market-stall .tension-meter.market-stall-meter {
+  min-width: 4.8rem;
 }
 
 .tension-meter.market-stall-meter:not(:has(.tension-suit)) {

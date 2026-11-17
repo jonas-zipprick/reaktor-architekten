@@ -173,7 +173,7 @@ export function fieldLabel(scenarioId: ScenarioId, fieldId: string): string {
   }
   if (fieldId.startsWith('markt-')) {
     const m = /^markt-(2|4|6)$/.exec(fieldId)
-    return m ? `${m[1]}¤` : 'Markt'
+    return m ? `${m[1]}T` : 'Markt'
   }
   if (fieldId === 'wasserhandel-1' || fieldId.startsWith('wasserhandel-')) {
     return 'Wasserhandel'

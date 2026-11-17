@@ -14,7 +14,7 @@
   border: 2px solid #fff;
   box-shadow: 0 12px 30px rgba(35, 84, 58, 0.35);
   pointer-events: none;
-  animation: demand-flash-in 2200ms ease both;
+  animation: demand-flash-in 2400ms ease both;
 }
 
 .demand-flash.dice-market {
@@ -31,6 +31,11 @@
   box-shadow: 0 12px 30px rgba(80, 70, 30, 0.4);
 }
 
+.demand-flash.dice-none {
+  background: #6b6560;
+  box-shadow: 0 12px 30px rgba(40, 36, 32, 0.35);
+}
+
 .demand-flash-title {
   margin: 0 0 8px;
   font-size: 0.72rem;
@@ -40,18 +45,25 @@
   color: rgba(255, 255, 255, 0.75);
 }
 
+.turn-dice-pair {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin: 0 0 8px;
+}
+
 .turn-dice {
   position: relative;
   display: grid;
   place-items: center;
-  height: 52px;
-  margin: 0 auto 6px;
+  min-width: 72px;
+  height: 64px;
 }
 
 .turn-dice-spin,
 .turn-dice-face {
   grid-area: 1 / 1;
-  font-size: 2rem;
+  font-size: 1.85rem;
   line-height: 1;
 }
 
@@ -66,11 +78,14 @@
   animation-delay: 450ms;
 }
 
-.turn-dice-label {
-  margin: 0 0 4px;
-  font-size: 1.05rem;
+.turn-dice-caption {
+  grid-area: 1 / 1;
+  align-self: end;
+  margin-top: 48px;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.04em;
+  opacity: 0.9;
 }
 
 .demand-flash ul {

@@ -179,7 +179,8 @@ export function ScenarioPicker() {
                 Entnahme kostet Standpreis (auch Markt→Markt)
               </li>
               <li>
-                Zugende: Würfel 2× Regen / 2× Markt / 2× beides; Depot +1;
+                Zugende: Regen-Würfel 0/1/1/1/2/2, Markt-Würfel 0/0/1/1/1/2;
+                Depot +1;
                 Beete; Preisanzeige Depot/Markt 0…7
               </li>
               <li>Zeitstrahl: Züge scrubben, JSON exportieren/importieren</li>

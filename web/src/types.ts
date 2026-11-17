@@ -40,13 +40,15 @@ export type PlayerId = 'white' | 'black' | 'red' | 'green'
 export type MarketPrice = 2 | 4 | 6
 export const MARKET_PRICES: readonly MarketPrice[] = [2, 4, 6] as const
 /**
- * Preisanzeige-Werte der Messleiste über dem jeweiligen Stand.
- * 0 steht links neben dem 2T-Stand (kein Feld); 5…7 über dem 6T-Stand.
+ * Preisanzeige-Werte der Messleiste.
+ * Links neben dem 2T-Stand: 0 / 1 (kein Feld).
+ * 2T: 2 / 3 · 4T: 4 / 5 · 6T: 6 / 7.
  */
+export const MARKET_LEADING_MARKS: readonly number[] = [0, 1] as const
 export const MARKET_METER_MARKS: Record<MarketPrice, readonly number[]> = {
-  2: [1, 2],
-  4: [3, 4],
-  6: [5, 6, 7],
+  2: [2, 3],
+  4: [4, 5],
+  6: [6, 7],
 }
 
 /** Marktabnahme: Stand kaufbar wenn Preis ≤ aktuelle Preisanzeige. */
@@ -242,10 +244,10 @@ export interface GameState {
   demandRollFlash: string[] | null
   demandRollIds: FieldId[]
   /**
-   * Zugende-Würfel: 2× Regen / 2× Markt / 2× Regen&Markt.
+   * Zugende-Würfel: Regen (0/1/1/1/2/2) und Markt (0/0/1/1/1/2).
    * `endTurnDiceSeq` triggert die UI-Animation.
    */
-  endTurnDice: 'rain' | 'market' | 'both' | null
+  endTurnDice: { rain: 0 | 1 | 2; market: 0 | 1 | 2 } | null
   endTurnDiceSeq: number
   /** @deprecated Früher Kollaps-/Spawn-Flash. */
   planetLimitSeq: number

@@ -388,7 +388,7 @@ export function scoreEndTurn(state: GameState): number {
     if (n > 0) score += 10 + n * 5
   }
 
-  // Markt kann eigene Ware kaufen — bei Markt oder beides (4 von 6).
+  // Markt kann eigene Ware kaufen — Markt-Würfel > 0 (4 von 6).
   const sell = marketSellableNow(state)
   if (sell.own > 0) score += 6 + sell.own * 4
   else if (sell.foreign > 0 && state.marketDemand >= TENSION_MAX - 3) {

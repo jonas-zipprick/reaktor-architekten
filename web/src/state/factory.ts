@@ -234,13 +234,13 @@ export function createGame(
     }
   }
 
-  // Drei gemeinsame Marktstände (2¤ / 4¤ / 6¤); gemeinsamer Bedarfsmesser.
+  // Drei gemeinsame Marktstände (2T / 4T / 6T); gemeinsamer Bedarfsmesser.
   for (const price of MARKET_PRICES) {
     const id = marketFieldId(price)
     fields[id] = {
       id,
       kind: 'market',
-      label: `${price}¤`,
+      label: `${price}T`,
       row: ROW.market,
       fee: 0,
       stack: [],

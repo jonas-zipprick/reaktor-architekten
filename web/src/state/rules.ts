@@ -994,15 +994,21 @@ function takeCheapestMarketCard(
 }
 
 /**
- * Würfel „Markt“: zuerst Preisanzeige +1, danach bei Anzeige &gt; 0 die
- * billigste Karte mit Preis ≤ Anzeige kaufen (Standpreis aus der Bank an den
- * Ableger, Anzeige −1) — weiter bis 0 oder keine Ware.
+ * Würfel „Markt“: Preisanzeige zuerst um `rise` erhöhen (1 oder 2),
+ * danach bei Anzeige &gt; 0 die billigste Karte mit Preis ≤ Anzeige kaufen.
  */
-function settleMarkets(state: GameState, player: PlayerState): void {
+function settleMarkets(
+  state: GameState,
+  player: PlayerState,
+  rise: 1 | 2,
+): void {
   const markets = Object.values(state.fields).filter((f) => isMarketField(f))
 
-  // 1) Preisanzeige zuerst um 1 erhöhen.
-  let meter = Math.min(TENSION_MAX, Math.max(TENSION_MIN, state.marketDemand + 1))
+  // 1) Preisanzeige zuerst um den Würfelwert erhöhen.
+  let meter = Math.min(
+    TENSION_MAX,
+    Math.max(TENSION_MIN, state.marketDemand + rise),
+  )
   if (markets.length === 0) {
     state.marketDemand = meter
     return
@@ -1039,36 +1045,44 @@ function settleMarkets(state: GameState, player: PlayerState): void {
   state.demandRollFlash = [
     'Würfel: Markt',
     cleared > 0
-      ? `Preis +1, dann ${cleared}× Abnahme → ${meterLabel(meter)}`
-      : `Preis +1, keine Abnahme → ${meterLabel(meter)}`,
+      ? `Preis +${rise}, dann ${cleared}× Abnahme → ${meterLabel(meter)}`
+      : `Preis +${rise}, keine Abnahme → ${meterLabel(meter)}`,
   ]
 
   if (cleared > 0) {
     log(
       state,
-      `${player.name}: Würfel Markt — Preis +1, dann ${cleared} Karte${cleared === 1 ? '' : 'n'} (${notes.join('; ')}) → Preis ${meterLabel(meter)}.`,
+      `${player.name}: Würfel Markt ${rise} — Preis +${rise}, dann ${cleared} Karte${cleared === 1 ? '' : 'n'} (${notes.join('; ')}) → Preis ${meterLabel(meter)}.`,
       'money',
     )
   } else {
     log(
       state,
-      `${player.name}: Würfel Markt — Preis +1, keine Abnahme → ${meterLabel(meter)}.`,
+      `${player.name}: Würfel Markt ${rise} — Preis +${rise}, keine Abnahme → ${meterLabel(meter)}.`,
       'money',
     )
   }
 }
 
-/** Würfel „Regen“: nur der Regen des Zugspielers erhält eine Wasserkarte. */
-function refillRainFields(state: GameState, player: PlayerState): string[] {
+/**
+ * Würfel „Regen“: der Regen des Zugspielers erhält `count` Wasserkarten.
+ */
+function refillRainFields(
+  state: GameState,
+  player: PlayerState,
+  count: 1 | 2,
+): string[] {
   const drawn: string[] = []
   const flashIds: FieldId[] = []
   for (const field of Object.values(state.fields)) {
     if (!isRegen(field) || !field.suit || field.owner !== player.id) continue
-    const card = drawCard(state, field.suit)
-    if (!card) continue
-    field.stack.push(card)
-    drawn.push(`${field.label} ${describeCard(card)}`)
-    flashIds.push(field.id)
+    for (let i = 0; i < count; i++) {
+      const card = drawCard(state, field.suit)
+      if (!card) break
+      field.stack.push(card)
+      drawn.push(`${field.label} ${describeCard(card)}`)
+    }
+    if (drawn.length) flashIds.push(field.id)
   }
   state.demandRollSeq += 1
   state.demandRollIds = flashIds
@@ -1079,22 +1093,16 @@ function refillRainFields(state: GameState, player: PlayerState): string[] {
   return drawn
 }
 
-/** Zugende-Würfel: 2× Regen, 2× Markt, 2× Regen & Markt. */
-const END_TURN_DICE_FACES = [
-  'rain',
-  'rain',
-  'market',
-  'market',
-  'both',
-  'both',
-] as const
+/** Regen-Würfel: 0, 1, 1, 1, 2, 2 */
+const RAIN_DICE_FACES = [0, 1, 1, 1, 2, 2] as const
+/** Markt-Würfel: 0, 0, 1, 1, 1, 2 */
+const MARKET_DICE_FACES = [0, 0, 1, 1, 1, 2] as const
 
-function diceHasRain(dice: (typeof END_TURN_DICE_FACES)[number]): boolean {
-  return dice === 'rain' || dice === 'both'
-}
-
-function diceHasMarket(dice: (typeof END_TURN_DICE_FACES)[number]): boolean {
-  return dice === 'market' || dice === 'both'
+function rollEndTurnDie(
+  faces: readonly (0 | 1 | 2)[],
+  rng: () => number,
+): 0 | 1 | 2 {
+  return faces[Math.floor(rng() * faces.length)]!
 }
 
 /** @deprecated Exp-10-Angebot entfällt. */
@@ -1704,7 +1712,7 @@ function producePersonalGardens(
 
 /**
  * Zugende „Karten ziehen und Produzieren“:
- * 1. Würfel: 2× Regen / 2× Markt / 2× Regen&Markt.
+ * 1. Zwei Würfel: Regen (0/1/1/1/2/2) und Markt (0/0/1/1/1/2).
  * 2. Jeder Ausgabestapel (Saatstand, Wasserhandel) erhält eine offene Karte.
  * 3. Persönliche Beete: bei mind. 1 Wasser + 1 Saat Eingang → gleiche Anzahl Ausgabe.
  * 4. Depot-Eingänge abrechnen und ggf. leeren.
@@ -1719,14 +1727,15 @@ export function executeEndTurn(state: GameState): GameState {
   const player = currentPlayer(next)
   const fields = Object.values(next.fields)
 
-  const faceIndex = Math.floor(rngFrom(next, 42)() * END_TURN_DICE_FACES.length)
-  const dice = END_TURN_DICE_FACES[faceIndex]!
-  next.endTurnDice = dice
+  const rng = rngFrom(next, 42)
+  const rainRoll = rollEndTurnDie(RAIN_DICE_FACES, rng)
+  const marketRoll = rollEndTurnDie(MARKET_DICE_FACES, rng)
+  next.endTurnDice = { rain: rainRoll, market: marketRoll }
   next.endTurnDiceSeq = (next.endTurnDiceSeq ?? 0) + 1
 
   let rainDrawn: string[] = []
-  if (diceHasRain(dice)) {
-    rainDrawn = refillRainFields(next, player)
+  if (rainRoll > 0) {
+    rainDrawn = refillRainFields(next, player, rainRoll)
   }
 
   const producedIds: FieldId[] = []
@@ -1757,14 +1766,10 @@ export function executeEndTurn(state: GameState): GameState {
     if (any) producedIds.push(field.id)
   }
 
-  const diceLabel =
-    dice === 'rain' ? 'Regen' : dice === 'market' ? 'Markt' : 'Regen & Markt'
   log(
     next,
-    `${player.name} beendet den Zug — Würfel ${diceLabel}${
-      diceHasRain(dice) && rainDrawn.length
-        ? `: ${rainDrawn.join(' · ')}`
-        : ''
+    `${player.name} beendet den Zug — Würfel Regen ${rainRoll}, Markt ${marketRoll}${
+      rainDrawn.length ? ` (${rainDrawn.join(' · ')})` : ''
     }; Ausgaben ${outputDrawn.length ? outputDrawn.join(', ') : 'keine'}.`,
     'info',
   )
@@ -1773,19 +1778,28 @@ export function executeEndTurn(state: GameState): GameState {
   next.producedIds = producedIds
 
   settleAndClearInputs(next, player)
-  if (diceHasMarket(dice)) {
-    settleMarkets(next, player)
+  if (marketRoll > 0) {
+    settleMarkets(next, player, marketRoll)
   }
-  if (dice === 'both') {
+
+  const flashLines: string[] = ['Zugende-Würfel']
+  flashLines.push(
+    rainRoll > 0
+      ? `Regen ${rainRoll}: ${rainDrawn.length ? rainDrawn.join(' · ') : 'keine Karte'}`
+      : 'Regen 0',
+  )
+  if (marketRoll > 0) {
     const marketLines = (next.demandRollFlash ?? []).slice(1)
-    next.demandRollFlash = [
-      'Würfel: Regen & Markt',
-      `Regen: ${rainDrawn.length ? rainDrawn.join(' · ') : 'keine Karte'}`,
-      ...marketLines.map((line) =>
-        line.startsWith('Markt:') ? line : `Markt: ${line}`,
-      ),
-    ]
+    if (marketLines.length) {
+      flashLines.push(...marketLines.map((line) => `Markt ${marketRoll}: ${line}`))
+    } else {
+      flashLines.push(`Markt ${marketRoll}`)
+    }
+  } else {
+    flashLines.push('Markt 0')
   }
+  next.demandRollFlash = flashLines
+  next.demandRollSeq += 1
 
   applyEndOfTurnDemand(next)
 

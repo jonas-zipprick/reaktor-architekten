@@ -53,7 +53,7 @@ Rangfolge: **7 → 6 → 5 → 4 → 3 → 2**
 | Kräuterbeet 🌿 | Persönlich (Sitz 3); Wasser \+ Saat → Kräuter; keine Preisanzeige |
 | Schuppen | Persönlich; nimmt jede Sorte an; genau einer je Spieler |
 | Erntefelder | Persönlich; **immer 3** je Spieler; jede Beet-Ernte, Sorten mischbar |
-| Markt | Gemeinschaftlich; **genau drei Stände** mit Festpreis **2T / 4T / 6T**; **ein gemeinsamer** Preisanzeiger (0…7): **0** links neben dem 2T-Stand, danach Abschnitte über den Ständen. |
+| Markt | Gemeinschaftlich; **genau drei Stände** mit Festpreis **2T / 4T / 6T**; **ein gemeinsamer** Preisanzeiger (0…7): **0 / 1** links neben dem 2T-Stand, **2 / 3** über 2T, **4 / 5** über 4T, **6 / 7** über 6T. |
 
 **Alle privaten Felder** (Regen, Beet, Schuppen, Ernte) sind für andere Spieler **tabu**: weder Ablegen noch Nehmen. Saatstand, Wasserhandel und Markt stehen im Gemeinschaftsbereich.
 
@@ -65,7 +65,10 @@ Um bei unklaren Karten auf dem Markt den Besitzer zu kennzeichnen
 
 ### **2.4. Zugende-Würfel**
 
-Bestimmt zum Ende jedes Spielzugs, ob Regen, Markt oder beides stattfindet.
+Zwei Würfel am Zugende:
+
+* **Regen:** Seiten **0, 1, 1, 1, 2, 2** — so viele Wasserkarten erhält der Regen des Zugspielers.
+* **Markt:** Seiten **0, 0, 1, 1, 1, 2** — um so viel steigt zuerst die Preisanzeige, danach folgt die Marktabnahme.
 
 ## **3\. Spielaufbau**
 
@@ -121,7 +124,7 @@ Nur Rezeptkarten dürfen auf Eingänge. Beet-Ernten gehören auf die Erntefelder
 
 ## **5\. Regen**
 
-Jeder Spieler hat **seinen eigenen Regen** (nur Eigentümer). Wenn der Zugende-Würfel **Regen** oder **Regen & Markt** zeigt, erhält **nur der Regen des Zugspielers** eine Karte vom Nachziehstapel. Das Feld bleibt unabhängig von der Stapelhöhe bestehen.
+Jeder Spieler hat **seinen eigenen Regen** (nur Eigentümer). Zeigt der Regen-Würfel **1** oder **2**, erhält **nur der Regen des Zugspielers** entsprechend eine bzw. zwei Karten vom Nachziehstapel. Bei **0** geschieht nichts. Das Feld bleibt unabhängig von der Stapelhöhe bestehen.
 
 ## **6\. Saatstand, Wasserhandel und Beete**
 
@@ -167,18 +170,18 @@ Jeder Spieler hat **genau drei** persönliche Erntefelder. Keines der Felder ist
 
 ## **8\. Markt**
 
-Es gibt **genau drei gemeinsame Marktstände** mit den Festpreisen **2T, 4T und 6T**. Über den Ständen liegt **eine gemeinsame Preisanzeige** mit Skala **0 … 7** (Start 0): **0** steht links neben dem 2T-Stand (über keinem Feld), **2T** trägt **1 / 2**, **4T** trägt **3 / 4**, **6T** trägt **5 … 7**. Die Preisanzeige fällt nie unter 0\.
+Es gibt **genau drei gemeinsame Marktstände** mit den Festpreisen **2T, 4T und 6T**. Über den Ständen liegt **eine gemeinsame Preisanzeige** mit Skala **0 … 7** (Start 0): **0 / 1** stehen links neben dem 2T-Stand (über keinem Feld), **2T** trägt **2 / 3**, **4T** trägt **4 / 5**, **6T** trägt **6 / 7**. Die Preisanzeige fällt nie unter 0\.
 
 * Ablegen: Beet-Ernten oder Saat; absteigende Rangfolge. Handelt es sich bei der abgelegten Karte um eine Saat oder die Beet-Ernte eines anderen Spielers, so kann man mit den Besitzmarken kennzeichnen dass einem diese Karte selbst gehört.  
 * **Spieler-Entnahme:** Je entnommene Karte zahlt der Ziehende den **Standpreis** direkt an den Spieler, der diese Karte **zuletzt auf den Markt gelegt** hat (nicht an die Bank). Eigene Karten kosten nichts. Ziel kann jedes sonst zulässige Feld sein (auch wieder ein Marktstand). Die Preisanzeige ändert sich dabei nicht.  
-* Am Zugende nur bei Würfel **Markt** (nach der Depot-Abrechnung):  
-  1. Die Preisanzeige steigt um **1** (aber nicht über 7).  
+* Am Zugende nur wenn der Markt-Würfel **1** oder **2** zeigt (nach der Depot-Abrechnung):  
+  1. Die Preisanzeige steigt um den **Würfelwert** (1 oder 2; nicht über 7).  
   2. Solange die Preisanzeige **\> 0** ist: Der Markt kauft wiederholt die **billigste** verfügbare Karte, deren **Preis ≤ \|aktuelle Preisanzeige\|** ist (Reihenfolge: 2 → 4 → 6). Der Spieler, der diese Karte **zuletzt auf den Markt gelegt** hat, erhält den Standpreis **aus der Bank**. Die Karte geht auf die Ablage; die Preisanzeige sinkt um **1**.  
   3. Gibt es keine passende Ware mehr (alle restlichen Preise \> \|Preisanzeige\|) oder ist die Preisanzeige bei 0, stoppt der Kauf — auch wenn die Preisanzeige noch über 0 liegt.
 
-Bei Würfel **Regen** (ohne Markt) bleibt der Markt unverändert (kein Kauf, kein wachsen der Preisanzeige).
+Bei Markt-Würfel **0** bleibt der Markt unverändert (kein Kauf, kein Wachsen der Preisanzeige).
 
-**Beispiel Würfel Markt:** Preisanzeige 5; Angebot: Zwei Karten zu 2T, eine zu 4T, eine zu 6T. Zuerst Preisanzeige 5 → **6**. Kauf: zwei×2T (Preisanzeige → 4). Dann kauf einmal 4T. Die 6T-Karten bleiben liegen, weil 6 \> \|3\|. Endstand **3\.** Die Auszahlung der Karten geht je an die Spieler die sie dort hingelegt hatten. Dies kann anhand der Besitzmarker erkannt werden.
+**Beispiel Markt-Würfel 1:** Preisanzeige 5; Angebot: Zwei Karten zu 2T, eine zu 4T, eine zu 6T. Zuerst Preisanzeige 5 → **6**. Kauf: zwei×2T (Preisanzeige → 4). Dann kauf einmal 4T. Die 6T-Karten bleiben liegen, weil 6 \> \|3\|. Endstand **3\.** Die Auszahlung der Karten geht je an die Spieler die sie dort hingelegt hatten. Dies kann anhand der Besitzmarker erkannt werden.
 
 ## **9\. Privateigentum**
 
@@ -192,12 +195,12 @@ Die Spieler sind reihum am Zug. Im eigenen Zug darf man beliebig oft:
 
 Der Zug endet mit **„Karten ziehen und Produzieren“**. Dabei geschieht in dieser Reihenfolge:
 
-1. **Würfel** mit **2× Regen**, **2× Markt** und **2× Regen & Markt** (beides gleichzeitig).  
-2. Bei **Regen** bzw. **Regen & Markt**: Regen des Zugspielers \+1 Karte (Abschnitt 5).  
+1. **Zwei Würfel:** Regen (0/1/1/1/2/2) und Markt (0/0/1/1/1/2).  
+2. Regen-Würfel \> 0: Regen des Zugspielers erhält so viele Karten (Abschnitt 5).  
 3. **Jeder** Ausgabestapel von Saatstand und Wasserhandel erhält eine neue offene Karte.  
 4. Persönliche Beete: bei mind. 1 Wasser \+ 1 Saat Eingang → gleiche Anzahl Ausgabe (Abschnitt 6.1).  
 5. Depot-Eingänge (Saatstand, Wasserhandel) abrechnen und leeren (Abschnitt 6.3).  
-6. Bei **Markt** oder **Regen & Markt**: zuerst Preisanzeige \+1, dann Marktabnahme (Abschnitt 8).
+6. Markt-Würfel \> 0: zuerst Preisanzeige um den Würfelwert erhöhen, dann Marktabnahme (Abschnitt 8).
 
 Depot-Abrechnung am Zugende erhält der Spieler, der den Zug beendet.  
 Ist ein Nachziehstapel leer, wird der Ablagestapel derselben Sorte gemischt und bildet den neuen Nachziehstapel.

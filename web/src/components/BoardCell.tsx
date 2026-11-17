@@ -7,6 +7,7 @@ import {
   isPersonalGarden,
   isSeedBed,
   isWaterTrade,
+  MARKET_LEADING_MARKS,
   MARKET_METER_MARKS,
   outputRevealedCount,
   recipeSuits,
@@ -106,92 +107,58 @@ export function DemandMeter({
   )
 }
 
-/**
- * Markt-Messwert 0 links neben dem 2T-Stand (über keinem Feld).
- */
-export function MarketZeroMeter({
+function MarketMeterSegment({
+  marks,
   value,
   flash = false,
   flashKey = 0,
   limitPulse = false,
+  showSuit = false,
+  className = '',
+  dataPrice,
 }: {
+  marks: readonly number[]
   value: number
   flash?: boolean
   flashKey?: number
   limitPulse?: boolean
+  showSuit?: boolean
+  className?: string
+  dataPrice?: MarketPrice
 }) {
-  const clamped = Math.max(TENSION_MIN, Math.min(TENSION_MAX, value))
-  const atZero = clamped === 0
-  const valueLabel = String(value)
-
-  return (
-    <div
-      key={flash ? `flash-market-zero-${flashKey}` : 'meter-market-zero'}
-      className={`tension-meter market-meter market-stall-meter market-zero-meter ${flash ? 'demand-pulse' : ''} ${limitPulse ? 'limit-pulse' : ''}`}
-      title={`Markt-Preis ${valueLabel}`}
-      aria-label={`Markt-Preisanzeige ${valueLabel}`}
-    >
-      <span className="tension-suit" aria-hidden>
-        🧺
-      </span>
-      <div
-        className="tension-scale"
-        style={{ gridTemplateColumns: '1fr' }}
-      >
-        <span
-          className={[
-            'tension-tick',
-            'major',
-            'zero',
-            atZero ? 'active' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          title="0"
-        >
-          <i className="tension-line" aria-hidden />
-          <em>0</em>
-        </span>
-        {atZero && (
-          <span className="tension-stone" style={{ left: '50%' }} />
-        )}
-      </div>
-      <span className="tension-value">{valueLabel}</span>
-    </div>
-  )
-}
-
-/**
- * Ein Abschnitt der Markt-Messleiste über einem Stand
- * (2T: 1/2, 4T: 3/4, 6T: 5…7).
- */
-export function MarketStallMeter({
-  price,
-  value,
-  flash = false,
-  flashKey = 0,
-  limitPulse = false,
-}: {
-  price: MarketPrice
-  value: number
-  flash?: boolean
-  flashKey?: number
-  limitPulse?: boolean
-}) {
-  const marks = MARKET_METER_MARKS[price]
   const clamped = Math.max(TENSION_MIN, Math.min(TENSION_MAX, value))
   const danger = value >= TENSION_MAX - 1
   const stoneIndex = marks.indexOf(clamped)
   const valueLabel = String(value)
+  const inSegment = stoneIndex >= 0
 
   return (
     <div
-      key={flash ? `flash-market-${price}-${flashKey}` : `meter-market-${price}`}
-      className={`tension-meter market-meter market-stall-meter ${danger ? 'danger' : ''} ${flash ? 'demand-pulse' : ''} ${limitPulse ? 'limit-pulse' : ''}`}
+      key={
+        flash
+          ? `flash-market-${dataPrice ?? 'lead'}-${flashKey}`
+          : `meter-market-${dataPrice ?? 'lead'}`
+      }
+      className={[
+        'tension-meter',
+        'market-meter',
+        'market-stall-meter',
+        className,
+        danger && inSegment ? 'danger' : '',
+        flash ? 'demand-pulse' : '',
+        limitPulse ? 'limit-pulse' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       title={`Markt-Preis ${valueLabel}${danger ? ` (Obergrenze ${TENSION_MAX})` : ''}`}
       aria-label={`Markt-Messwerte ${marks.join(', ')}`}
-      data-price={price}
+      data-price={dataPrice}
     >
+      {showSuit && (
+        <span className="tension-suit" aria-hidden>
+          🧺
+        </span>
+      )}
       <div
         className="tension-scale"
         style={{ gridTemplateColumns: `repeat(${marks.length}, 1fr)` }}
@@ -201,7 +168,8 @@ export function MarketStallMeter({
             key={mark}
             className={[
               'tension-tick',
-              mark === TENSION_MAX ? 'major' : 'minor',
+              mark === 0 || mark === TENSION_MAX ? 'major' : 'minor',
+              mark === 0 ? 'zero' : '',
               mark >= TENSION_MAX - 1 ? 'collapse-near' : '',
               mark === clamped ? 'active' : '',
             ]
@@ -223,6 +191,61 @@ export function MarketStallMeter({
         )}
       </div>
     </div>
+  )
+}
+
+/**
+ * Markt-Messwerte 0 und 1 links neben dem 2T-Stand (über keinem Feld).
+ */
+export function MarketZeroMeter({
+  value,
+  flash = false,
+  flashKey = 0,
+  limitPulse = false,
+}: {
+  value: number
+  flash?: boolean
+  flashKey?: number
+  limitPulse?: boolean
+}) {
+  return (
+    <MarketMeterSegment
+      marks={MARKET_LEADING_MARKS}
+      value={value}
+      flash={flash}
+      flashKey={flashKey}
+      limitPulse={limitPulse}
+      showSuit
+      className="market-zero-meter"
+    />
+  )
+}
+
+/**
+ * Messabschnitt über einem Stand (2T: 2/3, 4T: 4/5, 6T: 6/7).
+ */
+export function MarketStallMeter({
+  price,
+  value,
+  flash = false,
+  flashKey = 0,
+  limitPulse = false,
+}: {
+  price: MarketPrice
+  value: number
+  flash?: boolean
+  flashKey?: number
+  limitPulse?: boolean
+}) {
+  return (
+    <MarketMeterSegment
+      marks={MARKET_METER_MARKS[price]}
+      value={value}
+      flash={flash}
+      flashKey={flashKey}
+      limitPulse={limitPulse}
+      dataPrice={price}
+    />
   )
 }
 
@@ -294,7 +317,7 @@ function statusLine(field: FieldState): string {
   if (isMarketField(field)) {
     const price = field.marketPrice ?? 2
     const n = field.stack.length
-    return `${price}T-Stand · ${n} Karte${n === 1 ? '' : 'n'} · Ernte & Saat · Entnahme: ${price}T an Ableger (eigene gratis) · Marktwurf: erst Preis +1, dann Kauf wenn Preis ≤ Anzeige`
+    return `${price}T-Stand · ${n} Karte${n === 1 ? '' : 'n'} · Ernte & Saat · Entnahme: ${price}T an Ableger (eigene gratis) · Marktwurf: Preis +Würfel (1 oder 2), dann Kauf wenn Preis ≤ Anzeige`
   }
   if (hasOutputStack(field)) {
     const outs = field.outputs ?? []
@@ -555,9 +578,6 @@ export function BoardCell({
           })()
         ) : isMarket ? (
           <div className="cell-body market-stall-body">
-            <span className="stack-lane-label">
-              {field.marketPrice ?? 2}T
-            </span>
             <div className="cell-stack">
               {field.stack
                 .slice(Math.max(0, field.stack.length - INPUT_VISIBLE))
